@@ -19,7 +19,6 @@ import {
   TransactionItemData
 } from '@/app/actions/transaction';
 import { supabase } from '@/lib/supabase';
-import SignatureCanvas from './SignatureCanvas';
 import PhotoUpload from './PhotoUpload';
 
 // Esquemas de validación Zod
@@ -35,7 +34,7 @@ const formSchema = z.object({
   workerId: z.string().min(1, 'Debe seleccionar un trabajador'),
   supervisorName: z.string().min(1, 'El nombre del supervisor/jefe es requerido'),
   transactionType: z.enum(['devolucion', 'entrega', 'intercambio']),
-  signatureUrl: z.string().min(1, 'La firma del trabajador es requerida para el descargo'),
+  signatureUrl: z.string().nullable().optional(),
   items: z.array(itemSchema).min(1, 'Debe agregar al menos un insumo a la transacción'),
 });
 
@@ -189,8 +188,8 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     setLoading(true);
     try {
       // 1. Subir firma digital primero si está en base64
-      let finalSignatureUrl = values.signatureUrl;
-      if (values.signatureUrl.startsWith('data:image')) {
+      let finalSignatureUrl = '';
+      if (values.signatureUrl && values.signatureUrl.startsWith('data:image')) {
         finalSignatureUrl = await uploadSignature(values.signatureUrl);
       }
 
@@ -605,27 +604,13 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
             </div>
           )}
 
-          {/* SECCIÓN 3: CONFORMIDAD Y FIRMA */}
+          {/* SECCIÓN 3: CONFIRMAR REGISTRO */}
           {selectedWorker && (
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">3</span>
-                Conformidad del Trabajador
+                Confirmar Registro
               </h3>
-
-              <Controller
-                control={control}
-                name="signatureUrl"
-                render={({ field }) => (
-                  <SignatureCanvas
-                    value={field.value}
-                    onChange={field.onChange}
-                  />
-                )}
-              />
-              {errors.signatureUrl && (
-                <p className="text-xs text-red-600 font-semibold">{errors.signatureUrl.message}</p>
-              )}
 
               {/* Botón de envío */}
               <button
@@ -636,7 +621,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Subiendo firma y registrando descargo...
+                    Registrando descargo...
                   </>
                 ) : (
                   <>

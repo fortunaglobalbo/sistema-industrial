@@ -23,7 +23,7 @@ export interface TransactionData {
   workerId: string;
   supervisorName: string;
   transactionType: 'devolucion' | 'entrega' | 'intercambio';
-  signatureUrl: string;
+  signatureUrl?: string | null;
   items: TransactionItemData[];
 }
 
@@ -150,7 +150,7 @@ export async function registerTransaction(data: TransactionData) {
           worker_id: data.workerId,
           supervisor_name: data.supervisorName,
           transaction_type: data.transactionType,
-          signature_url: data.signatureUrl,
+          signature_url: data.signatureUrl || '',
         },
       ])
       .select()

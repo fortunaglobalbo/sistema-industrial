@@ -45,10 +45,10 @@ body {
     padding: 0 !important;
   }
 
-  /* Configurar márgenes de página A4 */
+  /* Configurar márgenes de página Carta (Letter) */
   @page {
-    size: A4 portrait;
-    margin: 8mm 10mm 8mm 10mm;
+    size: letter portrait;
+    margin: 5mm 8mm 5mm 8mm;
   }
 
   /* Evitar saltos de página huérfanos indeseados */

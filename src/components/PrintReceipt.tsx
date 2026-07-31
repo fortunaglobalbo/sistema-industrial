@@ -159,15 +159,7 @@ export default function PrintReceipt({ transaction, items, onBack }: PrintReceip
         {/* Firma del Trabajador */}
         <div className="flex flex-col items-center justify-end text-center">
           <div className="h-20 flex items-center justify-center border-b border-black w-48 mb-1">
-            {transaction.signatureUrl ? (
-              <img
-                src={transaction.signatureUrl}
-                alt="Firma del Trabajador"
-                className="max-h-full max-w-full object-contain mix-blend-multiply"
-              />
-            ) : (
-              <span className="text-[10px] text-slate-400">Sin firma registrada</span>
-            )}
+            {/* Espacio para firma física */}
           </div>
           <span className="font-bold text-[10px]">{transaction.worker.fullName}</span>
           <span className="text-[9px] text-slate-500">C.I. {transaction.worker.ci}</span>
