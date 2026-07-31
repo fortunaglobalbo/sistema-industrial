@@ -8,6 +8,7 @@ import {
 import { getTransactionDetails, getRecentTransactions, deleteTransaction } from './actions/transaction';
 import TransactionForm from '@/components/TransactionForm';
 import PrintReceipt from '@/components/PrintReceipt';
+import Swal from 'sweetalert2';
 
 export default function Home() {
   // Estados de Autenticación
@@ -82,35 +83,71 @@ export default function Home() {
         setItemsData(res.items || []);
         setActiveTransactionId(transactionId);
       } else {
-        alert(res.error || 'No se pudieron recuperar los detalles del acta.');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: res.error || 'No se pudieron recuperar los detalles del acta.',
+          confirmButtonColor: '#3b82f6'
+        });
       }
     } catch (err) {
       console.error(err);
-      alert('Error cargando los detalles del acta.');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error cargando los detalles del acta.',
+        confirmButtonColor: '#3b82f6'
+      });
     } finally {
       setLoadingDetails(false);
     }
   };
 
   // Eliminar una transacción y actualizar el historial
-  const handleDeleteTransaction = async (transactionId: string) => {
-    if (!confirm('¿Está seguro de eliminar esta transacción permanentemente? Se revertirá de forma automática el impacto en el stock de almacén.')) return;
-    
-    setLoadingHistory(true);
-    try {
-      const res = await deleteTransaction(transactionId);
-      if (res.success) {
-        alert('Transacción eliminada exitosamente y stock de almacén revertido.');
-        loadHistory();
-      } else {
-        alert(res.error || 'Error al eliminar la transacción.');
+  const handleDeleteTransaction = (transactionId: string) => {
+    Swal.fire({
+      title: '¿Eliminar transacción?',
+      text: 'Se revertirá de forma automática el impacto en el stock del almacén.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        setLoadingHistory(true);
+        try {
+          const res = await deleteTransaction(transactionId);
+          if (res.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Eliminada',
+              text: 'La transacción ha sido eliminada y el inventario fue restablecido.',
+              confirmButtonColor: '#10b981'
+            });
+            loadHistory();
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: res.error || 'No se pudo eliminar la transacción.',
+              confirmButtonColor: '#3b82f6'
+            });
+          }
+        } catch (err) {
+          console.error(err);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Ocurrió un error inesperado al eliminar la transacción.',
+            confirmButtonColor: '#3b82f6'
+          });
+        } finally {
+          setLoadingHistory(false);
+        }
       }
-    } catch (err) {
-      console.error(err);
-      alert('Error inesperado al intentar eliminar la transacción.');
-    } finally {
-      setLoadingHistory(false);
-    }
+    });
   };
 
   const handleBackToDashboard = () => {

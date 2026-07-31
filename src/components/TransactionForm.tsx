@@ -24,6 +24,7 @@ import {
   deleteInventoryItem
 } from '@/app/actions/transaction';
 import PhotoUpload from './PhotoUpload';
+import Swal from 'sweetalert2';
 
 // Esquemas de validación Zod
 const itemSchema = z.object({
@@ -200,21 +201,44 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
   };
 
   // Eliminar trabajador del catálogo
-  const handleDeleteWorker = async () => {
-    if (!selectedWorker?.id) return;
-    if (!confirm(`¿Está seguro de eliminar permanentemente a ${selectedWorker.fullName}? No podrá eliminarse si ya tiene comprobantes asociados.`)) return;
+  const handleDeleteWorker = () => {
+    const workerId = selectedWorker?.id;
+    if (!workerId) return;
 
-    setLoading(true);
-    const res = await deleteWorker(selectedWorker.id);
-    setLoading(false);
+    Swal.fire({
+      title: '¿Eliminar trabajador?',
+      text: `¿Está seguro de eliminar permanentemente a ${selectedWorker.fullName}? Se cancelarán todas sus transacciones de forma segura y se restaurará el stock de almacén.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        setLoading(true);
+        const res = await deleteWorker(workerId);
+        setLoading(false);
 
-    if (res.success) {
-      alert('Trabajador eliminado con éxito.');
-      handleDeselectWorker();
-      loadInitialData();
-    } else {
-      alert(res.error || 'No se pudo eliminar el trabajador.');
-    }
+        if (res.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Trabajador Eliminado',
+            text: 'El trabajador y su historial han sido eliminados del catálogo con éxito.',
+            confirmButtonColor: '#10b981'
+          });
+          handleDeselectWorker();
+          loadInitialData();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: res.error || 'No se pudo eliminar el trabajador.',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
+      }
+    });
   };
 
   // Registrar nuevo trabajador rápidamente
@@ -303,7 +327,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
   };
 
   // Eliminar insumo del catálogo
-  const handleDeleteItem = async () => {
+  const handleDeleteItem = () => {
     if (!selectedManageItemId) {
       setManageItemError('Selecciona un insumo para eliminar.');
       return;
@@ -312,22 +336,33 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     const item = inventory.find(i => i.id === selectedManageItemId);
     if (!item) return;
 
-    if (!confirm(`¿Está seguro de eliminar permanentemente "${item.name}" del catálogo?`)) return;
+    Swal.fire({
+      title: '¿Eliminar insumo?',
+      text: `¿Está seguro de eliminar permanentemente "${item.name}" del catálogo?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        setManageItemError('');
+        setManageItemSuccess('');
+        setManageLoading(true);
+        const res = await deleteInventoryItem(selectedManageItemId);
+        setManageLoading(false);
 
-    setManageItemError('');
-    setManageItemSuccess('');
-    setManageLoading(true);
-    const res = await deleteInventoryItem(selectedManageItemId);
-    setManageLoading(false);
-
-    if (res.success) {
-      setManageItemSuccess('Insumo eliminado del catálogo.');
-      setSelectedManageItemId('');
-      setNewManageStock(0);
-      loadInitialData();
-    } else {
-      setManageItemError(res.error || 'No se puede eliminar el insumo. Tiene transacciones registradas.');
-    }
+        if (res.success) {
+          setManageItemSuccess('Insumo eliminado del catálogo.');
+          setSelectedManageItemId('');
+          setNewManageStock(0);
+          loadInitialData();
+        } else {
+          setManageItemError(res.error || 'No se puede eliminar el insumo. Tiene transacciones registradas.');
+        }
+      }
+    });
   };
 
   // Manejar selección de item en la pestaña de edición
@@ -364,11 +399,21 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
         loadInitialData();
         onSuccess(res.transactionId);
       } else {
-        alert(res.error || 'Error al guardar la transacción.');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: res.error || 'No se pudo guardar la transacción.',
+          confirmButtonColor: '#3b82f6'
+        });
       }
     } catch (err: any) {
       console.error(err);
-      alert('Ocurrió un error inesperado al registrar el descargo.');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Ocurrió un error inesperado al registrar el descargo.',
+        confirmButtonColor: '#3b82f6'
+      });
     } finally {
       setLoading(false);
     }
