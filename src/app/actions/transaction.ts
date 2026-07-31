@@ -304,3 +304,149 @@ export async function getTransactionDetails(id: string) {
     return { success: false, error: error.message || 'Error al obtener los detalles del acta.' };
   }
 }
+
+/**
+ * Actualizar datos de un trabajador.
+ */
+export async function updateWorker(id: string, worker: WorkerData) {
+  try {
+    const { error } = await supabase
+      .from('workers')
+      .update({
+        full_name: worker.fullName,
+        ci: worker.ci,
+        position: worker.position,
+        department: worker.department,
+        supervisor_name: worker.supervisorName,
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error al actualizar trabajador:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Eliminar un trabajador.
+ */
+export async function deleteWorker(id: string) {
+  try {
+    const { error } = await supabase
+      .from('workers')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error al eliminar trabajador:', error);
+    return { success: false, error: error.message || 'No se puede eliminar el trabajador porque tiene transacciones registradas.' };
+  }
+}
+
+/**
+ * Agregar un nuevo insumo al catálogo de inventario.
+ */
+export async function addInventoryItem(name: string, category: 'ropa' | 'epp' | 'herramientas', currentStock: number) {
+  try {
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .insert([
+        {
+          name,
+          category,
+          current_stock: currentStock,
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { success: true, item: data };
+  } catch (error: any) {
+    console.error('Error al agregar insumo:', error);
+    return { success: false, error: error.message || 'El insumo ya existe en el catálogo.' };
+  }
+}
+
+/**
+ * Actualizar el stock actual de un insumo directamente.
+ */
+export async function updateInventoryStock(id: string, currentStock: number) {
+  try {
+    const { error } = await supabase
+      .from('inventory_items')
+      .update({
+        current_stock: currentStock,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error al actualizar stock:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Eliminar un insumo del catálogo.
+ */
+export async function deleteInventoryItem(id: string) {
+  try {
+    const { error } = await supabase
+      .from('inventory_items')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error al eliminar insumo:', error);
+    return { success: false, error: error.message || 'No se puede eliminar el insumo si ya tiene registros de entrega o devolución.' };
+  }
+}
+
+/**
+ * Obtener historial de transacciones recientes para reimpresión.
+ */
+export async function getRecentTransactions() {
+  try {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select(`
+        id,
+        created_at,
+        transaction_type,
+        supervisor_name,
+        workers (
+          full_name,
+          ci
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const totalCount = data.length;
+    return data.map((t, index) => {
+      const folio = String(totalCount - index).padStart(5, '0');
+      return {
+        id: t.id,
+        folio,
+        createdAt: t.created_at,
+        transactionType: t.transaction_type,
+        supervisorName: t.supervisor_name,
+        workerName: t.workers ? (t.workers as any).full_name : 'Desconocido',
+        workerCi: t.workers ? (t.workers as any).ci : '',
+      };
+    });
+  } catch (error) {
+    console.error('Error al obtener transacciones:', error);
+    return [];
+  }
+}
