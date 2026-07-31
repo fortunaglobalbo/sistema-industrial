@@ -194,24 +194,13 @@ export default function PrintReceipt({ transaction, items, onBack }: PrintReceip
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition"
         >
           <Printer className="w-4 h-4" />
-          Imprimir Acta (A4)
+          Imprimir Acta (Carta)
         </button>
       </div>
 
-      {/* Contenedor de impresión */}
-      <div className="print-area space-y-8 print:space-y-0 print:gap-y-12">
-        {/* Copia 1: Almacén */}
-        {renderSingleCopy('COPIA 1: REGISTRO SEGURIDAD INDUSTRIAL / ALMACÉN')}
-
-        {/* Línea de corte discontinua */}
-        <div className="relative border-t-2 border-dashed border-slate-300 my-6 print:my-8 flex justify-center items-center">
-          <span className="absolute -top-2 bg-slate-50 print:bg-white px-3 text-[10px] text-slate-400 font-medium tracking-wide border rounded border-slate-200 uppercase print:hidden">
-            Cortar por la línea punteada
-          </span>
-        </div>
-
-        {/* Copia 2: Trabajador */}
-        {renderSingleCopy('COPIA 2: COMPROBANTE DE DESCARGO PARA EL TRABAJADOR')}
+      {/* Contenedor de impresión (Una sola copia en tamaño Carta) */}
+      <div className="print-area">
+        {renderSingleCopy('ACTA DE CONFORMIDAD Y DESCARGO')}
       </div>
     </div>
   );

@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, HardHat, FileText, ClipboardList, Loader2, 
-  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw
+  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash
 } from 'lucide-react';
-import { getTransactionDetails, getRecentTransactions } from './actions/transaction';
+import { getTransactionDetails, getRecentTransactions, deleteTransaction } from './actions/transaction';
 import TransactionForm from '@/components/TransactionForm';
 import PrintReceipt from '@/components/PrintReceipt';
 
@@ -89,6 +89,27 @@ export default function Home() {
       alert('Error cargando los detalles del acta.');
     } finally {
       setLoadingDetails(false);
+    }
+  };
+
+  // Eliminar una transacción y actualizar el historial
+  const handleDeleteTransaction = async (transactionId: string) => {
+    if (!confirm('¿Está seguro de eliminar esta transacción permanentemente? Se revertirá de forma automática el impacto en el stock de almacén.')) return;
+    
+    setLoadingHistory(true);
+    try {
+      const res = await deleteTransaction(transactionId);
+      if (res.success) {
+        alert('Transacción eliminada exitosamente y stock de almacén revertido.');
+        loadHistory();
+      } else {
+        alert(res.error || 'Error al eliminar la transacción.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error inesperado al intentar eliminar la transacción.');
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
@@ -332,13 +353,21 @@ export default function Home() {
                               </span>
                             </td>
                             <td className="p-3 text-slate-600 font-medium">{t.supervisorName}</td>
-                            <td className="p-3 text-center">
+                            <td className="p-3 text-center flex items-center justify-center gap-1.5">
                               <button
                                 onClick={() => handleLoadTransactionDetails(t.id)}
-                                className="flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-1.5 rounded-lg transition shadow-sm"
+                                className="flex items-center justify-center gap-1 bg-slate-800 hover:bg-slate-900 text-white font-bold px-2.5 py-1.5 rounded-lg transition shadow-sm"
+                                title="Ver / Reimprimir Acta"
                               >
                                 <Printer className="w-3.5 h-3.5" />
                                 Reimprimir
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTransaction(t.id)}
+                                className="flex items-center justify-center p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-lg transition shadow-sm"
+                                title="Eliminar Transacción de Historial"
+                              >
+                                <Trash className="w-3.5 h-3.5" />
                               </button>
                             </td>
                           </tr>

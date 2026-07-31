@@ -330,10 +330,27 @@ export async function updateWorker(id: string, worker: WorkerData) {
 }
 
 /**
- * Eliminar un trabajador.
+ * Eliminar un trabajador (y todas sus transacciones asociadas en cascada, reversando el stock primero).
  */
 export async function deleteWorker(id: string) {
   try {
+    // 1. Buscar transacciones asociadas a este trabajador
+    const { data: transactions, error: transError } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('worker_id', id);
+
+    if (transError) throw transError;
+
+    // 2. Eliminar y reversar stock para cada transacción
+    if (transactions && transactions.length > 0) {
+      for (const t of transactions) {
+        const res = await deleteTransaction(t.id);
+        if (!res.success) throw new Error(res.error);
+      }
+    }
+
+    // 3. Eliminar al trabajador
     const { error } = await supabase
       .from('workers')
       .delete()
@@ -343,7 +360,7 @@ export async function deleteWorker(id: string) {
     return { success: true };
   } catch (error: any) {
     console.error('Error al eliminar trabajador:', error);
-    return { success: false, error: error.message || 'No se puede eliminar el trabajador porque tiene transacciones registradas.' };
+    return { success: false, error: error.message || 'Error al eliminar trabajador.' };
   }
 }
 
@@ -448,5 +465,71 @@ export async function getRecentTransactions() {
   } catch (error) {
     console.error('Error al obtener transacciones:', error);
     return [];
+  }
+}
+
+/**
+ * Eliminar una transacción del historial y reversar su impacto en el inventario.
+ */
+export async function deleteTransaction(id: string) {
+  try {
+    // 1. Obtener tipo de transacción y sus items para reversar el stock
+    const { data: trans, error: transError } = await supabase
+      .from('transactions')
+      .select('transaction_type')
+      .eq('id', id)
+      .single();
+
+    if (transError && transError.code !== 'PGRST116') throw transError;
+
+    if (trans) {
+      const { data: items } = await supabase
+        .from('transaction_items')
+        .select('item_name, quantity, condition_reason')
+        .eq('transaction_id', id);
+
+      if (items && items.length > 0) {
+        for (const item of items) {
+          // Obtener el item del inventario actual
+          const { data: invData } = await supabase
+            .from('inventory_items')
+            .select('id, current_stock')
+            .eq('name', item.item_name)
+            .single();
+
+          if (invData) {
+            let newStock = invData.current_stock;
+            if (trans.transaction_type === 'entrega' || trans.transaction_type === 'intercambio') {
+              // Si se entregó o intercambió, se restó stock; al eliminar la transacción, devolvemos el insumo (sumamos stock)
+              newStock = invData.current_stock + item.quantity;
+            } else if (trans.transaction_type === 'devolucion') {
+              // Si se devolvió y estaba reusable (nuevo o cambio_talla), se sumó stock; al eliminar, lo restamos
+              if (item.condition_reason === 'nuevo' || item.condition_reason === 'cambio_talla') {
+                newStock = Math.max(0, invData.current_stock - item.quantity);
+              }
+            }
+
+            // Actualizar stock
+            await supabase
+              .from('inventory_items')
+              .update({ current_stock: newStock, updated_at: new Date().toISOString() })
+              .eq('id', invData.id);
+          }
+        }
+      }
+    }
+
+    // 2. Eliminar la transacción (por CASCADE en base de datos, se borran los items automáticamente)
+    const { error: delError } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', id);
+
+    if (delError) throw delError;
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error al eliminar transacción:', error);
+    return { success: false, error: error.message || 'No se pudo eliminar la transacción.' };
   }
 }
