@@ -78,8 +78,11 @@ export default function PrintReceipt({ transaction, items, onBack }: PrintReceip
       {/* Encabezado */}
       <div className="flex justify-between items-start border-b border-black pb-3">
         <div>
-          <h1 className="text-sm font-bold tracking-wide">SISTEMA DE SEGURIDAD INDUSTRIAL</h1>
-          <p className="text-[10px] text-slate-500">DEPARTAMENTO de SEGURIDAD, HIGIENE Y MEDIO AMBIENTE</p>
+          <img 
+            src="/logo-ende.png" 
+            alt="ENDE ORURO" 
+            className="h-10 w-auto object-contain mix-blend-multiply" 
+          />
         </div>
         <div className="text-right">
           <span className="inline-block bg-slate-100 px-2.5 py-1 font-bold text-sm text-slate-800 border border-slate-300 rounded">

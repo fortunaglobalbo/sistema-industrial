@@ -212,8 +212,8 @@ export default function Home() {
               <ShieldCheck className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-extrabold tracking-wide uppercase">Seguridad Industrial</h1>
-              <p className="text-xs text-slate-400 font-semibold">Control de Inventario y Descargo de EPP</p>
+              <h1 className="text-lg font-extrabold tracking-wide uppercase">ENDE ORURO</h1>
+              <p className="text-xs text-slate-400 font-semibold">Sistema de Seguridad Industrial y Control de EPP</p>
             </div>
           </div>
           
@@ -385,7 +385,7 @@ export default function Home() {
 
       {/* Footer (Oculto en Impresión) */}
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400 font-semibold print:hidden mt-auto">
-        <p>Sistema de Gestión de Seguridad e Higiene Ocupacional © {new Date().getFullYear()}</p>
+        <p>Sistema de Seguridad Industrial - ENDE ORURO © {new Date().getFullYear()}</p>
       </footer>
     </div>
   );
