@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+/* --- ESTILOS DE IMPRESIÓN --- */
+@media print {
+  /* Forzar la impresión de colores de fondo en Chrome, Safari y Firefox */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ocultar todos los elementos del DOM por defecto al imprimir */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Mostrar única y exclusivamente el área del acta */
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+
+  /* Resetear posicionamiento para abarcar toda la hoja A4 sin márgenes del navegador */
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Configurar márgenes de página A4 */
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm 8mm 10mm;
+  }
+
+  /* Evitar saltos de página huérfanos indeseados */
+  tr {
+    page-break-inside: avoid;
+  }
+}
