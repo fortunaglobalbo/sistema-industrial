@@ -14,7 +14,7 @@ interface Worker {
 interface TransactionItem {
   id: string;
   itemName: string;
-  category: 'ropa' | 'epp' | 'herramientas' | 'botiquin';
+  category: string;
   quantity: number;
   conditionReason: string;
   photoUrl?: string | null;

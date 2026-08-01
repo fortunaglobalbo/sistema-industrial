@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
   Plus, Trash2, Search, UserPlus, Check, Loader2, Edit, Trash,
-  Package, ShoppingBag, HardHat, Wrench, RefreshCw, Settings, HeartPulse
+  Package, ShoppingBag, HardHat, Wrench, RefreshCw, Settings, HeartPulse, Tag, Layers
 } from 'lucide-react';
 
 import { 
@@ -20,7 +20,11 @@ import {
   deleteWorker,
   addInventoryItem,
   updateInventoryStock,
-  deleteInventoryItem
+  deleteInventoryItem,
+  getCategories,
+  addCategory,
+  deleteCategory,
+  CategoryData
 } from '@/app/actions/transaction';
 import PhotoUpload from './PhotoUpload';
 import Swal from 'sweetalert2';
@@ -28,7 +32,7 @@ import Swal from 'sweetalert2';
 // Esquemas de validación Zod
 const itemSchema = z.object({
   itemName: z.string().min(1, 'El nombre del insumo es requerido'),
-  category: z.enum(['ropa', 'epp', 'herramientas', 'botiquin']),
+  category: z.string().min(1, 'La categoría es requerida'),
   quantity: z.number().positive('La cantidad debe ser mayor a 0'),
   conditionReason: z.enum(['desgaste_natural', 'dano_operativo', 'defecto_fabrica', 'cambio_talla', 'nuevo', 'en_desuso']),
   photoUrl: z.string().nullable().optional(),
@@ -51,6 +55,7 @@ interface TransactionFormProps {
 export default function TransactionForm({ onSuccess }: TransactionFormProps) {
   const [workers, setWorkers] = useState<WorkerData[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
+  const [categories, setCategories] = useState<CategoryData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -80,19 +85,22 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     supervisorName: '',
   });
 
-  // Estados para GESTIÓN directa del inventario/almacén en la barra lateral
+  // Estados para GESTIÓN directa del inventario/almacén y Categorías
   const [isManagingInventory, setIsManagingInventory] = useState(false);
-  const [inventoryManageTab, setInventoryManageTab] = useState<'add' | 'edit'>('add');
+  const [inventoryManageTab, setInventoryManageTab] = useState<'add' | 'edit' | 'categories'>('add');
   const [manageItemError, setManageItemError] = useState('');
   const [manageItemSuccess, setManageItemSuccess] = useState('');
   const [manageLoading, setManageLoading] = useState(false);
   const [newInventoryItem, setNewInventoryItem] = useState({
     name: '',
-    category: 'epp' as 'epp' | 'ropa' | 'herramientas' | 'botiquin',
+    category: '',
     currentStock: 0
   });
   const [selectedManageItemId, setSelectedManageItemId] = useState('');
   const [newManageStock, setNewManageStock] = useState(0);
+
+  // Estado para nueva categoría
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   const {
     register,
@@ -109,7 +117,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
       supervisorName: '',
       transactionType: 'dotacion',
       signatureUrl: '',
-      items: [{ itemName: '', category: 'epp', quantity: 1, conditionReason: 'nuevo', photoUrl: null }],
+      items: [{ itemName: '', category: 'EPP (Protección)', quantity: 1, conditionReason: 'nuevo', photoUrl: null }],
     },
   });
 
@@ -120,7 +128,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
 
   const transactionType = watch('transactionType');
 
-  // Cargar lista inicial de trabajadores y catálogo de inventario
+  // Cargar lista inicial de trabajadores, inventario y categorías
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -130,6 +138,11 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     setWorkers(wData);
     const iData = await getInventory();
     setInventory(iData);
+    const cData = await getCategories();
+    setCategories(cData);
+    if (cData.length > 0 && !newInventoryItem.category) {
+      setNewInventoryItem((prev) => ({ ...prev, category: cData[0].name }));
+    }
   };
 
   // Buscar trabajador por C.I. o Nombre
@@ -149,7 +162,6 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     setValue('supervisorName', worker.supervisorName);
     setSearchQuery('');
     
-    // Preparar datos de edición
     setEditWorkerData({
       fullName: worker.fullName,
       ci: worker.ci,
@@ -193,7 +205,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
       setSelectedWorker(updated);
       setValue('supervisorName', updated.supervisorName);
       setIsEditingWorker(false);
-      loadInitialData(); // Refrescar lista de autocompletado
+      loadInitialData();
     } else {
       setEditWorkerError(res.error || 'Error al actualizar los datos del trabajador.');
     }
@@ -283,21 +295,22 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
       setManageItemError('El nombre del insumo es requerido.');
       return;
     }
+    const catName = newInventoryItem.category || (categories[0] ? categories[0].name : 'EPP (Protección)');
 
     setManageItemError('');
     setManageItemSuccess('');
     setManageLoading(true);
     const res = await addInventoryItem(
       newInventoryItem.name,
-      newInventoryItem.category as any,
+      catName,
       newInventoryItem.currentStock
     );
     setManageLoading(false);
 
     if (res.success) {
       setManageItemSuccess('¡Insumo agregado con éxito!');
-      setNewInventoryItem({ name: '', category: 'epp', currentStock: 0 });
-      loadInitialData(); // Actualiza el catálogo local de inmediato
+      setNewInventoryItem({ name: '', category: catName, currentStock: 0 });
+      loadInitialData();
     } else {
       setManageItemError(res.error || 'Error al registrar el insumo.');
     }
@@ -364,6 +377,58 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     });
   };
 
+  // Agregar nueva categoría personalizada
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) {
+      setManageItemError('Ingresa un nombre para la nueva categoría.');
+      return;
+    }
+
+    setManageItemError('');
+    setManageItemSuccess('');
+    setManageLoading(true);
+    const res = await addCategory(newCategoryName);
+    setManageLoading(false);
+
+    if (res.success) {
+      setManageItemSuccess(`¡Categoría "${newCategoryName.trim()}" agregada con éxito!`);
+      setNewCategoryName('');
+      loadInitialData();
+    } else {
+      setManageItemError(res.error || 'No se pudo agregar la categoría.');
+    }
+  };
+
+  // Eliminar una categoría
+  const handleDeleteCategory = (catName: string) => {
+    Swal.fire({
+      title: '¿Eliminar categoría?',
+      text: `¿Deseas eliminar la categoría "${catName}"? Solo podrás hacerlo si no tiene insumos asociados.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        setManageItemError('');
+        setManageItemSuccess('');
+        setManageLoading(true);
+        const res = await deleteCategory(catName);
+        setManageLoading(false);
+
+        if (res.success) {
+          setManageItemSuccess(`Categoría "${catName}" eliminada.`);
+          loadInitialData();
+        } else {
+          setManageItemError(res.error || 'No se pudo eliminar la categoría.');
+        }
+      }
+    });
+  };
+
   // Manejar selección de item en la pestaña de edición
   const handleSelectManageItem = (id: string) => {
     setSelectedManageItemId(id);
@@ -418,12 +483,22 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     }
   };
 
-  const getFilteredCatalog = (category: string) => {
-    if (category === 'epp' || category === 'botiquin') {
-      return inventory.filter((item) => item.category === 'epp' || item.category === 'botiquin');
-    }
-    return inventory.filter((item) => item.category === category);
+  const getFilteredCatalog = (categoryName: string) => {
+    if (!categoryName) return inventory;
+    return inventory.filter((item) => {
+      const itemCat = (item.category || '').toLowerCase().trim();
+      const targetCat = categoryName.toLowerCase().trim();
+      return itemCat === targetCat || itemCat.includes(targetCat) || targetCat.includes(itemCat);
+    });
   };
+
+  // Obtener lista única de nombres de categorías combinando categories state y items del inventario
+  const allCategoryNames = Array.from(
+    new Set([
+      ...categories.map((c) => c.name),
+      ...inventory.map((i) => i.category).filter(Boolean)
+    ])
+  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto px-4 py-6">
@@ -748,7 +823,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
             )}
           </div>
 
-          {/* SECCIÓN 2: DETALLE DE INSUMOS (MULTI-ÍTEM CON SOPORTE PARA DECIMALES Y BOTIQUINES) */}
+          {/* SECCIÓN 2: DETALLE DE INSUMOS (CON CATEGORÍAS DINÁMICAS Y CANTIDADES DECIMALES) */}
           {selectedWorker && !isEditingWorker && (
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
               <div className="flex justify-between items-center border-b pb-3">
@@ -758,7 +833,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                 </h3>
                 <button
                   type="button"
-                  onClick={() => append({ itemName: '', category: 'epp', quantity: 1, conditionReason: transactionType === 'dotacion' ? 'nuevo' : 'desgaste_natural', photoUrl: null })}
+                  onClick={() => append({ itemName: '', category: allCategoryNames[0] || 'EPP (Protección)', quantity: 1, conditionReason: transactionType === 'dotacion' ? 'nuevo' : 'desgaste_natural', photoUrl: null })}
                   className="flex items-center gap-1 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg transition"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -789,17 +864,20 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                         </button>
                       )}
 
-                      {/* Categoría */}
+                      {/* Categoría Dinámica */}
                       <div className="md:col-span-3">
-                        <label className="text-[9px] font-bold text-slate-500 block mb-1 uppercase">Categoría</label>
+                        <label className="text-[9px] font-bold text-slate-500 block mb-1 uppercase flex items-center gap-1">
+                          <Tag className="w-3 h-3 text-blue-500" /> Categoría
+                        </label>
                         <select
                           {...register(`items.${index}.category`)}
-                          className="w-full text-xs border bg-white rounded-lg px-2 py-1.5 focus:outline-none"
+                          className="w-full text-xs border bg-white rounded-lg px-2 py-1.5 focus:outline-none font-medium"
                         >
-                          <option value="epp">EPP (Protección)</option>
-                          <option value="botiquin">Botiquín / Auxilios</option>
-                          <option value="ropa">Ropa de Trabajo</option>
-                          <option value="herramientas">Herramientas</option>
+                          {allCategoryNames.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -908,7 +986,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
         </form>
       </div>
 
-      {/* PANEL LATERAL: CATÁLOGO / GESTIÓN DE ALMACÉN */}
+      {/* PANEL LATERAL: CATÁLOGO / GESTIÓN DE ALMACÉN Y CATEGORÍAS */}
       <div className="space-y-6">
         
         {/* Card de Stock de Almacén y Ajustes Directos */}
@@ -927,7 +1005,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                   setManageItemSuccess('');
                 }}
                 className={`p-1.5 rounded-lg border transition ${isManagingInventory ? 'bg-blue-50 text-blue-600 border-blue-200' : 'text-slate-400 hover:text-slate-600 border-slate-200'}`}
-                title="Gestionar Catálogo de Almacén"
+                title="Gestionar Catálogo y Categorías"
               >
                 <Settings className="w-4 h-4" />
               </button>
@@ -955,7 +1033,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
               </div>
 
               {/* Pestañas de Gestión */}
-              <div className="flex gap-2 border-b border-slate-200 pb-2">
+              <div className="flex gap-1.5 border-b border-slate-200 pb-2 overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => {
@@ -963,9 +1041,9 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                     setManageItemError('');
                     setManageItemSuccess('');
                   }}
-                  className={`flex-1 text-[10px] py-1 rounded font-bold transition ${inventoryManageTab === 'add' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}
+                  className={`px-2 py-1 text-[10px] rounded font-bold transition whitespace-nowrap ${inventoryManageTab === 'add' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}
                 >
-                  Agregar Insumo
+                  + Insumo
                 </button>
                 <button
                   type="button"
@@ -974,9 +1052,20 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                     setManageItemError('');
                     setManageItemSuccess('');
                   }}
-                  className={`flex-1 text-[10px] py-1 rounded font-bold transition ${inventoryManageTab === 'edit' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}
+                  className={`px-2 py-1 text-[10px] rounded font-bold transition whitespace-nowrap ${inventoryManageTab === 'edit' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}
                 >
-                  Ajustar / Eliminar
+                  Ajustar / Borrar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInventoryManageTab('categories');
+                    setManageItemError('');
+                    setManageItemSuccess('');
+                  }}
+                  className={`px-2 py-1 text-[10px] rounded font-bold transition whitespace-nowrap flex items-center gap-1 ${inventoryManageTab === 'categories' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700'}`}
+                >
+                  <Tag className="w-3 h-3" /> Categorías
                 </button>
               </div>
 
@@ -1005,13 +1094,14 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                     <label className="font-bold text-slate-600 block mb-1">Categoría</label>
                     <select
                       value={newInventoryItem.category}
-                      onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, category: e.target.value })}
-                      className="w-full border rounded px-2 py-1 text-xs bg-white"
+                      onChange={(e) => setNewInventoryItem({ ...newInventoryItem, category: e.target.value })}
+                      className="w-full border rounded px-2 py-1 text-xs bg-white font-medium"
                     >
-                      <option value="epp">EPP (Protección)</option>
-                      <option value="botiquin">Botiquín / Auxilios</option>
-                      <option value="ropa">Ropa de Trabajo</option>
-                      <option value="herramientas">Herramientas</option>
+                      {allCategoryNames.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -1033,8 +1123,8 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                     {manageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Agregar al Catálogo'}
                   </button>
                 </form>
-              ) : (
-                /* PESTAÑA AJUSTAR / ELIMINAR */
+              ) : inventoryManageTab === 'edit' ? (
+                /* PESTAÑA AJUSTAR / ELIMINAR INSUMO */
                 <form onSubmit={handleUpdateStock} className="space-y-2 text-[10px]">
                   <div>
                     <label className="font-bold text-slate-600 block mb-1">Seleccionar Insumo</label>
@@ -1086,25 +1176,77 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                     </>
                   )}
                 </form>
+              ) : (
+                /* PESTAÑA GESTIÓN DE CATEGORÍAS (CREAR / ELIMINAR CATEGORÍA) */
+                <div className="space-y-3 text-[10px]">
+                  <form onSubmit={handleCreateCategory} className="space-y-2 border-b border-slate-200 pb-3">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1 uppercase flex items-center gap-1">
+                        <Tag className="w-3 h-3 text-blue-500" /> Nueva Categoría
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Extintores y Señalización"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        className="w-full border rounded px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={manageLoading}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 rounded transition flex items-center justify-center gap-1 text-xs"
+                    >
+                      {manageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Plus className="w-3 h-3" /> Crear Categoría</>}
+                    </button>
+                  </form>
+
+                  {/* Lista de Categorías Existentes */}
+                  <div className="space-y-1.5">
+                    <span className="font-bold text-slate-500 uppercase block text-[9px] tracking-wider">Categorías Activas</span>
+                    <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
+                      {allCategoryNames.map((catName) => {
+                        const countInCat = inventory.filter(i => (i.category || '').toLowerCase() === catName.toLowerCase()).length;
+                        return (
+                          <div key={catName} className="flex justify-between items-center p-1.5 bg-white border border-slate-200 rounded text-xs">
+                            <div>
+                              <span className="font-semibold text-slate-800">{catName}</span>
+                              <span className="text-[9px] text-slate-400 block">{countInCat} insumo(s)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCategory(catName)}
+                              className="text-slate-400 hover:text-red-600 p-1 rounded transition"
+                              title={`Eliminar categoría ${catName}`}
+                            >
+                              <Trash className="w-3 h-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           ) : (
-            /* LISTA DE STOCK NORMAL */
+            /* LISTA DE STOCK DINÁMICO POR CATEGORÍAS */
             <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-              {['epp', 'botiquin', 'ropa', 'herramientas'].map((cat) => {
-                const itemsInCat = inventory.filter((i) => i.category === cat);
+              {allCategoryNames.map((cat) => {
+                const itemsInCat = inventory.filter((i) => (i.category || '').toLowerCase() === cat.toLowerCase());
                 return (
                   <div key={cat} className="space-y-1.5">
-                    <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                      {cat === 'epp' && <HardHat className="w-3.5 h-3.5" />}
-                      {cat === 'botiquin' && <HeartPulse className="w-3.5 h-3.5 text-rose-500" />}
-                      {cat === 'ropa' && <ShoppingBag className="w-3.5 h-3.5" />}
-                      {cat === 'herramientas' && <Wrench className="w-3.5 h-3.5" />}
-                      {cat === 'epp' ? 'EPP (Protección)' : cat === 'botiquin' ? 'Botiquines / Primeros Auxilios' : cat === 'ropa' ? 'Ropa de Trabajo' : 'Herramientas'}
+                    <h4 className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                      {cat.toLowerCase().includes('epp') ? <HardHat className="w-3.5 h-3.5 text-amber-500" /> :
+                       cat.toLowerCase().includes('botiquin') || cat.toLowerCase().includes('auxilio') ? <HeartPulse className="w-3.5 h-3.5 text-rose-500" /> :
+                       cat.toLowerCase().includes('ropa') ? <ShoppingBag className="w-3.5 h-3.5 text-blue-500" /> :
+                       cat.toLowerCase().includes('herramienta') ? <Wrench className="w-3.5 h-3.5 text-indigo-500" /> :
+                       <Layers className="w-3.5 h-3.5 text-slate-400" />}
+                      {cat}
                     </h4>
 
                     {itemsInCat.length === 0 ? (
-                      <p className="text-[10px] text-slate-400 italic pl-4">No hay insumos registrados.</p>
+                      <p className="text-[10px] text-slate-400 italic pl-4">Sin insumos en esta categoría.</p>
                     ) : (
                       <div className="space-y-1 pl-2">
                         {itemsInCat.map((item) => (

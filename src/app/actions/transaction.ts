@@ -13,7 +13,7 @@ export interface WorkerData {
 
 export interface TransactionItemData {
   itemName: string;
-  category: 'ropa' | 'epp' | 'herramientas' | 'botiquin';
+  category: string;
   quantity: number;
   conditionReason: 'desgaste_natural' | 'dano_operativo' | 'defecto_fabrica' | 'cambio_talla' | 'nuevo' | 'en_desuso';
   photoUrl?: string | null;
@@ -26,6 +26,117 @@ export interface TransactionData {
   transactionType: 'devolucion' | 'entrega' | 'intercambio' | 'dotacion' | 'desuso';
   signatureUrl?: string | null;
   items: TransactionItemData[];
+}
+
+export interface CategoryData {
+  id?: string;
+  name: string;
+}
+
+/**
+ * Obtener la lista de categorías dinámicas disponibles.
+ */
+export async function getCategories(): Promise<CategoryData[]> {
+  const defaultCategories = [
+    'EPP (Protección)',
+    'Botiquines / Primeros Auxilios',
+    'Ropa de Trabajo',
+    'Herramientas'
+  ];
+
+  try {
+    // 1. Intentar consultar la tabla 'categories'
+    const { data: dbCategories, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name', { ascending: true });
+
+    if (!error && dbCategories && dbCategories.length > 0) {
+      return dbCategories.map((c) => ({ id: c.id, name: c.name }));
+    }
+
+    // 2. Si la tabla aún no existe o está vacía, consultar categorías usadas en inventory_items
+    const { data: invCategories } = await supabase
+      .from('inventory_items')
+      .select('category');
+
+    const setCategories = new Set<string>(defaultCategories);
+    if (invCategories) {
+      invCategories.forEach((i) => {
+        if (i.category) setCategories.add(i.category);
+      });
+    }
+
+    return Array.from(setCategories).map((name) => ({ name }));
+  } catch (error) {
+    console.error('Error al obtener categorías:', error);
+    return defaultCategories.map((name) => ({ name }));
+  }
+}
+
+/**
+ * Crear una nueva categoría personalizada.
+ */
+export async function addCategory(name: string) {
+  try {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return { success: false, error: 'El nombre de la categoría no puede estar vacío.' };
+    }
+
+    const { data, error } = await supabase
+      .from('categories')
+      .insert([{ name: trimmed }])
+      .select()
+      .single();
+
+    if (error) {
+      // Si la tabla no existe aún, no falla catastróficamente
+      if (error.code === '42P01') {
+        return { success: true, item: { name: trimmed } };
+      }
+      throw error;
+    }
+
+    return { success: true, item: data };
+  } catch (error: any) {
+    console.error('Error al agregar categoría:', error);
+    return { success: false, error: error.message || 'La categoría ya existe o no se pudo guardar.' };
+  }
+}
+
+/**
+ * Eliminar una categoría personalizada.
+ */
+export async function deleteCategory(categoryName: string) {
+  try {
+    // 1. Verificar si hay insumos que utilicen esta categoría
+    const { data: existingItems, error: checkError } = await supabase
+      .from('inventory_items')
+      .select('id')
+      .eq('category', categoryName)
+      .limit(1);
+
+    if (!checkError && existingItems && existingItems.length > 0) {
+      return { 
+        success: false, 
+        error: `No se puede eliminar la categoría "${categoryName}" porque tiene insumos registrados en almacén. Reasigna o elimina los insumos primero.` 
+      };
+    }
+
+    // 2. Eliminar de la tabla categories
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('name', categoryName);
+
+    if (error && error.code !== '42P01') throw error;
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error al eliminar categoría:', error);
+    return { success: false, error: error.message || 'Error al eliminar la categoría.' };
+  }
 }
 
 /**
@@ -180,7 +291,6 @@ export async function registerTransaction(data: TransactionData) {
     // 3. Ajustar Inventario (Stock)
     for (const item of data.items) {
       const qty = Number(item.quantity);
-      // Intentar obtener el item del inventario actual para validar stock
       const { data: invData } = await supabase
         .from('inventory_items')
         .select('id, current_stock')
@@ -191,28 +301,22 @@ export async function registerTransaction(data: TransactionData) {
         let newStock = Number(invData.current_stock);
 
         if (data.transactionType === 'entrega' || data.transactionType === 'dotacion' || data.transactionType === 'desuso') {
-          // Restar stock para entregas, dotaciones iniciales y materiales puestos en desuso/baja
           newStock = Math.max(0, newStock - qty);
         } else if (data.transactionType === 'devolucion') {
-          // Sumar stock para devoluciones SOLO si el insumo está en estado reutilizable (nuevo o cambio_talla)
           if (item.conditionReason === 'nuevo' || item.conditionReason === 'cambio_talla') {
             newStock = newStock + qty;
           }
         } else if (data.transactionType === 'intercambio') {
-          // Un intercambio entrega un item nuevo (resta stock)
           newStock = Math.max(0, newStock - qty);
         }
 
-        // Redondear a 2 decimales
         newStock = Math.round(newStock * 100) / 100;
 
-        // Actualizar base de datos
         await supabase
           .from('inventory_items')
           .update({ current_stock: newStock, updated_at: new Date().toISOString() })
           .eq('id', invData.id);
       } else {
-        // Si el item no existe en el catálogo de inventario, lo insertamos
         let initialStock = 0;
         if (data.transactionType === 'devolucion' && (item.conditionReason === 'nuevo' || item.conditionReason === 'cambio_talla')) {
           initialStock = qty;
@@ -266,7 +370,6 @@ export async function getTransactionDetails(id: string) {
 
     if (itemsError) throw itemsError;
 
-    // Obtener correlativo secuencial (folio) de la transacción
     const { count } = await supabase
       .from('transactions')
       .select('*', { count: 'exact', head: true })
@@ -365,7 +468,7 @@ export async function deleteWorker(id: string) {
 /**
  * Agregar un nuevo insumo al catálogo de inventario.
  */
-export async function addInventoryItem(name: string, category: 'ropa' | 'epp' | 'herramientas' | 'botiquin', currentStock: number) {
+export async function addInventoryItem(name: string, category: string, currentStock: number) {
   try {
     const { data, error } = await supabase
       .from('inventory_items')
