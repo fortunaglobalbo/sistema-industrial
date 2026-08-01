@@ -13,16 +13,17 @@ export interface WorkerData {
 
 export interface TransactionItemData {
   itemName: string;
-  category: 'ropa' | 'epp' | 'herramientas';
+  category: 'ropa' | 'epp' | 'herramientas' | 'botiquin';
   quantity: number;
-  conditionReason: 'desgaste_natural' | 'dano_operativo' | 'defecto_fabrica' | 'cambio_talla' | 'nuevo';
+  conditionReason: 'desgaste_natural' | 'dano_operativo' | 'defecto_fabrica' | 'cambio_talla' | 'nuevo' | 'en_desuso';
   photoUrl?: string | null;
 }
 
 export interface TransactionData {
   workerId: string;
   supervisorName: string;
-  transactionType: 'devolucion' | 'entrega' | 'intercambio';
+  supervisorRoleTitle?: string;
+  transactionType: 'devolucion' | 'entrega' | 'intercambio' | 'dotacion' | 'desuso';
   signatureUrl?: string | null;
   items: TransactionItemData[];
 }
@@ -165,7 +166,7 @@ export async function registerTransaction(data: TransactionData) {
       transaction_id: transactionId,
       item_name: item.itemName,
       category: item.category,
-      quantity: item.quantity,
+      quantity: Number(item.quantity),
       condition_reason: item.conditionReason,
       photo_url: item.photoUrl || null,
     }));
@@ -177,8 +178,8 @@ export async function registerTransaction(data: TransactionData) {
     if (itemsError) throw itemsError;
 
     // 3. Ajustar Inventario (Stock)
-    // Para cada item, actualizaremos el stock actual
     for (const item of data.items) {
+      const qty = Number(item.quantity);
       // Intentar obtener el item del inventario actual para validar stock
       const { data: invData } = await supabase
         .from('inventory_items')
@@ -187,21 +188,23 @@ export async function registerTransaction(data: TransactionData) {
         .single();
 
       if (invData) {
-        let newStock = invData.current_stock;
+        let newStock = Number(invData.current_stock);
 
-        if (data.transactionType === 'entrega') {
-          // Restar stock para entregas
-          newStock = Math.max(0, invData.current_stock - item.quantity);
+        if (data.transactionType === 'entrega' || data.transactionType === 'dotacion' || data.transactionType === 'desuso') {
+          // Restar stock para entregas, dotaciones iniciales y materiales puestos en desuso/baja
+          newStock = Math.max(0, newStock - qty);
         } else if (data.transactionType === 'devolucion') {
           // Sumar stock para devoluciones SOLO si el insumo está en estado reutilizable (nuevo o cambio_talla)
-          // Si está desgastado o dañado, no se vuelve a poner en circulación
           if (item.conditionReason === 'nuevo' || item.conditionReason === 'cambio_talla') {
-            newStock = invData.current_stock + item.quantity;
+            newStock = newStock + qty;
           }
         } else if (data.transactionType === 'intercambio') {
-          // Un intercambio entrega un item nuevo (resta stock) y recibe uno dañado (no suma a stock activo)
-          newStock = Math.max(0, invData.current_stock - item.quantity);
+          // Un intercambio entrega un item nuevo (resta stock)
+          newStock = Math.max(0, newStock - qty);
         }
+
+        // Redondear a 2 decimales
+        newStock = Math.round(newStock * 100) / 100;
 
         // Actualizar base de datos
         await supabase
@@ -210,10 +213,9 @@ export async function registerTransaction(data: TransactionData) {
           .eq('id', invData.id);
       } else {
         // Si el item no existe en el catálogo de inventario, lo insertamos
-        // Si es una entrega, el stock inicial será 0. Si es devolución y es nuevo, stock inicial será la cantidad.
         let initialStock = 0;
         if (data.transactionType === 'devolucion' && (item.conditionReason === 'nuevo' || item.conditionReason === 'cambio_talla')) {
-          initialStock = item.quantity;
+          initialStock = qty;
         }
 
         await supabase
@@ -264,8 +266,7 @@ export async function getTransactionDetails(id: string) {
 
     if (itemsError) throw itemsError;
 
-    // Obtener correlativo secuencial (folio) de la transacción basándonos en la fecha
-    // Para simplificar, usamos los últimos 6 dígitos del UUID o podemos contar cuántas transacciones hay.
+    // Obtener correlativo secuencial (folio) de la transacción
     const { count } = await supabase
       .from('transactions')
       .select('*', { count: 'exact', head: true })
@@ -283,18 +284,18 @@ export async function getTransactionDetails(id: string) {
         transactionType: trans.transaction_type,
         signatureUrl: trans.signature_url,
         worker: {
-          fullName: trans.workers.full_name,
-          ci: trans.workers.ci,
-          position: trans.workers.position,
-          department: trans.workers.department,
-          supervisorName: trans.workers.supervisor_name,
+          fullName: trans.workers ? trans.workers.full_name : 'No especificado',
+          ci: trans.workers ? trans.workers.ci : 'S/N',
+          position: trans.workers ? trans.workers.position : '-',
+          department: trans.workers ? trans.workers.department : '-',
+          supervisorName: trans.workers ? trans.workers.supervisor_name : trans.supervisor_name,
         },
       },
       items: items.map((i) => ({
         id: i.id,
         itemName: i.item_name,
         category: i.category,
-        quantity: i.quantity,
+        quantity: Number(i.quantity),
         conditionReason: i.condition_reason,
         photoUrl: i.photo_url,
       })),
@@ -330,11 +331,10 @@ export async function updateWorker(id: string, worker: WorkerData) {
 }
 
 /**
- * Eliminar un trabajador (y todas sus transacciones asociadas en cascada, reversando el stock primero).
+ * Eliminar un trabajador (y todas sus transacciones asociadas en cascada).
  */
 export async function deleteWorker(id: string) {
   try {
-    // 1. Buscar transacciones asociadas a este trabajador
     const { data: transactions, error: transError } = await supabase
       .from('transactions')
       .select('id')
@@ -342,7 +342,6 @@ export async function deleteWorker(id: string) {
 
     if (transError) throw transError;
 
-    // 2. Eliminar y reversar stock para cada transacción
     if (transactions && transactions.length > 0) {
       for (const t of transactions) {
         const res = await deleteTransaction(t.id);
@@ -350,7 +349,6 @@ export async function deleteWorker(id: string) {
       }
     }
 
-    // 3. Eliminar al trabajador
     const { error } = await supabase
       .from('workers')
       .delete()
@@ -367,7 +365,7 @@ export async function deleteWorker(id: string) {
 /**
  * Agregar un nuevo insumo al catálogo de inventario.
  */
-export async function addInventoryItem(name: string, category: 'ropa' | 'epp' | 'herramientas', currentStock: number) {
+export async function addInventoryItem(name: string, category: 'ropa' | 'epp' | 'herramientas' | 'botiquin', currentStock: number) {
   try {
     const { data, error } = await supabase
       .from('inventory_items')
@@ -375,7 +373,7 @@ export async function addInventoryItem(name: string, category: 'ropa' | 'epp' | 
         {
           name,
           category,
-          current_stock: currentStock,
+          current_stock: Number(currentStock),
         }
       ])
       .select()
@@ -397,7 +395,7 @@ export async function updateInventoryStock(id: string, currentStock: number) {
     const { error } = await supabase
       .from('inventory_items')
       .update({
-        current_stock: currentStock,
+        current_stock: Number(currentStock),
         updated_at: new Date().toISOString()
       })
       .eq('id', id);
@@ -473,7 +471,6 @@ export async function getRecentTransactions() {
  */
 export async function deleteTransaction(id: string) {
   try {
-    // 1. Obtener tipo de transacción y sus items para reversar el stock
     const { data: trans, error: transError } = await supabase
       .from('transactions')
       .select('transaction_type')
@@ -490,7 +487,7 @@ export async function deleteTransaction(id: string) {
 
       if (items && items.length > 0) {
         for (const item of items) {
-          // Obtener el item del inventario actual
+          const qty = Number(item.quantity);
           const { data: invData } = await supabase
             .from('inventory_items')
             .select('id, current_stock')
@@ -498,18 +495,17 @@ export async function deleteTransaction(id: string) {
             .single();
 
           if (invData) {
-            let newStock = invData.current_stock;
-            if (trans.transaction_type === 'entrega' || trans.transaction_type === 'intercambio') {
-              // Si se entregó o intercambió, se restó stock; al eliminar la transacción, devolvemos el insumo (sumamos stock)
-              newStock = invData.current_stock + item.quantity;
+            let newStock = Number(invData.current_stock);
+            if (trans.transaction_type === 'entrega' || trans.transaction_type === 'dotacion' || trans.transaction_type === 'intercambio' || trans.transaction_type === 'desuso') {
+              newStock = newStock + qty;
             } else if (trans.transaction_type === 'devolucion') {
-              // Si se devolvió y estaba reusable (nuevo o cambio_talla), se sumó stock; al eliminar, lo restamos
               if (item.condition_reason === 'nuevo' || item.condition_reason === 'cambio_talla') {
-                newStock = Math.max(0, invData.current_stock - item.quantity);
+                newStock = Math.max(0, newStock - qty);
               }
             }
 
-            // Actualizar stock
+            newStock = Math.round(newStock * 100) / 100;
+
             await supabase
               .from('inventory_items')
               .update({ current_stock: newStock, updated_at: new Date().toISOString() })
@@ -519,7 +515,6 @@ export async function deleteTransaction(id: string) {
       }
     }
 
-    // 2. Eliminar la transacción (por CASCADE en base de datos, se borran los items automáticamente)
     const { error: delError } = await supabase
       .from('transactions')
       .delete()

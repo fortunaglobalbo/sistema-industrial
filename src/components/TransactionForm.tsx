@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
   Plus, Trash2, Search, UserPlus, Check, Loader2, Edit, Trash,
-  Package, FileText, ShoppingBag, HardHat, Wrench, RefreshCw, X, Settings
+  Package, ShoppingBag, HardHat, Wrench, RefreshCw, Settings, HeartPulse
 } from 'lucide-react';
 
 import { 
@@ -16,7 +16,6 @@ import {
   getInventory, 
   registerTransaction,
   WorkerData,
-  TransactionItemData,
   updateWorker,
   deleteWorker,
   addInventoryItem,
@@ -29,16 +28,16 @@ import Swal from 'sweetalert2';
 // Esquemas de validación Zod
 const itemSchema = z.object({
   itemName: z.string().min(1, 'El nombre del insumo es requerido'),
-  category: z.enum(['ropa', 'epp', 'herramientas']),
-  quantity: z.number().min(1, 'La cantidad debe ser mayor a 0'),
-  conditionReason: z.enum(['desgaste_natural', 'dano_operativo', 'defecto_fabrica', 'cambio_talla', 'nuevo']),
+  category: z.enum(['ropa', 'epp', 'herramientas', 'botiquin']),
+  quantity: z.number().positive('La cantidad debe ser mayor a 0'),
+  conditionReason: z.enum(['desgaste_natural', 'dano_operativo', 'defecto_fabrica', 'cambio_talla', 'nuevo', 'en_desuso']),
   photoUrl: z.string().nullable().optional(),
 });
 
 const formSchema = z.object({
   workerId: z.string().min(1, 'Debe seleccionar un trabajador'),
-  supervisorName: z.string().min(1, 'El nombre del supervisor/jefe es requerido'),
-  transactionType: z.enum(['devolucion', 'entrega', 'intercambio']),
+  supervisorName: z.string().min(1, 'El nombre de la supervisora/jefe es requerido'),
+  transactionType: z.enum(['devolucion', 'entrega', 'intercambio', 'dotacion', 'desuso']),
   signatureUrl: z.string().nullable().optional(),
   items: z.array(itemSchema).min(1, 'Debe agregar al menos un insumo a la transacción'),
 });
@@ -89,7 +88,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
   const [manageLoading, setManageLoading] = useState(false);
   const [newInventoryItem, setNewInventoryItem] = useState({
     name: '',
-    category: 'epp' as 'epp' | 'ropa' | 'herramientas',
+    category: 'epp' as 'epp' | 'ropa' | 'herramientas' | 'botiquin',
     currentStock: 0
   });
   const [selectedManageItemId, setSelectedManageItemId] = useState('');
@@ -108,7 +107,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     defaultValues: {
       workerId: '',
       supervisorName: '',
-      transactionType: 'entrega',
+      transactionType: 'dotacion',
       signatureUrl: '',
       items: [{ itemName: '', category: 'epp', quantity: 1, conditionReason: 'nuevo', photoUrl: null }],
     },
@@ -290,7 +289,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     setManageLoading(true);
     const res = await addInventoryItem(
       newInventoryItem.name,
-      newInventoryItem.category,
+      newInventoryItem.category as any,
       newInventoryItem.currentStock
     );
     setManageLoading(false);
@@ -411,7 +410,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Ocurrió un error inesperado al registrar el descargo.',
+        text: 'Ocurrió un error inesperado al registrar el documento.',
         confirmButtonColor: '#3b82f6'
       });
     } finally {
@@ -420,6 +419,9 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
   };
 
   const getFilteredCatalog = (category: string) => {
+    if (category === 'epp' || category === 'botiquin') {
+      return inventory.filter((item) => item.category === 'epp' || item.category === 'botiquin');
+    }
     return inventory.filter((item) => item.category === category);
   };
 
@@ -509,10 +511,10 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">Inmediato Superior (Jefe Directo)</label>
+                    <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">Supervisora / Inmediato Superior</label>
                     <input 
                       type="text" 
-                      placeholder="Ej. Ing. Roberto Choque"
+                      placeholder="Ej. Ing. Patricia Arteaga"
                       value={newWorkerData.supervisorName}
                       onChange={(e) => setNewWorkerData({...newWorkerData, supervisorName: e.target.value})}
                       className="w-full text-sm border rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -532,7 +534,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
               </div>
             )}
 
-            {/* Buscador de Trabajadores (Si no hay seleccionado) */}
+            {/* Buscador de Trabajadores */}
             {!selectedWorker && !showNewWorkerForm && (
               <div className="space-y-3">
                 <div className="flex gap-2">
@@ -578,11 +580,9 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
               </div>
             )}
 
-            {/* Ficha de Trabajador Seleccionado (Modo Normal o Edición) */}
+            {/* Ficha de Trabajador Seleccionado */}
             {selectedWorker && (
               <div className="border border-blue-200 rounded-xl overflow-hidden shadow-sm">
-                
-                {/* Visualización */}
                 {!isEditingWorker ? (
                   <div className="bg-blue-50/50 p-4 space-y-3">
                     <div className="flex justify-between items-start">
@@ -600,7 +600,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                           <span className="text-slate-800">{selectedWorker.position} ({selectedWorker.department})</span>
                         </div>
                         <div>
-                          <span className="font-bold text-slate-500 block text-[10px] uppercase tracking-wide">Autoriza (Jefe Directo)</span>
+                          <span className="font-bold text-slate-500 block text-[10px] uppercase tracking-wide">Supervisora / Autoriza</span>
                           <span className="text-slate-800 font-semibold">{watch('supervisorName') || selectedWorker.supervisorName}</span>
                         </div>
                       </div>
@@ -688,7 +688,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                         />
                       </div>
                       <div className="md:col-span-2">
-                        <label className="text-[9px] font-bold text-slate-600 block mb-1 uppercase">Jefe Superior Inmediato</label>
+                        <label className="text-[9px] font-bold text-slate-600 block mb-1 uppercase">Supervisora / Inmediato Superior</label>
                         <input
                           type="text"
                           value={editWorkerData.supervisorName}
@@ -720,43 +720,45 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
             {selectedWorker && !isEditingWorker && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">Inmediato Superior Responsable</label>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">Supervisora / Inmediato Superior</label>
                   <input
                     type="text"
                     {...register('supervisorName')}
                     className="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-500 transition font-medium"
-                    placeholder="Jefe de área que autoriza"
+                    placeholder="Supervisora o jefe que autoriza"
                   />
                   {errors.supervisorName && (
                     <p className="text-xs text-red-600 font-semibold mt-1">{errors.supervisorName.message}</p>
                   )}
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">Tipo de Transacción</label>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">Tipo de Operación / Planilla</label>
                   <select
                     {...register('transactionType')}
-                    className="w-full text-xs border rounded-lg px-3 py-2 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-500 transition font-bold"
+                    className="w-full text-xs border rounded-lg px-3 py-2 bg-blue-50/50 border-blue-200 focus:outline-none focus:ring-1 focus:ring-blue-500 transition font-bold text-slate-900"
                   >
-                    <option value="entrega">Entrega (EPP / Ropa / Herramientas)</option>
+                    <option value="dotacion">Dotación (Personal Nuevo / Primer Ingreso)</option>
+                    <option value="entrega">Entrega Regular (EPP / Ropa / Herramientas)</option>
                     <option value="devolucion">Devolución / Descargo</option>
                     <option value="intercambio">Intercambio (Reposición de dañado)</option>
+                    <option value="desuso">Equipo en Desuso / Dado de Baja</option>
                   </select>
                 </div>
               </div>
             )}
           </div>
 
-          {/* SECCIÓN 2: DETALLE DE INSUMOS (MULTI-ÍTEM) */}
+          {/* SECCIÓN 2: DETALLE DE INSUMOS (MULTI-ÍTEM CON SOPORTE PARA DECIMALES Y BOTIQUINES) */}
           {selectedWorker && !isEditingWorker && (
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
               <div className="flex justify-between items-center border-b pb-3">
                 <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">2</span>
-                  Detalle de Insumos / Lote
+                  Detalle de Insumos / Equipo Entregado o Descargado
                 </h3>
                 <button
                   type="button"
-                  onClick={() => append({ itemName: '', category: 'epp', quantity: 1, conditionReason: 'nuevo', photoUrl: null })}
+                  onClick={() => append({ itemName: '', category: 'epp', quantity: 1, conditionReason: transactionType === 'dotacion' ? 'nuevo' : 'desgaste_natural', photoUrl: null })}
                   className="flex items-center gap-1 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg transition"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -794,7 +796,8 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                           {...register(`items.${index}.category`)}
                           className="w-full text-xs border bg-white rounded-lg px-2 py-1.5 focus:outline-none"
                         >
-                          <option value="epp">EPP</option>
+                          <option value="epp">EPP (Protección)</option>
+                          <option value="botiquin">Botiquín / Auxilios</option>
                           <option value="ropa">Ropa de Trabajo</option>
                           <option value="herramientas">Herramientas</option>
                         </select>
@@ -805,7 +808,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                         <label className="text-[9px] font-bold text-slate-500 block mb-1 uppercase">Insumo / Descripción</label>
                         <select
                           {...register(`items.${index}.itemName`)}
-                          className="w-full text-xs border bg-white rounded-lg px-2 py-1.5 focus:outline-none"
+                          className="w-full text-xs border bg-white rounded-lg px-2 py-1.5 focus:outline-none font-medium"
                         >
                           <option value="">-- Seleccionar --</option>
                           {filteredCatalog.map((item) => (
@@ -819,12 +822,14 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                         )}
                       </div>
 
-                      {/* Cantidad */}
+                      {/* Cantidad (Soporta fracciones decimales como 22.5 o 3.5) */}
                       <div className="md:col-span-2">
-                        <label className="text-[9px] font-bold text-slate-500 block mb-1 uppercase">Cantidad</label>
+                        <label className="text-[9px] font-bold text-slate-500 block mb-1 uppercase">Cantidad (pza/par)</label>
                         <input
                           type="number"
-                          min="1"
+                          step="any"
+                          min="0.1"
+                          placeholder="Ej. 22.5"
                           {...register(`items.${index}.quantity`, { valueAsNumber: true })}
                           className="w-full text-xs border bg-white rounded-lg px-2 py-1.5 focus:outline-none font-bold"
                         />
@@ -838,22 +843,14 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                         <label className="text-[9px] font-bold text-slate-500 block mb-1 uppercase">Estado / Motivo</label>
                         <select
                           {...register(`items.${index}.conditionReason`)}
-                          className="w-full text-xs border bg-white rounded-lg px-2 py-1.5 focus:outline-none"
+                          className="w-full text-xs border bg-white rounded-lg px-2 py-1.5 focus:outline-none font-medium"
                         >
-                          {transactionType === 'entrega' ? (
-                            <>
-                              <option value="nuevo">Nuevo</option>
-                              <option value="cambio_talla">Reposición Talla</option>
-                            </>
-                          ) : (
-                            <>
-                              <option value="desgaste_natural">Desgaste Natural</option>
-                              <option value="dano_operativo">Daño Operativo</option>
-                              <option value="defecto_fabrica">Defecto de Fábrica</option>
-                              <option value="cambio_talla">Cambio de Talla</option>
-                              <option value="nuevo">Devolución Nuevo</option>
-                            </>
-                          )}
+                          <option value="nuevo">Nuevo (Dotación / Ingreso)</option>
+                          <option value="desgaste_natural">Desgaste Natural</option>
+                          <option value="dano_operativo">Daño Operativo</option>
+                          <option value="defecto_fabrica">Defecto de Fábrica</option>
+                          <option value="cambio_talla">Cambio de Talla</option>
+                          <option value="en_desuso">En Desuso / Dado de Baja</option>
                         </select>
                       </div>
 
@@ -885,7 +882,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">3</span>
-                Confirmar Registro
+                Confirmar Registro de Acta
               </h3>
 
               <button
@@ -896,12 +893,12 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Registrando descargo...
+                    Registrando acta y ajustando inventario...
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4" />
-                    Registrar y Generar Acta Imprimible
+                    Registrar y Generar Acta Imprimible (Carta)
                   </>
                 )}
               </button>
@@ -998,7 +995,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                     <label className="font-bold text-slate-600 block mb-1">Nombre del Insumo</label>
                     <input
                       type="text"
-                      placeholder="Ej. Guantes de Nitrilo"
+                      placeholder="Ej. Botiquín de Primeros Auxilios"
                       value={newInventoryItem.name}
                       onChange={(e) => setNewInventoryItem({ ...newInventoryItem, name: e.target.value })}
                       className="w-full border rounded px-2 py-1 text-xs bg-white"
@@ -1012,6 +1009,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                       className="w-full border rounded px-2 py-1 text-xs bg-white"
                     >
                       <option value="epp">EPP (Protección)</option>
+                      <option value="botiquin">Botiquín / Auxilios</option>
                       <option value="ropa">Ropa de Trabajo</option>
                       <option value="herramientas">Herramientas</option>
                     </select>
@@ -1020,9 +1018,10 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                     <label className="font-bold text-slate-600 block mb-1">Stock Inicial</label>
                     <input
                       type="number"
+                      step="any"
                       min="0"
                       value={newInventoryItem.currentStock}
-                      onChange={(e) => setNewInventoryItem({ ...newInventoryItem, currentStock: parseInt(e.target.value) || 0 })}
+                      onChange={(e) => setNewInventoryItem({ ...newInventoryItem, currentStock: parseFloat(e.target.value) || 0 })}
                       className="w-full border rounded px-2 py-1 text-xs bg-white font-bold"
                     />
                   </div>
@@ -1059,9 +1058,10 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                         <label className="font-bold text-slate-600 block mb-1">Nuevo Stock</label>
                         <input
                           type="number"
+                          step="any"
                           min="0"
                           value={newManageStock}
-                          onChange={(e) => setNewManageStock(parseInt(e.target.value) || 0)}
+                          onChange={(e) => setNewManageStock(parseFloat(e.target.value) || 0)}
                           className="w-full border rounded px-2 py-1 text-xs bg-white font-bold"
                         />
                       </div>
@@ -1091,15 +1091,16 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
           ) : (
             /* LISTA DE STOCK NORMAL */
             <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-              {['epp', 'ropa', 'herramientas'].map((cat) => {
+              {['epp', 'botiquin', 'ropa', 'herramientas'].map((cat) => {
                 const itemsInCat = inventory.filter((i) => i.category === cat);
                 return (
                   <div key={cat} className="space-y-1.5">
                     <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                       {cat === 'epp' && <HardHat className="w-3.5 h-3.5" />}
+                      {cat === 'botiquin' && <HeartPulse className="w-3.5 h-3.5 text-rose-500" />}
                       {cat === 'ropa' && <ShoppingBag className="w-3.5 h-3.5" />}
                       {cat === 'herramientas' && <Wrench className="w-3.5 h-3.5" />}
-                      {cat === 'epp' ? 'EPP (Protección)' : cat === 'ropa' ? 'Ropa de Trabajo' : 'Herramientas'}
+                      {cat === 'epp' ? 'EPP (Protección)' : cat === 'botiquin' ? 'Botiquines / Primeros Auxilios' : cat === 'ropa' ? 'Ropa de Trabajo' : 'Herramientas'}
                     </h4>
 
                     {itemsInCat.length === 0 ? (

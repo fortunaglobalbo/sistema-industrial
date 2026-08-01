@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  ShieldCheck, HardHat, FileText, ClipboardList, Loader2, 
+  ShieldCheck, ClipboardList, Loader2, 
   Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash
 } from 'lucide-react';
 import { getTransactionDetails, getRecentTransactions, deleteTransaction } from './actions/transaction';
@@ -154,7 +154,6 @@ export default function Home() {
     setActiveTransactionId(null);
     setTransactionData(null);
     setItemsData([]);
-    // Si estábamos en el flujo de registro exitoso, volver al historial para ver los registros actualizados
     if (activeTab === 'new') {
       setActiveTab('history');
     } else {
@@ -173,9 +172,11 @@ export default function Home() {
 
   const translateType = (type: string) => {
     switch (type) {
+      case 'dotacion': return 'Dotación';
       case 'entrega': return 'Entrega';
       case 'devolucion': return 'Devolución';
       case 'intercambio': return 'Intercambio';
+      case 'desuso': return 'En Desuso';
       default: return type;
     }
   };
@@ -302,7 +303,7 @@ export default function Home() {
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Panel de Control de EPP</h2>
-                <p className="text-xs text-slate-500 mt-1 font-medium">Gestión de entregas, devoluciones de ropa, herramientas e insumos industriales.</p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">Gestión de dotaciones a personal nuevo, entregas, devoluciones, desuso y herramientas.</p>
               </div>
 
               {/* Botones de Pestañas (Registrar vs Historial) */}
@@ -353,7 +354,7 @@ export default function Home() {
                   </div>
                 ) : historyTransactions.length === 0 ? (
                   <div className="text-center py-16 text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl">
-                    No se encontraron actas de entrega o devolución registradas en el sistema.
+                    No se encontraron actas registradas en el sistema.
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -385,7 +386,17 @@ export default function Home() {
                               </div>
                             </td>
                             <td className="p-3">
-                              <span className={`px-2 py-0.5 rounded font-bold text-[10px] uppercase border ${t.transactionType === 'entrega' ? 'bg-blue-50 text-blue-700 border-blue-100' : t.transactionType === 'devolucion' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                              <span className={`px-2 py-0.5 rounded font-bold text-[10px] uppercase border ${
+                                t.transactionType === 'dotacion' 
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                                  : t.transactionType === 'entrega' 
+                                  ? 'bg-blue-50 text-blue-700 border-blue-100' 
+                                  : t.transactionType === 'devolucion' 
+                                  ? 'bg-amber-50 text-amber-700 border-amber-100' 
+                                  : t.transactionType === 'desuso' 
+                                  ? 'bg-rose-50 text-rose-700 border-rose-100'
+                                  : 'bg-slate-100 text-slate-700 border-slate-200'
+                              }`}>
                                 {translateType(t.transactionType)}
                               </span>
                             </td>

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Printer, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Printer, ArrowLeft } from 'lucide-react';
 
 interface Worker {
   fullName: string;
@@ -14,7 +14,7 @@ interface Worker {
 interface TransactionItem {
   id: string;
   itemName: string;
-  category: 'ropa' | 'epp' | 'herramientas';
+  category: 'ropa' | 'epp' | 'herramientas' | 'botiquin';
   quantity: number;
   conditionReason: string;
   photoUrl?: string | null;
@@ -25,7 +25,7 @@ interface Transaction {
   folio: string;
   createdAt: string;
   supervisorName: string;
-  transactionType: 'devolucion' | 'entrega' | 'intercambio';
+  transactionType: 'devolucion' | 'entrega' | 'intercambio' | 'dotacion' | 'desuso';
   signatureUrl: string;
   worker: Worker;
 }
@@ -54,25 +54,33 @@ export default function PrintReceipt({ transaction, items, onBack }: PrintReceip
 
   const translateType = (type: string) => {
     switch (type) {
-      case 'entrega': return 'ENTREGA DE EPP/INSUMOS';
-      case 'devolucion': return 'DEVOLUCIÓN DE DESCARGO';
+      case 'dotacion': return 'DOTACIÓN DE EQUIPO (PERSONAL NUEVO)';
+      case 'entrega': return 'ENTREGA DE EPP / INSUMOS';
+      case 'devolucion': return 'DEVOLUCIÓN Y DESCARGO';
       case 'intercambio': return 'INTERCAMBIO POR REPOSICIÓN';
+      case 'desuso': return 'EQUIPO EN DESUSO / DADO DE BAJA';
       default: return type.toUpperCase();
     }
   };
 
   const translateReason = (reason: string) => {
     switch (reason) {
+      case 'nuevo': return 'Nuevo / Dotación';
       case 'desgaste_natural': return 'Desgaste Natural';
       case 'dano_operativo': return 'Daño Operativo';
       case 'defecto_fabrica': return 'Defecto de Fábrica';
       case 'cambio_talla': return 'Cambio de Talla';
-      case 'nuevo': return 'Ingreso Nuevo';
+      case 'en_desuso': return 'En Desuso / Dado de Baja';
       default: return reason;
     }
   };
 
-  // Renderiza una sola copia del acta (se duplicará para Almacén y Trabajador)
+  const formatQuantity = (qty: number) => {
+    if (Number.isInteger(qty)) return qty.toString();
+    return qty.toLocaleString('es-ES', { maximumFractionDigits: 2 });
+  };
+
+  // Renderiza una sola copia del acta (se duplicará o imprimirá en formato Carta)
   const renderSingleCopy = (copyTitle: string) => (
     <div className="w-full bg-white text-black p-6 font-sans text-xs border border-slate-300 rounded shadow-sm print:shadow-none print:border-none">
       {/* Encabezado */}
@@ -93,8 +101,8 @@ export default function PrintReceipt({ transaction, items, onBack }: PrintReceip
       </div>
 
       {/* Título Principal */}
-      <h2 className="text-center font-bold text-sm my-3 tracking-wide">
-        ACTA DE CONFORMIDAD - {translateType(transaction.transactionType)}
+      <h2 className="text-center font-extrabold text-sm my-3 tracking-wide uppercase">
+        ACTA DE CONFORMIDAD Y DESCARGO - {translateType(transaction.transactionType)}
       </h2>
 
       {/* Datos del Trabajador */}
@@ -129,21 +137,21 @@ export default function PrintReceipt({ transaction, items, onBack }: PrintReceip
       <table className="w-full border-collapse border border-slate-300 mb-4">
         <thead>
           <tr className="bg-slate-100">
-            <th className="border border-slate-300 p-1.5 text-center w-12">Cant.</th>
+            <th className="border border-slate-300 p-1.5 text-center w-14">Cant.</th>
             <th className="border border-slate-300 p-1.5 text-left">Categoría</th>
             <th className="border border-slate-300 p-1.5 text-left">Descripción del Insumo / Herramienta</th>
-            <th className="border border-slate-300 p-1.5 text-center w-24">Operación</th>
-            <th className="border border-slate-300 p-1.5 text-left w-32">Estado / Motivo</th>
+            <th className="border border-slate-300 p-1.5 text-center w-28">Operación</th>
+            <th className="border border-slate-300 p-1.5 text-left w-36">Estado / Motivo</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item) => (
             <tr key={item.id} className="hover:bg-slate-50/50">
-              <td className="border border-slate-300 p-1.5 text-center font-bold">{item.quantity}</td>
+              <td className="border border-slate-300 p-1.5 text-center font-bold">{formatQuantity(item.quantity)}</td>
               <td className="border border-slate-300 p-1.5 capitalize">{item.category}</td>
               <td className="border border-slate-300 p-1.5 font-medium">{item.itemName}</td>
               <td className="border border-slate-300 p-1.5 text-center capitalize font-semibold">
-                {transaction.transactionType === 'intercambio' ? 'Entrega/Dev.' : transaction.transactionType}
+                {transaction.transactionType === 'dotacion' ? 'Dotación' : transaction.transactionType === 'intercambio' ? 'Entrega/Dev.' : transaction.transactionType}
               </td>
               <td className="border border-slate-300 p-1.5 text-[10px] text-slate-700">
                 {translateReason(item.conditionReason)}
@@ -169,12 +177,12 @@ export default function PrintReceipt({ transaction, items, onBack }: PrintReceip
           <span className="text-[9px] text-slate-500 font-bold">Firma del Trabajador</span>
         </div>
 
-        {/* Firma del Encargado */}
+        {/* Firma de la Supervisora o Unidad de Seguridad Industrial */}
         <div className="flex flex-col items-center justify-end text-center">
           <div className="h-20 border-b border-black w-48 mb-1 flex items-end justify-center pb-2">
             <span className="text-[10px] text-slate-300 font-serif italic select-none">Autorizado</span>
           </div>
-          <span className="font-bold text-[10px]">Encargado de Seguridad / Almacén</span>
+          <span className="font-bold text-[10px]">Supervisora / Unidad de Seguridad Industrial</span>
           <span className="text-[9px] text-slate-500">Firma, Sello y Fecha</span>
         </div>
       </div>
@@ -201,7 +209,7 @@ export default function PrintReceipt({ transaction, items, onBack }: PrintReceip
         </button>
       </div>
 
-      {/* Contenedor de impresión (Una sola copia en tamaño Carta) */}
+      {/* Contenedor de impresión */}
       <div className="print-area">
         {renderSingleCopy('ACTA DE CONFORMIDAD Y DESCARGO')}
       </div>
