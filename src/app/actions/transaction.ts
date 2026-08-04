@@ -55,7 +55,7 @@ export async function getCategories(): Promise<CategoryData[]> {
       return dbCategories.map((c) => ({ id: c.id, name: c.name }));
     }
   } catch {
-    // Si la tabla categories no existe aún en Supabase, continuar suavemente con inventory_items
+    // Continuar suavemente si la tabla no existe en Supabase
   }
 
   try {
@@ -94,12 +94,14 @@ export async function addCategory(name: string) {
       .single();
 
     if (error) {
-      // Si la tabla 'categories' aún no existe en Supabase (error 42P01 o schema cache)
       if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.toLowerCase().includes('schema cache') || error.message?.toLowerCase().includes('not find')) {
         return { 
           success: false, 
           error: 'Falta crear la tabla `categories` en tu Supabase. Por favor ejecuta el script SQL en el SQL Editor de Supabase.' 
         };
+      }
+      if (error.code === '23505' || error.message?.toLowerCase().includes('unique') || error.message?.toLowerCase().includes('duplicate')) {
+        return { success: false, error: `La categoría "${trimmed}" ya existe.` };
       }
       throw error;
     }
@@ -109,7 +111,7 @@ export async function addCategory(name: string) {
     console.error('Error al agregar categoría:', error);
     return { 
       success: false, 
-      error: error.message || 'Falta crear la tabla `categories` en Supabase. Ejecuta el script SQL.' 
+      error: error.message || 'Error al agregar la categoría.' 
     };
   }
 }
@@ -238,6 +240,9 @@ export async function createWorker(worker: WorkerData) {
     };
   } catch (error: any) {
     console.error('Error al crear trabajador:', error);
+    if (error.code === '23505' || error.message?.toLowerCase().includes('unique') || error.message?.toLowerCase().includes('ci')) {
+      return { success: false, error: 'Ya existe un trabajador registrado con esa Cédula de Identidad (C.I.).' };
+    }
     return { success: false, error: error.message || 'Error al guardar el trabajador.' };
   }
 }
@@ -541,15 +546,16 @@ export async function deleteWorker(id: string) {
 }
 
 /**
- * Agregar un nuevo insumo al catálogo de inventario (con fallback a ENUM 'epp' si falla por restricción de base de datos).
+ * Agregar un nuevo insumo al catálogo de inventario (con tratamiento de nombres duplicados).
  */
 export async function addInventoryItem(name: string, category: string, currentStock: number) {
+  const trimmedName = name.trim();
   try {
     let { data, error } = await supabase
       .from('inventory_items')
       .insert([
         {
-          name,
+          name: trimmedName,
           category,
           current_stock: Number(currentStock),
         }
@@ -562,7 +568,7 @@ export async function addInventoryItem(name: string, category: string, currentSt
         .from('inventory_items')
         .insert([
           {
-            name,
+            name: trimmedName,
             category: sanitizeCategoryForEnum(category),
             current_stock: Number(currentStock),
           }
@@ -573,13 +579,30 @@ export async function addInventoryItem(name: string, category: string, currentSt
       if (!retry.error) {
         data = retry.data;
         error = null;
+      } else {
+        error = retry.error;
       }
     }
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === '23505' || error.message?.toLowerCase().includes('unique') || error.message?.toLowerCase().includes('key')) {
+        return { 
+          success: false, 
+          error: `El insumo "${trimmedName}" ya existe en el catálogo. Para modificar su stock, usa la pestaña "Ajustar / Borrar".` 
+        };
+      }
+      throw error;
+    }
+
     return { success: true, item: data };
   } catch (error: any) {
     console.error('Error al agregar insumo:', error);
+    if (error.code === '23505' || error.message?.toLowerCase().includes('unique') || error.message?.toLowerCase().includes('key')) {
+      return { 
+        success: false, 
+        error: `El insumo "${trimmedName}" ya existe en el catálogo. Para modificar su stock, usa la pestaña "Ajustar / Borrar".` 
+      };
+    }
     return { success: false, error: error.message || 'El insumo ya existe en el catálogo.' };
   }
 }
