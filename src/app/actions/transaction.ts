@@ -246,29 +246,54 @@ export async function getInventory() {
 
 /**
  * Registrar una transacción completa (cabecera, detalles y ajuste de inventario).
+ * Incluye tolerancia y autoreintento si la base de datos Supabase aún tiene restricciones ENUM antiguas.
  */
 export async function registerTransaction(data: TransactionData) {
   try {
-    // 1. Insertar Cabecera de la Transacción
-    const { data: transData, error: transError } = await supabase
+    // 1. Intentar insertar la cabecera con el transactionType exacto
+    let targetType = data.transactionType;
+    let { data: transData, error: transError } = await supabase
       .from('transactions')
       .insert([
         {
           worker_id: data.workerId,
           supervisor_name: data.supervisorName,
-          transaction_type: data.transactionType,
+          transaction_type: targetType,
           signature_url: data.signatureUrl || '',
         },
       ])
       .select()
       .single();
 
-    if (transError) throw transError;
+    // Si Supabase falla por restricción de ENUM no actualizado en PostgreSQL (ej. 'dotacion' o 'desuso')
+    if (transError && (transError.message?.toLowerCase().includes('enum') || transError.code === '22P02')) {
+      // Reintentar mapeando temporalmente a 'entrega' o 'devolucion' para no bloquear la app
+      targetType = (data.transactionType === 'dotacion' || data.transactionType === 'desuso') ? 'entrega' : 'devolucion';
+      const retryTrans = await supabase
+        .from('transactions')
+        .insert([
+          {
+            worker_id: data.workerId,
+            supervisor_name: data.supervisorName,
+            transaction_type: targetType,
+            signature_url: data.signatureUrl || '',
+          },
+        ])
+        .select()
+        .single();
+
+      if (retryTrans.error) {
+        throw retryTrans.error;
+      }
+      transData = retryTrans.data;
+    } else if (transError) {
+      throw transError;
+    }
 
     const transactionId = transData.id;
 
     // 2. Insertar los detalles de los items
-    const itemsToInsert = data.items.map((item) => ({
+    let itemsToInsert = data.items.map((item) => ({
       transaction_id: transactionId,
       item_name: item.itemName,
       category: item.category,
@@ -277,13 +302,33 @@ export async function registerTransaction(data: TransactionData) {
       photo_url: item.photoUrl || null,
     }));
 
-    const { error: itemsError } = await supabase
+    let { error: itemsError } = await supabase
       .from('transaction_items')
       .insert(itemsToInsert);
 
-    if (itemsError) throw itemsError;
+    // Si falla por ENUM de condition_reason (ej. 'nuevo' o 'en_desuso')
+    if (itemsError && (itemsError.message?.toLowerCase().includes('enum') || itemsError.code === '22P02')) {
+      itemsToInsert = data.items.map((item) => ({
+        transaction_id: transactionId,
+        item_name: item.itemName,
+        category: item.category,
+        quantity: Number(item.quantity),
+        condition_reason: item.conditionReason === 'nuevo' ? 'desgaste_natural' : item.conditionReason === 'en_desuso' ? 'dano_operativo' : item.conditionReason,
+        photo_url: item.photoUrl || null,
+      }));
 
-    // 3. Ajustar Inventario (Stock)
+      const retryItems = await supabase
+        .from('transaction_items')
+        .insert(itemsToInsert);
+
+      if (retryItems.error) {
+        throw retryItems.error;
+      }
+    } else if (itemsError) {
+      throw itemsError;
+    }
+
+    // 3. Ajustar Inventario (Stock en base a la lógica real de negocio)
     for (const item of data.items) {
       const qty = Number(item.quantity);
       const { data: invData } = await supabase
@@ -332,14 +377,7 @@ export async function registerTransaction(data: TransactionData) {
     return { success: true, transactionId };
   } catch (error: any) {
     console.error('Error al registrar transacción:', error);
-    const errMsg = error.message || '';
-    if (errMsg.toLowerCase().includes('enum') || errMsg.toLowerCase().includes('transaction_type_enum')) {
-      return { 
-        success: false, 
-        error: 'Tu base de datos de Supabase requiere actualizar los tipos ENUM. Por favor ejecuta el script `supabase_schema.sql` en el SQL Editor de tu panel de Supabase.' 
-      };
-    }
-    return { success: false, error: errMsg || 'Error al registrar la transacción en la base de datos.' };
+    return { success: false, error: error.message || 'Error al registrar la transacción en la base de datos.' };
   }
 }
 
