@@ -1,14 +1,51 @@
--- SCRIPT DE INICIALIZACIÓN DE BASE DE DATOS (Supabase PostgreSQL)
--- Ejecutar en el SQL Editor de tu proyecto de Supabase.
+-- SCRIPT DE INICIALIZACIÓN Y MIGRACIÓN DE BASE DE DATOS (Supabase PostgreSQL)
+-- Ejecutar en el SQL Editor de tu proyecto de Supabase para solucionar el error de ENUM.
 
--- 1. Crear tabla de Categorías (categories)
+-- 1. Si los tipos ENUM existen en tu base de datos de Supabase, agregar los nuevos valores:
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'transaction_type_enum') THEN
+        ALTER TYPE transaction_type_enum ADD VALUE IF NOT EXISTS 'dotacion';
+        ALTER TYPE transaction_type_enum ADD VALUE IF NOT EXISTS 'desuso';
+    END IF;
+    IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'condition_reason_enum') THEN
+        ALTER TYPE condition_reason_enum ADD VALUE IF NOT EXISTS 'nuevo';
+        ALTER TYPE condition_reason_enum ADD VALUE IF NOT EXISTS 'en_desuso';
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END
+$$;
+
+-- 2. Convertir las columnas a TEXT para evitar restricciones estáticas de ENUM en el futuro:
+DO $$
+BEGIN
+    -- Convertir columna transaction_type en transactions
+    ALTER TABLE transactions ALTER COLUMN transaction_type TYPE TEXT USING transaction_type::TEXT;
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    -- Convertir columnas en inventory_items y transaction_items
+    ALTER TABLE inventory_items ALTER COLUMN category TYPE TEXT USING category::TEXT;
+    ALTER TABLE inventory_items ALTER COLUMN current_stock TYPE NUMERIC(10,2);
+    ALTER TABLE transaction_items ALTER COLUMN category TYPE TEXT USING category::TEXT;
+    ALTER TABLE transaction_items ALTER COLUMN condition_reason TYPE TEXT USING condition_reason::TEXT;
+    ALTER TABLE transaction_items ALTER COLUMN quantity TYPE NUMERIC(10,2);
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+-- 3. Crear tabla de Categorías (categories)
 CREATE TABLE IF NOT EXISTS categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 2. Crear tabla de Trabajadores (workers)
+-- 4. Crear tabla de Trabajadores (workers)
 CREATE TABLE IF NOT EXISTS workers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     full_name TEXT NOT NULL,
@@ -22,7 +59,7 @@ CREATE TABLE IF NOT EXISTS workers (
 CREATE INDEX IF NOT EXISTS idx_workers_ci ON workers(ci);
 CREATE INDEX IF NOT EXISTS idx_workers_full_name ON workers(full_name);
 
--- 3. Crear tabla de Inventario (inventory_items) - Soporta categorías dinámicas (TEXT) y decimales
+-- 5. Crear tabla de Inventario (inventory_items)
 CREATE TABLE IF NOT EXISTS inventory_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL UNIQUE,
@@ -31,21 +68,17 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Si la tabla ya existe, asegurarse de alterar la columna a TEXT y NUMERIC:
-ALTER TABLE inventory_items ALTER COLUMN category TYPE TEXT;
-ALTER TABLE inventory_items ALTER COLUMN current_stock TYPE NUMERIC(10,2);
-
--- 4. Crear tabla de Transacciones (transactions)
+-- 6. Crear tabla de Transacciones (transactions)
 CREATE TABLE IF NOT EXISTS transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     worker_id UUID NOT NULL REFERENCES workers(id) ON DELETE RESTRICT,
     supervisor_name TEXT NOT NULL,
     transaction_type TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    signature_url TEXT NOT NULL -- URL en Supabase Storage
+    signature_url TEXT NOT NULL
 );
 
--- 5. Crear tabla de Items por Transacción (transaction_items)
+-- 7. Crear tabla de Items por Transacción (transaction_items)
 CREATE TABLE IF NOT EXISTS transaction_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     transaction_id UUID NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
@@ -57,12 +90,7 @@ CREATE TABLE IF NOT EXISTS transaction_items (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Si la tabla ya existe, asegurarse de alterar las columnas:
-ALTER TABLE transaction_items ALTER COLUMN category TYPE TEXT;
-ALTER TABLE transaction_items ALTER COLUMN condition_reason TYPE TEXT;
-ALTER TABLE transaction_items ALTER COLUMN quantity TYPE NUMERIC(10,2);
-
--- 6. Configurar RLS (Row Level Security) y Políticas de Acceso
+-- 8. Configurar RLS (Row Level Security) y Políticas de Acceso
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE workers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_items ENABLE ROW LEVEL SECURITY;
@@ -84,7 +112,7 @@ CREATE POLICY "Permitir todo a todos en transactions" ON transactions FOR ALL US
 DROP POLICY IF EXISTS "Permitir todo a todos en transaction_items" ON transaction_items;
 CREATE POLICY "Permitir todo a todos en transaction_items" ON transaction_items FOR ALL USING (true) WITH CHECK (true);
 
--- 7. Categorías iniciales por defecto
+-- 9. Categorías iniciales por defecto
 INSERT INTO categories (name) VALUES
 ('EPP (Protección)'),
 ('Botiquines / Primeros Auxilios'),
@@ -92,7 +120,7 @@ INSERT INTO categories (name) VALUES
 ('Herramientas')
 ON CONFLICT (name) DO NOTHING;
 
--- 8. Datos de muestra e Insumos Frecuentes
+-- 10. Datos de muestra e Insumos Frecuentes
 INSERT INTO workers (full_name, ci, position, department, supervisor_name) VALUES
 ('Juan Carlos Perez', '1234567', 'Operador de Planta', 'Producción', 'Ing. Mario Gomez'),
 ('Ana Maria Rodriguez', '7654321', 'Soldador Calificado', 'Mantenimiento', 'Ing. Carlos Sanchez'),

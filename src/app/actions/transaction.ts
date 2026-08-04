@@ -45,7 +45,6 @@ export async function getCategories(): Promise<CategoryData[]> {
   ];
 
   try {
-    // 1. Intentar consultar la tabla 'categories'
     const { data: dbCategories, error } = await supabase
       .from('categories')
       .select('*')
@@ -55,7 +54,6 @@ export async function getCategories(): Promise<CategoryData[]> {
       return dbCategories.map((c) => ({ id: c.id, name: c.name }));
     }
 
-    // 2. Si la tabla aún no existe o está vacía, consultar categorías usadas en inventory_items
     const { data: invCategories } = await supabase
       .from('inventory_items')
       .select('category');
@@ -91,7 +89,6 @@ export async function addCategory(name: string) {
       .single();
 
     if (error) {
-      // Si la tabla no existe aún, no falla catastróficamente
       if (error.code === '42P01') {
         return { success: true, item: { name: trimmed } };
       }
@@ -110,7 +107,6 @@ export async function addCategory(name: string) {
  */
 export async function deleteCategory(categoryName: string) {
   try {
-    // 1. Verificar si hay insumos que utilicen esta categoría
     const { data: existingItems, error: checkError } = await supabase
       .from('inventory_items')
       .select('id')
@@ -124,7 +120,6 @@ export async function deleteCategory(categoryName: string) {
       };
     }
 
-    // 2. Eliminar de la tabla categories
     const { error } = await supabase
       .from('categories')
       .delete()
@@ -337,7 +332,14 @@ export async function registerTransaction(data: TransactionData) {
     return { success: true, transactionId };
   } catch (error: any) {
     console.error('Error al registrar transacción:', error);
-    return { success: false, error: error.message || 'Error al registrar la transacción en la base de datos.' };
+    const errMsg = error.message || '';
+    if (errMsg.toLowerCase().includes('enum') || errMsg.toLowerCase().includes('transaction_type_enum')) {
+      return { 
+        success: false, 
+        error: 'Tu base de datos de Supabase requiere actualizar los tipos ENUM. Por favor ejecuta el script `supabase_schema.sql` en el SQL Editor de tu panel de Supabase.' 
+      };
+    }
+    return { success: false, error: errMsg || 'Error al registrar la transacción en la base de datos.' };
   }
 }
 
