@@ -35,6 +35,7 @@ export interface CategoryData {
 
 /**
  * Obtener la lista de categorías dinámicas disponibles.
+ * Silencia errores si la tabla 'categories' aún no fue creada en Supabase.
  */
 export async function getCategories(): Promise<CategoryData[]> {
   const defaultCategories = [
@@ -53,7 +54,11 @@ export async function getCategories(): Promise<CategoryData[]> {
     if (!error && dbCategories && dbCategories.length > 0) {
       return dbCategories.map((c) => ({ id: c.id, name: c.name }));
     }
+  } catch {
+    // Si la tabla categories no existe aún en Supabase, continuar suavemente con inventory_items
+  }
 
+  try {
     const { data: invCategories } = await supabase
       .from('inventory_items')
       .select('category');
@@ -67,7 +72,7 @@ export async function getCategories(): Promise<CategoryData[]> {
 
     return Array.from(setCategories).map((name) => ({ name }));
   } catch (error) {
-    console.error('Error al obtener categorías:', error);
+    console.error('Error al obtener categorías de inventario:', error);
     return defaultCategories.map((name) => ({ name }));
   }
 }
@@ -89,8 +94,12 @@ export async function addCategory(name: string) {
       .single();
 
     if (error) {
-      if (error.code === '42P01') {
-        return { success: true, item: { name: trimmed } };
+      // Si la tabla 'categories' aún no existe en Supabase (error 42P01 o schema cache)
+      if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.toLowerCase().includes('schema cache') || error.message?.toLowerCase().includes('not find')) {
+        return { 
+          success: false, 
+          error: 'Falta crear la tabla `categories` en tu Supabase. Por favor ejecuta el script SQL en el SQL Editor de Supabase.' 
+        };
       }
       throw error;
     }
@@ -98,7 +107,10 @@ export async function addCategory(name: string) {
     return { success: true, item: data };
   } catch (error: any) {
     console.error('Error al agregar categoría:', error);
-    return { success: false, error: error.message || 'La categoría ya existe o no se pudo guardar.' };
+    return { 
+      success: false, 
+      error: error.message || 'Falta crear la tabla `categories` en Supabase. Ejecuta el script SQL.' 
+    };
   }
 }
 
@@ -125,7 +137,11 @@ export async function deleteCategory(categoryName: string) {
       .delete()
       .eq('name', categoryName);
 
-    if (error && error.code !== '42P01') throw error;
+    if (error && (error.code === '42P01' || error.code === 'PGRST205' || error.message?.toLowerCase().includes('schema cache'))) {
+      return { success: true };
+    } else if (error) {
+      throw error;
+    }
 
     return { success: true };
   } catch (error: any) {
@@ -251,7 +267,7 @@ function sanitizeCategoryForEnum(cat: string): string {
   const c = cat.toLowerCase();
   if (c.includes('ropa')) return 'ropa';
   if (c.includes('herramienta')) return 'herramientas';
-  return 'epp'; // Fallback por defecto a epp para botiquines u otras categorías si la DB tiene ENUM antiguo
+  return 'epp';
 }
 
 /**
