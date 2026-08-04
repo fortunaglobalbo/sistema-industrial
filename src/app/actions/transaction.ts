@@ -245,12 +245,22 @@ export async function getInventory() {
 }
 
 /**
+ * Mapea una categoría al valor ENUM clásico de Supabase si la columna aún es de tipo ENUM estático
+ */
+function sanitizeCategoryForEnum(cat: string): string {
+  const c = cat.toLowerCase();
+  if (c.includes('ropa')) return 'ropa';
+  if (c.includes('herramienta')) return 'herramientas';
+  return 'epp'; // Fallback por defecto a epp para botiquines u otras categorías si la DB tiene ENUM antiguo
+}
+
+/**
  * Registrar una transacción completa (cabecera, detalles y ajuste de inventario).
- * Incluye tolerancia y autoreintento si la base de datos Supabase aún tiene restricciones ENUM antiguas.
+ * Resiliente a restricciones ENUM antiguas en Supabase.
  */
 export async function registerTransaction(data: TransactionData) {
   try {
-    // 1. Intentar insertar la cabecera con el transactionType exacto
+    // 1. Insertar Cabecera de la Transacción (con fallback a 'entrega' o 'devolucion')
     let targetType = data.transactionType;
     let { data: transData, error: transError } = await supabase
       .from('transactions')
@@ -265,9 +275,7 @@ export async function registerTransaction(data: TransactionData) {
       .select()
       .single();
 
-    // Si Supabase falla por restricción de ENUM no actualizado en PostgreSQL (ej. 'dotacion' o 'desuso')
     if (transError && (transError.message?.toLowerCase().includes('enum') || transError.code === '22P02')) {
-      // Reintentar mapeando temporalmente a 'entrega' o 'devolucion' para no bloquear la app
       targetType = (data.transactionType === 'dotacion' || data.transactionType === 'desuso') ? 'entrega' : 'devolucion';
       const retryTrans = await supabase
         .from('transactions')
@@ -292,7 +300,7 @@ export async function registerTransaction(data: TransactionData) {
 
     const transactionId = transData.id;
 
-    // 2. Insertar los detalles de los items
+    // 2. Insertar los detalles de los items (con fallback para category y condition_reason)
     let itemsToInsert = data.items.map((item) => ({
       transaction_id: transactionId,
       item_name: item.itemName,
@@ -306,12 +314,11 @@ export async function registerTransaction(data: TransactionData) {
       .from('transaction_items')
       .insert(itemsToInsert);
 
-    // Si falla por ENUM de condition_reason (ej. 'nuevo' o 'en_desuso')
     if (itemsError && (itemsError.message?.toLowerCase().includes('enum') || itemsError.code === '22P02')) {
       itemsToInsert = data.items.map((item) => ({
         transaction_id: transactionId,
         item_name: item.itemName,
-        category: item.category,
+        category: sanitizeCategoryForEnum(item.category),
         quantity: Number(item.quantity),
         condition_reason: item.conditionReason === 'nuevo' ? 'desgaste_natural' : item.conditionReason === 'en_desuso' ? 'dano_operativo' : item.conditionReason,
         photo_url: item.photoUrl || null,
@@ -362,7 +369,7 @@ export async function registerTransaction(data: TransactionData) {
           initialStock = qty;
         }
 
-        await supabase
+        const invInsert = await supabase
           .from('inventory_items')
           .insert([
             {
@@ -371,6 +378,18 @@ export async function registerTransaction(data: TransactionData) {
               current_stock: initialStock,
             },
           ]);
+
+        if (invInsert.error && (invInsert.error.message?.toLowerCase().includes('enum') || invInsert.error.code === '22P02')) {
+          await supabase
+            .from('inventory_items')
+            .insert([
+              {
+                name: item.itemName,
+                category: sanitizeCategoryForEnum(item.category),
+                current_stock: initialStock,
+              },
+            ]);
+        }
       }
     }
 
@@ -506,11 +525,11 @@ export async function deleteWorker(id: string) {
 }
 
 /**
- * Agregar un nuevo insumo al catálogo de inventario.
+ * Agregar un nuevo insumo al catálogo de inventario (con fallback a ENUM 'epp' si falla por restricción de base de datos).
  */
 export async function addInventoryItem(name: string, category: string, currentStock: number) {
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('inventory_items')
       .insert([
         {
@@ -521,6 +540,25 @@ export async function addInventoryItem(name: string, category: string, currentSt
       ])
       .select()
       .single();
+
+    if (error && (error.message?.toLowerCase().includes('enum') || error.code === '22P02')) {
+      const retry = await supabase
+        .from('inventory_items')
+        .insert([
+          {
+            name,
+            category: sanitizeCategoryForEnum(category),
+            current_stock: Number(currentStock),
+          }
+        ])
+        .select()
+        .single();
+
+      if (!retry.error) {
+        data = retry.data;
+        error = null;
+      }
+    }
 
     if (error) throw error;
     return { success: true, item: data };
