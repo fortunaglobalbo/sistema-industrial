@@ -189,23 +189,28 @@ export default function FormularioHerramientas({
       if (result.success && result.requestId) {
         Swal.fire({
           icon: 'success',
-          title: '¡Solicitud Registrada!',
+          title: '¡Solicitud Enviada con Éxito!',
           html: `
             <div class="text-left text-sm space-y-2">
-              <p class="font-bold text-slate-800">Se ha guardado el requerimiento de herramientas en MAYÚSCULAS.</p>
+              <p class="font-bold text-slate-800">El requerimiento de herramientas ha sido registrado correctamente para su consolidación.</p>
               <div class="bg-blue-50 p-3 rounded-xl border border-blue-200 font-mono text-xs text-blue-900">
                 <p><strong>N° Folio:</strong> #${result.folio}</p>
                 <p><strong>Código:</strong> ${result.requestCode}</p>
                 <p><strong>Área:</strong> ${effectiveArea}</p>
                 <p><strong>Solicitante:</strong> ${supervisorName.trim().toUpperCase()}</p>
-                <p><strong>Total Items:</strong> ${rows.length}</p>
+                <p><strong>Total Herramientas:</strong> ${rows.length}</p>
               </div>
             </div>
           `,
           confirmButtonColor: '#2563eb',
-          confirmButtonText: 'Ver Documento de Solicitud'
+          confirmButtonText: 'ACEPTAR Y ENTENDIDO'
         }).then(() => {
-          handleViewDetails(result.requestId);
+          // Limpiar formulario para nuevo envío sin abrir vista de impresión
+          setSupervisorName('');
+          setJustification('');
+          setRows([
+            { id: Date.now().toString(), itemNumber: 1, toolType: 'HERRAMIENTA MANUAL', description: '', quantity: 1, area: effectiveArea }
+          ]);
         });
       } else {
         Swal.fire({
