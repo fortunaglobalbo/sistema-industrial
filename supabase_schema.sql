@@ -145,3 +145,42 @@ INSERT INTO inventory_items (name, category, current_stock) VALUES
 ('Rotomartillo Industrial Bosch', 'Herramientas', 5.00),
 ('Amoladora Angular 4.5" DeWalt', 'Herramientas', 10.00)
 ON CONFLICT (name) DO NOTHING;
+
+-- 11. Crear Secuencia de Folio para Requerimientos de Herramientas
+CREATE SEQUENCE IF NOT EXISTS tool_request_folio_seq START WITH 1001;
+
+-- 12. Tabla de Solicitudes Masivas de Herramientas (tool_requests)
+CREATE TABLE IF NOT EXISTS tool_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    folio INTEGER DEFAULT nextval('tool_request_folio_seq') UNIQUE,
+    request_code TEXT NOT NULL UNIQUE,
+    supervisor_name TEXT NOT NULL,
+    area TEXT NOT NULL,
+    justification TEXT,
+    priority TEXT DEFAULT 'Normal',
+    status TEXT DEFAULT 'Pendiente',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 13. Tabla de Ítems por Solicitud de Herramientas (tool_request_items)
+CREATE TABLE IF NOT EXISTS tool_request_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    request_id UUID NOT NULL REFERENCES tool_requests(id) ON DELETE CASCADE,
+    item_number INTEGER NOT NULL,
+    tool_type TEXT NOT NULL,
+    description TEXT NOT NULL,
+    quantity NUMERIC(10,2) NOT NULL CHECK (quantity > 0),
+    area TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 14. Habilitar RLS y Políticas de Acceso para Requerimientos de Herramientas
+ALTER TABLE tool_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_request_items ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Permitir todo a todos en tool_requests" ON tool_requests;
+CREATE POLICY "Permitir todo a todos en tool_requests" ON tool_requests FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Permitir todo a todos en tool_request_items" ON tool_request_items;
+CREATE POLICY "Permitir todo a todos en tool_request_items" ON tool_request_items FOR ALL USING (true) WITH CHECK (true);
+

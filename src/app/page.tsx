@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   ShieldCheck, ClipboardList, Loader2, 
-  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash
+  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench
 } from 'lucide-react';
 import { getTransactionDetails, getRecentTransactions, deleteTransaction } from './actions/transaction';
 import TransactionForm from '@/components/TransactionForm';
@@ -255,14 +256,23 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            <div className="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300">
+          <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
+            <Link
+              href="/formulario"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-lg transition border border-blue-400/30"
+              title="Abrir Formulario de Requerimiento de Herramientas para Técnicos"
+            >
+              <Wrench className="w-4 h-4 text-amber-300" />
+              <span>Formulario Requerimiento Herramientas</span>
+            </Link>
+
+            <div className="hidden md:flex items-center gap-1.5 bg-slate-800 px-3 py-2 rounded-xl border border-slate-700 text-slate-300">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>Almacén Central Activo</span>
             </div>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1 bg-red-950/20 hover:bg-red-900/40 text-red-400 border border-red-950 hover:border-red-900/50 px-3 py-1.5 rounded-lg transition"
+              className="flex items-center gap-1 bg-red-950/20 hover:bg-red-900/40 text-red-400 border border-red-950 hover:border-red-900/50 px-3 py-2 rounded-xl transition"
               title="Cerrar sesión"
             >
               <LogOut className="w-3.5 h-3.5" />
