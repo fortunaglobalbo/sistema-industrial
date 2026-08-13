@@ -225,25 +225,45 @@ export async function deleteToolRequest(requestId: string) {
 }
 
 /**
-  Obtener reporte consolidado agrupado de herramientas por período (Día, Semanal, Mensual)
+  Obtener reporte consolidado agrupado de herramientas por período (Día, Semanal, Mensual, Rango Personalizado)
  */
-export async function getConsolidatedToolReport(period: 'day' | 'week' | 'month', filterArea?: string) {
+export async function getConsolidatedToolReport(
+  period: 'day' | 'week' | 'month' | 'custom', 
+  filterArea?: string,
+  customStartDate?: string,
+  customEndDate?: string
+) {
   try {
     const now = new Date();
     let startDate = new Date();
+    let endDate = new Date();
 
     if (period === 'day') {
       startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
     } else if (period === 'week') {
       startDate.setDate(now.getDate() - 7);
+      startDate.setHours(0, 0, 0, 0);
     } else if (period === 'month') {
       startDate.setDate(now.getDate() - 30);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (period === 'custom') {
+      if (customStartDate) {
+        startDate = new Date(customStartDate + 'T00:00:00');
+      } else {
+        startDate.setDate(now.getDate() - 30);
+        startDate.setHours(0, 0, 0, 0);
+      }
+      if (customEndDate) {
+        endDate = new Date(customEndDate + 'T23:59:59');
+      }
     }
 
     let query = supabase
       .from('tool_requests')
       .select('*, tool_request_items(*)')
       .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString())
       .order('created_at', { ascending: false });
 
     if (filterArea && filterArea !== 'TODAS') {
@@ -291,11 +311,19 @@ export async function getConsolidatedToolReport(period: 'day' | 'week' | 'month'
       areas: Array.from(entry.areas)
     })).sort((a, b) => a.description.localeCompare(b.description));
 
+    const labelPeriod = period === 'day' 
+      ? 'HOY (DÍA)' 
+      : period === 'week' 
+      ? 'ÚLTIMOS 7 DÍAS (SEMANAL)' 
+      : period === 'month' 
+      ? 'ÚLTIMOS 30 DÍAS (MENSUAL)' 
+      : 'RANGO PERSONALIZADO DE FECHAS';
+
     return {
       success: true,
-      periodLabel: period === 'day' ? 'HOY (DÍA)' : period === 'week' ? 'ÚLTIMOS 7 DÍAS (SEMANAL)' : 'ÚLTIMOS 30 DÍAS (MENSUAL)',
+      periodLabel: labelPeriod,
       startDate: startDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-      endDate: now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      endDate: endDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
       totalRequests: (requests || []).length,
       items: consolidatedItems
     };

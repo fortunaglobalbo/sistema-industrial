@@ -61,7 +61,17 @@ export default function FormularioHerramientas({
   const [viewingItems, setViewingItems] = useState<ToolRequestItemData[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
-  // Estado para Visualizar / Imprimir Reporte Consolidado (Día, Semanal, Mensual)
+  // Estado para Rango de Fechas de Reporte Consolidado
+  const [reportStartDate, setReportStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(1); // Primer día del mes actual
+    return d.toISOString().split('T')[0];
+  });
+  const [reportEndDate, setReportEndDate] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
+
+  // Estado para Visualizar / Imprimir Reporte Consolidado (Día, Semanal, Mensual / Personalizado)
   const [viewingReportData, setViewingReportData] = useState<any | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
 
@@ -255,18 +265,18 @@ export default function FormularioHerramientas({
     setLoadingDetails(false);
   };
 
-  // Generar y ver reporte consolidado (Día, Semanal, Mensual)
-  const handleGenerateConsolidatedReport = async (period: 'day' | 'week' | 'month') => {
+  // Generar y ver reporte consolidado por período o rango de fechas
+  const handleGenerateConsolidatedReport = async (period: 'day' | 'week' | 'month' | 'custom') => {
     setLoadingReport(true);
     setViewingRequest(null);
-    const res = await getConsolidatedToolReport(period, areaFilter);
+    const res = await getConsolidatedToolReport(period, areaFilter, reportStartDate, reportEndDate);
     if (res.success && res.items && res.items.length > 0) {
       setViewingReportData(res);
     } else {
       Swal.fire({
         icon: 'info',
         title: 'Sin Registros',
-        text: 'No se encontraron herramientas registradas en el período seleccionado.',
+        text: 'No se encontraron herramientas registradas en el rango de fechas seleccionado.',
         confirmButtonColor: '#2563eb'
       });
     }
@@ -389,7 +399,7 @@ export default function FormularioHerramientas({
           </div>
         ) : viewingReportData ? (
 
-          /* VISTA IMPRESIÓN REPORTE CONSOLIDADO (DÍA / SEMANAL / MENSUAL) */
+          /* VISTA IMPRESIÓN REPORTE CONSOLIDADO CON CLASE PRINT-AREA PARA EVITAR HOJAS EN BLANCO */
           <div className="space-y-4">
             
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3 print:hidden">
@@ -416,8 +426,8 @@ export default function FormularioHerramientas({
               </button>
             </div>
 
-            {/* DOCUMENTO CONSOLIDADO OFICIAL IMPRIMIBLE */}
-            <div className="bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 shadow-xl max-w-4xl mx-auto print:shadow-none print:border-none print:w-full print:p-0 font-sans">
+            {/* DOCUMENTO CONSOLIDADO OFICIAL IMPRIMIBLE CON CLASE print-area */}
+            <div className="print-area bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 shadow-xl max-w-4xl mx-auto print:shadow-none print:border-none print:w-full print:p-0 font-sans">
               
               <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
                 <div className="flex items-center gap-4">
@@ -503,7 +513,7 @@ export default function FormularioHerramientas({
 
         ) : viewingRequest ? (
           
-          /* COMPROBANTE DE SOLICITUD INDIVIDUAL */
+          /* COMPROBANTE DE SOLICITUD INDIVIDUAL CON CLASE print-area */
           <div className="space-y-4">
             
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3 print:hidden">
@@ -551,8 +561,8 @@ export default function FormularioHerramientas({
               </div>
             </div>
 
-            {/* VISTA INDIVIDUAL INSTITUCIONAL */}
-            <div className="bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 shadow-xl max-w-4xl mx-auto print:shadow-none print:border-none print:w-full print:p-0 font-sans">
+            {/* VISTA INDIVIDUAL INSTITUCIONAL CON CLASE print-area */}
+            <div className="print-area bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 shadow-xl max-w-4xl mx-auto print:shadow-none print:border-none print:w-full print:p-0 font-sans">
               
               <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
                 <div className="flex items-center gap-4">
@@ -859,7 +869,7 @@ export default function FormularioHerramientas({
 
         ) : (
 
-          /* PANEL DE CONTROL DE REQUERIMIENTOS Y OPCIONES DE IMPRESIÓN (INDIVIDUAL, POR DÍA, SEMANAL, MENSUAL) */
+          /* PANEL DE CONTROL DE REQUERIMIENTOS Y OPCIONES DE IMPRESIÓN CON RANGO PERSONALIZABLE */
           <div className="bg-white p-5 sm:p-7 rounded-2xl border border-slate-300 shadow-sm space-y-6">
             
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-4">
@@ -869,7 +879,7 @@ export default function FormularioHerramientas({
                   Control de Requerimientos y Reportes Consolidados
                 </h3>
                 <p className="text-xs sm:text-sm font-bold text-slate-600">
-                  Visualice solicitudes individuales o genere reportes agrupados por período
+                  Visualice solicitudes individuales o genere reportes agrupados por período y fechas
                 </p>
               </div>
 
@@ -896,35 +906,64 @@ export default function FormularioHerramientas({
               </div>
             </div>
 
-            {/* BOTONES DESTACADOS PARA IMPRESIÓN CONSOLIDADA (INDIVIDUAL, DÍA, SEMANAL, MENSUAL) */}
-            <div className="bg-blue-50/70 p-4 rounded-2xl border border-blue-200 space-y-2">
+            {/* BOTONES DESTACADOS Y SELECCIÓN DE RANGO DE FECHAS PARA IMPRESIÓN CONSOLIDADA */}
+            <div className="bg-blue-50/70 p-4 sm:p-5 rounded-2xl border border-blue-200 space-y-4">
               <span className="text-xs font-black text-blue-900 uppercase tracking-wider block">
-                🖨️ OPCIONES DE IMPRESIÓN Y CONSOLIDACIÓN DE COMPRAS
+                🖨️ GENERAR Y IMPRIMIR REPORTE CONSOLIDADO DE COMPRAS POR RANGO DE FECHAS
               </span>
 
+              {/* Selector de Fechas para Reporte Personalizado / Mensual */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-xl border border-blue-200 shadow-sm">
+                <div className="space-y-1">
+                  <label className="block text-xs font-black text-slate-800 uppercase flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                    Fecha Desde (Inicio):
+                  </label>
+                  <input
+                    type="date"
+                    value={reportStartDate}
+                    onChange={(e) => setReportStartDate(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white rounded-xl px-3 py-2 text-xs sm:text-sm font-black text-slate-900"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-black text-slate-800 uppercase flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                    Fecha Hasta (Fin):
+                  </label>
+                  <input
+                    type="date"
+                    value={reportEndDate}
+                    onChange={(e) => setReportEndDate(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white rounded-xl px-3 py-2 text-xs sm:text-sm font-black text-slate-900"
+                  />
+                </div>
+              </div>
+
+              {/* Opciones de Reporte */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <button
                   onClick={() => handleGenerateConsolidatedReport('day')}
-                  className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm py-3 px-4 rounded-xl shadow transition border border-blue-500 uppercase"
+                  className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm py-3.5 px-4 rounded-xl shadow transition border border-blue-500 uppercase"
                 >
                   <Calendar className="w-4 h-4" />
-                  <span>Imprimir Consolidado HOY (Día)</span>
+                  <span>Consolidado HOY (Día)</span>
                 </button>
 
                 <button
                   onClick={() => handleGenerateConsolidatedReport('week')}
-                  className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm py-3 px-4 rounded-xl shadow transition border border-indigo-500 uppercase"
+                  className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm py-3.5 px-4 rounded-xl shadow transition border border-indigo-500 uppercase"
                 >
                   <Layers className="w-4 h-4" />
-                  <span>Imprimir Consolidado SEMANAL</span>
+                  <span>Consolidado SEMANAL (7 Días)</span>
                 </button>
 
                 <button
-                  onClick={() => handleGenerateConsolidatedReport('month')}
-                  className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm py-3 px-4 rounded-xl shadow transition uppercase"
+                  onClick={() => handleGenerateConsolidatedReport('custom')}
+                  className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm py-3.5 px-4 rounded-xl shadow-lg transition uppercase border border-slate-700"
                 >
-                  <Printer className="w-4 h-4" />
-                  <span>Imprimir Consolidado MENSUAL</span>
+                  <Printer className="w-4 h-4 text-emerald-400" />
+                  <span>Imprimir Rango / Mensual</span>
                 </button>
               </div>
             </div>
