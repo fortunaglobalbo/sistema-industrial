@@ -647,7 +647,7 @@ export default function FormularioHerramientas({
                     Datos del Supervisor Solicitante
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-600 font-bold">
-                    Escriba su nombre y seleccione su Área Técnica (incluyendo EGPP)
+                    Escriba su nombre y seleccione su Área Técnica (incluyendo EPP)
                   </p>
                 </div>
               </div>
@@ -669,7 +669,7 @@ export default function FormularioHerramientas({
                   />
                 </div>
 
-                {/* Selección de Áreas Técnicas (Incluyendo EGPP) */}
+                {/* Selección de Áreas Técnicas (Incluyendo EPP) */}
                 <div className="space-y-2">
                   <label className="block text-xs sm:text-sm font-black text-slate-900 uppercase">
                     Área Técnica de ENDE DEORURO <span className="text-red-600 text-base">*</span>

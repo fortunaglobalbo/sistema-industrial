@@ -45,7 +45,7 @@ export const TECHNICAL_AREAS = [
   'LINEAS DE TRANSMISION',
   'INGENIERIA Y DESARROLLO',
   'SISTEMA RURAL',
-  'EGPP'
+  'EPP'
 ] as const;
 
 export interface ConsolidatedReportItem {
