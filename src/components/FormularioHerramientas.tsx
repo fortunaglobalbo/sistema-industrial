@@ -323,7 +323,7 @@ export default function FormularioHerramientas({
               />
               <div>
                 <h1 className="text-base sm:text-xl font-black tracking-tight text-slate-900 uppercase">
-                  ENDE CORPORACIÓN
+                  ENDE DEORURO
                 </h1>
                 <p className="text-xs sm:text-sm text-blue-700 font-black uppercase tracking-wide">
                   Requerimiento Masivo de Herramientas
@@ -421,7 +421,7 @@ export default function FormularioHerramientas({
                 <div className="flex items-center gap-4">
                   <img 
                     src="/logo-ende.png" 
-                    alt="ENDE CORPORACION" 
+                    alt="ENDE DEORURO" 
                     className="h-12 w-auto object-contain"
                   />
                   <div>
