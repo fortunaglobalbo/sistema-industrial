@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Wrench, Plus, Trash2, Copy, Save, Printer, RefreshCw, 
-  User, FileText, Layers, ArrowLeft, Check, Minus, Building2, Filter
+  User, FileText, ArrowLeft, Minus, Filter, Tag, Check, X
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { 
@@ -31,11 +31,22 @@ interface FormRowItem {
 
 interface FormularioHerramientasProps {
   onBackToMainApp?: () => void;
+  showTabs?: boolean;
+  initialTab?: 'create' | 'history';
 }
 
-export default function FormularioHerramientas({ onBackToMainApp }: FormularioHerramientasProps) {
-  const [activeTab, setActiveTab] = useState<'create' | 'history'>('create');
+export default function FormularioHerramientas({ 
+  onBackToMainApp, 
+  showTabs = false, 
+  initialTab = 'create' 
+}: FormularioHerramientasProps) {
+  const [activeTab, setActiveTab] = useState<'create' | 'history'>(initialTab);
   
+  // Lista de tipos de herramientas gestionables dinámicamente
+  const [toolTypesList, setToolTypesList] = useState<string[]>([...TOOL_TYPES_PRESETS]);
+  const [customTypeInput, setCustomTypeInput] = useState('');
+  const [showAddTypeModal, setShowAddTypeModal] = useState(false);
+
   // Estados del Formulario
   const [supervisorName, setSupervisorName] = useState('');
   const [selectedArea, setSelectedArea] = useState<string>(TECHNICAL_AREAS[0]);
@@ -43,10 +54,9 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
   const [priority, setPriority] = useState('Normal');
   const [justification, setJustification] = useState('');
   
-  // Lista de Herramientas (Formato Tarjetas Responsivas)
+  // Lista de Herramientas (Inicia con SOLO 1 herramienta por defecto)
   const [rows, setRows] = useState<FormRowItem[]>([
-    { id: '1', itemNumber: 1, toolType: 'Herramienta Manual', description: '', quantity: 1, area: TECHNICAL_AREAS[0] },
-    { id: '2', itemNumber: 2, toolType: 'Herramienta Eléctrica', description: '', quantity: 1, area: TECHNICAL_AREAS[0] }
+    { id: '1', itemNumber: 1, toolType: 'Herramienta Manual', description: '', quantity: 1, area: TECHNICAL_AREAS[0] }
   ]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,12 +71,12 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [areaFilter, setAreaFilter] = useState('TODAS');
 
-  // Sincronizar área por defecto en las herramientas
+  // Sincronizar área seleccionada en todas las filas
   useEffect(() => {
     const currentArea = selectedArea === 'OTRA' ? (customArea || 'ÁREA TÉCNICA') : selectedArea;
     setRows(prevRows => prevRows.map(row => ({
       ...row,
-      area: row.area ? row.area : currentArea
+      area: currentArea
     })));
   }, [selectedArea, customArea]);
 
@@ -95,7 +105,7 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
       {
         id: newId,
         itemNumber: prev.length + 1,
-        toolType: 'Herramienta Manual',
+        toolType: toolTypesList[0] || 'Herramienta Manual',
         description: '',
         quantity: 1,
         area: effectiveArea
@@ -108,7 +118,7 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
       Swal.fire({
         icon: 'info',
         title: 'Mínimo de ítems',
-        text: 'La solicitud debe incluir al menos una herramienta.',
+        text: 'La solicitud debe contener al menos 1 herramienta.',
         confirmButtonColor: '#2563eb'
       });
       return;
@@ -132,6 +142,11 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
   };
 
   const handleRowChange = (index: number, field: keyof FormRowItem, value: any) => {
+    if (field === 'toolType' && value === 'NUEVO_TIPO_OPTION') {
+      setShowAddTypeModal(true);
+      return;
+    }
+
     setRows(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
@@ -148,21 +163,37 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
     });
   };
 
-  const handleLoadSampleTemplate = () => {
-    const effectiveArea = getEffectiveArea();
-    setRows([
-      { id: '1', itemNumber: 1, toolType: 'Herramienta Manual', description: 'Juego de llaves combinadas (8 a 24 mm) cromo vanadio', quantity: 2, area: effectiveArea },
-      { id: '2', itemNumber: 2, toolType: 'Herramienta Manual', description: 'Alicate universal dieléctrico 1000V de 8 pulgadas', quantity: 4, area: effectiveArea },
-      { id: '3', itemNumber: 3, toolType: 'Herramienta Eléctrica', description: 'Amoladora angular 4 1/2" 850W industrial', quantity: 1, area: effectiveArea },
-      { id: '4', itemNumber: 4, toolType: 'Instrumento de Medición y Prueba', description: 'Multímetro digital de gancho True RMS CAT IV 600V', quantity: 2, area: effectiveArea }
-    ]);
+  // Agregar nuevo tipo personalizado a la lista de tipos
+  const handleAddNewToolType = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = customTypeInput.trim();
+    if (!trimmed) return;
+
+    if (!toolTypesList.includes(trimmed)) {
+      setToolTypesList(prev => [...prev, trimmed]);
+    }
+    
+    // Asignar el nuevo tipo a la última fila o actual
+    setRows(prev => prev.map((row, i) => i === prev.length - 1 ? { ...row, toolType: trimmed } : row));
+    
+    setCustomTypeInput('');
+    setShowAddTypeModal(false);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Tipo Agregado',
+      text: `Se agregó "${trimmed}" a la lista de tipos de herramientas.`,
+      timer: 1500,
+      showConfirmButton: false
+    });
   };
 
-  const handleClearRows = () => {
-    const effectiveArea = getEffectiveArea();
-    setRows([
-      { id: '1', itemNumber: 1, toolType: 'Herramienta Manual', description: '', quantity: 1, area: effectiveArea }
-    ]);
+  const handleRemoveToolType = (typeToRemove: string) => {
+    if (toolTypesList.length <= 1) {
+      Swal.fire({ icon: 'warning', title: 'Atención', text: 'Debe haber al menos un tipo de herramienta disponible.' });
+      return;
+    }
+    setToolTypesList(prev => prev.filter(t => t !== typeToRemove));
   };
 
   const handleSubmitRequest = async (e: React.FormEvent) => {
@@ -184,7 +215,7 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
       Swal.fire({
         icon: 'warning',
         title: 'DESCRIPCIÓN Incompleta',
-        text: 'Por favor complete la descripción de cada una de las herramientas solicitadas.',
+        text: 'Por favor ingrese la descripción de cada herramienta en el pedido.',
         confirmButtonColor: '#2563eb'
       });
       return;
@@ -203,7 +234,7 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
           toolType: r.toolType,
           description: r.description.trim(),
           quantity: Number(r.quantity) || 1,
-          area: r.area || effectiveArea
+          area: effectiveArea
         }))
       };
 
@@ -212,20 +243,21 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
       if (result.success && result.requestId) {
         Swal.fire({
           icon: 'success',
-          title: '¡Solicitud Registrada con Éxito!',
+          title: '¡Solicitud Enviada con Éxito!',
           html: `
             <div class="text-left text-xs space-y-2">
-              <p class="font-medium text-slate-700">Se ha guardado la lista de herramientas requeridas para compras masivas.</p>
+              <p class="font-medium text-slate-700">Se ha guardado el requerimiento masivo para la Jefatura de Adquisiciones.</p>
               <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 font-mono text-xs text-blue-900">
                 <p><strong>N° Folio:</strong> #${result.folio}</p>
                 <p><strong>Código:</strong> ${result.requestCode}</p>
                 <p><strong>Área:</strong> ${effectiveArea}</p>
-                <p><strong>Total Items:</strong> ${rows.length} herramienta(s)</p>
+                <p><strong>Supervisor:</strong> ${supervisorName.trim()}</p>
+                <p><strong>Total Herramientas:</strong> ${rows.length}</p>
               </div>
             </div>
           `,
           confirmButtonColor: '#2563eb',
-          confirmButtonText: 'Ver Documento de Solicitud'
+          confirmButtonText: 'Ver Documento Generado'
         }).then(() => {
           handleViewDetails(result.requestId);
         });
@@ -233,7 +265,7 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
         Swal.fire({
           icon: 'error',
           title: 'Error al Guardar',
-          text: result.error || 'No se pudo registrar la solicitud.',
+          text: result.error || 'No se pudo enviar la solicitud.',
           confirmButtonColor: '#ef4444'
         });
       }
@@ -287,7 +319,7 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
   const handleDeleteRequest = (requestId: string) => {
     Swal.fire({
       title: '¿Eliminar Solicitud?',
-      text: 'Esta acción removerá el registro del sistema.',
+      text: 'Esta acción removerá la solicitud del sistema.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
@@ -317,9 +349,9 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans antialiased">
       
-      {/* HEADER LIMPIO Y BLANCO CON LOGO ENDE */}
+      {/* HEADER PRINCIPAL */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 print:hidden shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
           
           <div className="flex items-center gap-3 w-full sm:w-auto">
             {onBackToMainApp && (
@@ -349,42 +381,96 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
             </div>
           </div>
 
-          {/* Selector de Pestañas */}
-          <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200 w-full sm:w-auto">
-            <button
-              onClick={() => { setViewingRequest(null); setActiveTab('create'); }}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-extrabold transition ${activeTab === 'create' && !viewingRequest ? 'bg-white text-blue-700 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'}`}
-            >
-              <Wrench className="w-4 h-4 text-blue-600" />
-              Nueva Solicitud
-            </button>
+          {/* Renderizar selector de pestañas SOLO si está habilitado por la administración */}
+          {showTabs && (
+            <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200 w-full sm:w-auto">
+              <button
+                onClick={() => { setViewingRequest(null); setActiveTab('create'); }}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-extrabold transition ${activeTab === 'create' && !viewingRequest ? 'bg-white text-blue-700 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'}`}
+              >
+                <Wrench className="w-4 h-4 text-blue-600" />
+                Nueva Solicitud
+              </button>
 
-            <button
-              onClick={() => { setViewingRequest(null); setActiveTab('history'); }}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-extrabold transition ${activeTab === 'history' && !viewingRequest ? 'bg-white text-blue-700 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'}`}
-            >
-              <FileText className="w-4 h-4 text-blue-600" />
-              Historial Envíos
-            </button>
-          </div>
+              <button
+                onClick={() => { setViewingRequest(null); setActiveTab('history'); }}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-extrabold transition ${activeTab === 'history' && !viewingRequest ? 'bg-white text-blue-700 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'}`}
+              >
+                <FileText className="w-4 h-4 text-blue-600" />
+                Historial de Solicitudes
+              </button>
+            </div>
+          )}
 
         </div>
       </header>
 
+      {/* MODAL PARA AGREGAR NUEVO TIPO DE HERRAMIENTA */}
+      {showAddTypeModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-300 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <Tag className="w-5 h-5 text-blue-600" />
+                Agregar Nuevo Tipo de Herramienta
+              </h3>
+              <button 
+                onClick={() => setShowAddTypeModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddNewToolType} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase">
+                  Nombre del Tipo / Categoría
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="Ej. Herramienta Neumática, Equipo Hidráulico..."
+                  value={customTypeInput}
+                  onChange={(e) => setCustomTypeInput(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddTypeModal(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-extrabold transition shadow"
+                >
+                  Guardar Tipo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* CUERPO PRINCIPAL */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6">
+      <main className="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-6">
         
         {loadingDetails ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-sm font-bold text-slate-600">Cargando datos de la solicitud...</p>
+            <p className="text-sm font-bold text-slate-600">Cargando detalles de la solicitud...</p>
           </div>
         ) : viewingRequest ? (
           
-          /* VISTA COMPROBANTE OFICIAL PARA IMPRIMIR / REVISAR */
+          /* COMPROBANTE OFICIAL PARA IMPRIMIR / DOCUMENTO */
           <div className="space-y-4">
             
-            {/* Barra de Acciones */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3 print:hidden">
               <div className="flex items-center gap-3">
                 <button
@@ -404,7 +490,7 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
                 <select
                   value={viewingRequest.status}
                   onChange={(e) => handleUpdateStatus(viewingRequest.id, e.target.value)}
-                  className="bg-slate-50 border border-slate-300 text-slate-900 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="bg-slate-50 border border-slate-300 text-slate-900 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 >
                   <option value="Pendiente">Estado: Pendiente</option>
                   <option value="En Revisión">Estado: En Revisión</option>
@@ -417,20 +503,20 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
                   className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-extrabold shadow transition"
                 >
                   <Printer className="w-4 h-4" />
-                  Imprimir Documento
+                  Imprimir Comprobante
                 </button>
 
                 <button
                   onClick={() => handleDeleteRequest(viewingRequest.id)}
                   className="p-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl transition"
-                  title="Eliminar"
+                  title="Eliminar Solicitud"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* DOCUMENTO IMPRESO OFICIAL */}
+            {/* VISTA OFICIAL INSTITUCIONAL */}
             <div className="bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 shadow-xl max-w-4xl mx-auto print:shadow-none print:border-none print:w-full print:p-0 font-sans">
               
               <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
@@ -442,7 +528,7 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
                   />
                   <div>
                     <h2 className="text-base font-black uppercase text-slate-900 tracking-tight">ENDE ORURO - DEPARTAMENTO TÉCNICO</h2>
-                    <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">FORMULARIO DE REQUERIMIENTO MASIVO DE HERRAMIENTAS</p>
+                    <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">SOLICITUD DE REQUERIMIENTO MASIVO DE HERRAMIENTAS</p>
                   </div>
                 </div>
 
@@ -466,7 +552,7 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
               </div>
 
               <h3 className="font-black text-xs uppercase tracking-wider text-slate-800 mb-3 border-l-4 border-blue-600 pl-2">
-                HERRAMIENTAS Y EQUIPOS REQUERIDOS
+                DETALLE DE HERRAMIENTAS SOLICITADAS
               </h3>
 
               <div className="overflow-x-auto mb-8">
@@ -474,10 +560,9 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
                   <thead>
                     <tr className="bg-slate-900 text-white font-bold text-left">
                       <th className="p-2.5 text-center w-12 border border-slate-900">NRO</th>
-                      <th className="p-2.5 w-44 border border-slate-900">TIPO</th>
-                      <th className="p-2.5 border border-slate-900">DESCRIPCIÓN</th>
+                      <th className="p-2.5 w-48 border border-slate-900">TIPO DE HERRAMIENTA</th>
+                      <th className="p-2.5 border border-slate-900">DESCRIPCIÓN Y ESPECIFICACIÓN</th>
                       <th className="p-2.5 text-center w-24 border border-slate-900">CANTIDAD</th>
-                      <th className="p-2.5 w-44 border border-slate-900">ÁREA</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-300 border border-slate-300">
@@ -486,8 +571,7 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
                         <td className="p-2.5 text-center font-bold font-mono border-r border-slate-300">{item.itemNumber}</td>
                         <td className="p-2.5 font-bold text-slate-800 border-r border-slate-300">{item.toolType}</td>
                         <td className="p-2.5 text-slate-900 border-r border-slate-300 font-medium">{item.description}</td>
-                        <td className="p-2.5 text-center font-extrabold text-blue-900 border-r border-slate-300 text-sm font-mono">{item.quantity}</td>
-                        <td className="p-2.5 text-slate-700 uppercase text-[11px] font-semibold">{item.area}</td>
+                        <td className="p-2.5 text-center font-extrabold text-blue-900 text-sm font-mono">{item.quantity}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -513,10 +597,10 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
 
         ) : activeTab === 'create' ? (
 
-          /* FORMULARIO BLANCO MÓVIL (TARJETAS ADAPTABLES A CELULAR) */
+          /* FORMULARIO BLANCO (MÓVIL / RESPONSIVO) */
           <form onSubmit={handleSubmitRequest} className="space-y-5">
             
-            {/* HEADER DEL FORMULARIO CON DATOS DEL SUPERVISOR Y ÁREA */}
+            {/* DATOS DEL SUPERVISOR Y SELECCIÓN DE ÁREA TÉCNICA */}
             <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
               
               <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
@@ -525,15 +609,15 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
                 </div>
                 <div>
                   <h2 className="text-base font-black text-slate-900 uppercase tracking-tight">
-                    Datos del Requerimiento Masivo
+                    Información del Solicitante
                   </h2>
-                  <p className="text-xs text-slate-500">Supervisión y asignación por área técnica</p>
+                  <p className="text-xs text-slate-500">Ingrese sus datos para canalizar la compra masiva</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 
-                {/* Nombre del Supervisor */}
+                {/* Nombre del Supervisor / Solicitante */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-slate-700 uppercase">
                     Supervisor / Solicitante <span className="text-red-500">*</span>
@@ -541,7 +625,7 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
                   <input
                     type="text"
                     required
-                    placeholder="Nombre completo del supervisor..."
+                    placeholder="Ej. Ing. Juan Pérez (Supervisor)"
                     value={supervisorName}
                     onChange={(e) => setSupervisorName(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
@@ -571,7 +655,7 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
                 <div>
                   <input
                     type="text"
-                    placeholder="Escriba el nombre de la nueva Área Técnica..."
+                    placeholder="Escriba el nombre del área técnica..."
                     value={customArea}
                     onChange={(e) => setCustomArea(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-900"
@@ -581,53 +665,44 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
 
             </div>
 
-            {/* LISTADO DE HERRAMIENTAS EN FORMATO DE TARJETAS MÓVILES CÓMODAS */}
+            {/* LISTADO DE HERRAMIENTAS (INICIA CON 1 SOLA HERRAMIENTA Y SIN AREA DESTINO INTERNA) */}
             <div className="space-y-4">
               
               <div className="flex justify-between items-center px-1">
                 <div>
                   <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
                     <Wrench className="w-4 h-4 text-blue-600" />
-                    Listado de Herramientas y Equipos Solicitados
+                    Listado de Herramientas Requeridas
                   </h3>
-                  <p className="text-[11px] text-slate-500">Agregue las herramientas necesarias para su cuadrilla</p>
+                  <p className="text-[11px] text-slate-500">Agregue cada item que necesita su equipo de trabajo</p>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleAddRow}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold px-3 py-2 rounded-xl transition flex items-center gap-1 shadow-sm shrink-0"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>+ Agregar Herramienta</span>
-                </button>
               </div>
 
-              {/* TARJETAS INTERACTIVAS CÓMODAS PARA CELULAR Y PC */}
+              {/* TARJETAS DE ÍTEMS */}
               <div className="space-y-3">
                 {rows.map((row, index) => (
                   <div 
                     key={row.id} 
-                    className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 relative hover:border-blue-300 transition"
+                    className="bg-white p-4.5 rounded-2xl border border-slate-200 shadow-sm space-y-3 relative hover:border-blue-400 transition"
                   >
                     
-                    {/* Encabezado de la Tarjeta */}
+                    {/* Encabezado Fila */}
                     <div className="flex justify-between items-center border-b border-slate-100 pb-2.5">
                       <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-mono font-bold text-xs flex items-center justify-center">
+                        <span className="w-6 h-6 rounded-full bg-blue-600 text-white font-mono font-bold text-xs flex items-center justify-center shadow-sm">
                           #{index + 1}
                         </span>
-                        <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
-                          Herramienta {index + 1}
+                        <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                          Herramienta #{index + 1}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleDuplicateRow(index)}
                           className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition text-xs flex items-center gap-1 font-semibold"
-                          title="Duplicar esta herramienta"
+                          title="Duplicar item"
                         >
                           <Copy className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline text-[11px]">Duplicar</span>
@@ -637,57 +712,53 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
                           type="button"
                           onClick={() => handleRemoveRow(index)}
                           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                          title="Eliminar"
+                          title="Eliminar item"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Cuerpo de la Tarjeta */}
+                    {/* Campos de la Herramienta (Sin campo Área Destino) */}
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                       
-                      {/* Tipo de Herramienta */}
-                      <div className="sm:col-span-4 space-y-1">
-                        <label className="block text-[11px] font-bold text-slate-600 uppercase">
-                          TIPO
-                        </label>
+                      {/* Tipo de Herramienta + opción de agregar o gestionar tipos */}
+                      <div className="sm:col-span-5 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="block text-[11px] font-bold text-slate-700 uppercase">
+                            TIPO DE HERRAMIENTA
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setShowAddTypeModal(true)}
+                            className="text-[10px] text-blue-600 hover:underline font-bold"
+                          >
+                            + Nuevo Tipo
+                          </button>
+                        </div>
+
                         <select
                           value={row.toolType}
                           onChange={(e) => handleRowChange(index, 'toolType', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                         >
-                          {TOOL_TYPES_PRESETS.map((type) => (
+                          {toolTypesList.map((type) => (
                             <option key={type} value={type}>{type}</option>
                           ))}
+                          <option value="NUEVO_TIPO_OPTION">+ AGREGAR OTRO TIPO...</option>
                         </select>
                       </div>
 
-                      {/* Descripción */}
-                      <div className="sm:col-span-8 space-y-1">
-                        <label className="block text-[11px] font-bold text-slate-600 uppercase">
-                          DESCRIPCIÓN Y ESPECIFICACIÓN <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="Ej. Juego de destornilladores aislados 1000V..."
-                          value={row.description}
-                          onChange={(e) => handleRowChange(index, 'description', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
-                        />
-                      </div>
-
-                      {/* Cantidad con botones táctiles grandes para celular */}
-                      <div className="sm:col-span-5 space-y-1">
-                        <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                      {/* Cantidad con botones grandes para celular */}
+                      <div className="sm:col-span-7 space-y-1">
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase">
                           CANTIDAD
                         </label>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => handleQuantityStep(index, -1)}
-                            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 font-bold text-slate-700 flex items-center justify-center shrink-0 transition"
+                            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 font-bold text-slate-800 flex items-center justify-center shrink-0 transition"
                           >
                             <Minus className="w-4 h-4" />
                           </button>
@@ -697,33 +768,32 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
                             min="1"
                             value={row.quantity}
                             onChange={(e) => handleRowChange(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                            className="w-full text-center bg-slate-50 border border-slate-300 rounded-xl py-1.5 text-sm font-extrabold text-slate-900 font-mono"
+                            className="w-full text-center bg-slate-50 border border-slate-300 rounded-xl py-1.5 text-sm font-black text-slate-900 font-mono"
                           />
 
                           <button
                             type="button"
                             onClick={() => handleQuantityStep(index, 1)}
-                            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 font-bold text-slate-700 flex items-center justify-center shrink-0 transition"
+                            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 font-bold text-slate-800 flex items-center justify-center shrink-0 transition"
                           >
                             <Plus className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
 
-                      {/* Área */}
-                      <div className="sm:col-span-7 space-y-1">
-                        <label className="block text-[11px] font-bold text-slate-600 uppercase">
-                          ÁREA DESTINO
+                      {/* Descripción Completa */}
+                      <div className="sm:col-span-12 space-y-1">
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase">
+                          DESCRIPCIÓN Y ESPECIFICACIÓN TÉCNICA <span className="text-red-500">*</span>
                         </label>
-                        <select
-                          value={row.area}
-                          onChange={(e) => handleRowChange(index, 'area', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 uppercase"
-                        >
-                          {TECHNICAL_AREAS.map((a) => (
-                            <option key={a} value={a}>{a}</option>
-                          ))}
-                        </select>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Ej. Alicate dieléctrico 1000V de 8 pulgadas marca Stanley / DeWalt..."
+                          value={row.description}
+                          onChange={(e) => handleRowChange(index, 'description', e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+                        />
                       </div>
 
                     </div>
@@ -732,30 +802,33 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
                 ))}
               </div>
 
-              {/* Acciones Inferiores */}
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2">
+              {/* BOTÓN RESALTADO DESTACADO PARA AGREGAR OTRA HERRAMIENTA */}
+              <div className="pt-2">
                 <button
                   type="button"
                   onClick={handleAddRow}
-                  className="w-full sm:w-auto bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-xs px-4 py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-sm"
+                  className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-black text-sm py-4 px-6 rounded-2xl shadow-lg hover:shadow-blue-500/25 transition border border-blue-400/30 flex items-center justify-center gap-2 tracking-wide uppercase"
                 >
-                  <Plus className="w-4 h-4 text-blue-600" />
+                  <Plus className="w-5 h-5 text-amber-300" />
                   <span>+ Agregar Otra Herramienta al Pedido</span>
                 </button>
+              </div>
 
+              {/* BOTÓN DE ENVÍO FINAL */}
+              <div className="pt-4 border-t border-slate-200">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm px-8 py-3.5 rounded-xl shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black text-sm py-4 px-6 rounded-2xl shadow-xl transition flex items-center justify-center gap-2 disabled:opacity-50 uppercase tracking-wider"
                 >
                   {isSubmitting ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Guardando...</span>
+                      <RefreshCw className="w-5 h-5 animate-spin text-blue-400" />
+                      <span>Enviando Requerimiento...</span>
                     </>
                   ) : (
                     <>
-                      <Save className="w-4 h-4" />
+                      <Save className="w-5 h-5 text-emerald-400" />
                       <span>Enviar Requerimiento Masivo</span>
                     </>
                   )}
@@ -768,16 +841,16 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
 
         ) : (
 
-          /* HISTORIAL BLANCO */
+          /* HISTORIAL Y CONTROL (SOLO VISIBLE SI ES LLAMADO DESDE EL PANEL DE CONTROL ADMIN) */
           <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
             
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900 uppercase flex items-center gap-2">
                   <FileText className="w-5 h-5 text-blue-600" />
-                  Historial de Requerimientos Registrados
+                  Control de Requerimientos Masivos Enviados
                 </h3>
-                <p className="text-xs text-slate-500">Solicitudes enviadas por supervisores de área</p>
+                <p className="text-xs text-slate-500">Administración de pedidos por áreas técnicas</p>
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -785,9 +858,9 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
                 <select
                   value={areaFilter}
                   onChange={(e) => setAreaFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-300 text-slate-900 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 w-full sm:w-auto"
+                  className="bg-slate-50 border border-slate-300 text-slate-900 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 w-full sm:w-auto uppercase"
                 >
-                  <option value="TODAS">Ver Todas las Áreas Técnicas</option>
+                  <option value="TODAS">Todas las Áreas Técnicas</option>
                   {TECHNICAL_AREAS.map((a) => (
                     <option key={a} value={a}>{a}</option>
                   ))}
@@ -807,11 +880,11 @@ export default function FormularioHerramientas({ onBackToMainApp }: FormularioHe
             {loadingHistory ? (
               <div className="flex flex-col items-center justify-center py-12 gap-2">
                 <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
-                <p className="text-xs text-slate-500">Cargando requerimientos...</p>
+                <p className="text-xs text-slate-500">Cargando lista de requerimientos...</p>
               </div>
             ) : historyList.length === 0 ? (
               <div className="text-center py-12 text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl">
-                No se registraron requerimientos de herramientas para el área seleccionada.
+                No hay solicitudes de requerimientos registradas para el área seleccionada.
               </div>
             ) : (
               <div className="overflow-x-auto rounded-xl border border-slate-200">
