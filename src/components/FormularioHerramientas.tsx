@@ -34,16 +34,6 @@ interface FormularioHerramientasProps {
   initialTab?: 'create' | 'history';
 }
 
-const QUICK_TOOL_SUGGESTIONS = [
-  'HERRAMIENTA MANUAL',
-  'HERRAMIENTA ELÉCTRICA',
-  'HERRAMIENTA INALÁMBRICA',
-  'INSTRUMENTO DE MEDISIÓN Y PRUEBA',
-  'EQUIPO DE PROTECCIÓN ESPECIAL (EPP)',
-  'EQUIPO DE MANIOBRA / ALTURA',
-  'INSUMO / CONSUMIBLE TÉCNICO'
-];
-
 export default function FormularioHerramientas({ 
   onBackToMainApp, 
   showTabs = false, 
@@ -635,20 +625,6 @@ export default function FormularioHerramientas({
                           onChange={(e) => handleRowChange(index, 'toolType', e.target.value)}
                           className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm sm:text-base font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600 shadow-inner"
                         />
-                        
-                        {/* Etiquetas rápidas de sugerencia */}
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {QUICK_TOOL_SUGGESTIONS.map((tag) => (
-                            <button
-                              key={tag}
-                              type="button"
-                              onClick={() => handleRowChange(index, 'toolType', tag)}
-                              className="text-[10px] sm:text-xs font-bold bg-slate-100 hover:bg-blue-100 hover:text-blue-900 text-slate-700 border border-slate-300 rounded-lg px-2 py-1 transition"
-                            >
-                              + {tag}
-                            </button>
-                          ))}
-                        </div>
                       </div>
 
                       {/* Cantidad con Botones Táctiles Grandes */}
