@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Wrench, Plus, Trash2, Save, Printer, RefreshCw, 
-  User, FileText, ArrowLeft, Minus, Filter, Tag, Check
+  User, FileText, ArrowLeft, Minus, Filter, Calendar, Layers
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { 
@@ -11,7 +11,8 @@ import {
   getToolRequests, 
   getToolRequestDetails, 
   updateToolRequestStatus, 
-  deleteToolRequest
+  deleteToolRequest,
+  getConsolidatedToolReport
 } from '@/app/actions/toolRequest';
 import { 
   TECHNICAL_AREAS,
@@ -55,10 +56,14 @@ export default function FormularioHerramientas({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Estado para Visualizar / Imprimir Solicitud
+  // Estado para Visualizar / Imprimir Solicitud Individual
   const [viewingRequest, setViewingRequest] = useState<ToolRequestData | null>(null);
   const [viewingItems, setViewingItems] = useState<ToolRequestItemData[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
+
+  // Estado para Visualizar / Imprimir Reporte Consolidado (Día, Semanal, Mensual)
+  const [viewingReportData, setViewingReportData] = useState<any | null>(null);
+  const [loadingReport, setLoadingReport] = useState(false);
 
   // Historial
   const [historyList, setHistoryList] = useState<any[]>([]);
@@ -205,7 +210,6 @@ export default function FormularioHerramientas({
           confirmButtonColor: '#2563eb',
           confirmButtonText: 'ACEPTAR Y ENTENDIDO'
         }).then(() => {
-          // Limpiar formulario para nuevo envío sin abrir vista de impresión
           setSupervisorName('');
           setJustification('');
           setRows([
@@ -235,6 +239,7 @@ export default function FormularioHerramientas({
 
   const handleViewDetails = async (requestId: string) => {
     setLoadingDetails(true);
+    setViewingReportData(null);
     const res = await getToolRequestDetails(requestId);
     if (res.success && res.request) {
       setViewingRequest(res.request);
@@ -248,6 +253,24 @@ export default function FormularioHerramientas({
       });
     }
     setLoadingDetails(false);
+  };
+
+  // Generar y ver reporte consolidado (Día, Semanal, Mensual)
+  const handleGenerateConsolidatedReport = async (period: 'day' | 'week' | 'month') => {
+    setLoadingReport(true);
+    setViewingRequest(null);
+    const res = await getConsolidatedToolReport(period, areaFilter);
+    if (res.success && res.items && res.items.length > 0) {
+      setViewingReportData(res);
+    } else {
+      Swal.fire({
+        icon: 'info',
+        title: 'Sin Registros',
+        text: 'No se encontraron herramientas registradas en el período seleccionado.',
+        confirmButtonColor: '#2563eb'
+      });
+    }
+    setLoadingReport(false);
   };
 
   const handleUpdateStatus = async (requestId: string, newStatus: string) => {
@@ -300,7 +323,7 @@ export default function FormularioHerramientas({
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans antialiased">
       
-      {/* HEADER LIMPIO Y CLARO CON LOGO ENDE */}
+      {/* HEADER PRINCIPAL */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 print:hidden shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
           
@@ -318,7 +341,7 @@ export default function FormularioHerramientas({
             <div className="flex items-center gap-3">
               <img 
                 src="/logo-ende.png" 
-                alt="ENDE ORURO" 
+                alt="ENDE DEORURO" 
                 className="h-11 sm:h-12 w-auto object-contain"
               />
               <div>
@@ -336,19 +359,19 @@ export default function FormularioHerramientas({
           {showTabs && (
             <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200 w-full sm:w-auto">
               <button
-                onClick={() => { setViewingRequest(null); setActiveTab('create'); }}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-black transition ${activeTab === 'create' && !viewingRequest ? 'bg-white text-blue-700 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'}`}
+                onClick={() => { setViewingRequest(null); setViewingReportData(null); setActiveTab('create'); }}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-black transition ${activeTab === 'create' && !viewingRequest && !viewingReportData ? 'bg-white text-blue-700 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 <Wrench className="w-4 h-4 text-blue-600" />
                 Nueva Solicitud
               </button>
 
               <button
-                onClick={() => { setViewingRequest(null); setActiveTab('history'); }}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-black transition ${activeTab === 'history' && !viewingRequest ? 'bg-white text-blue-700 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'}`}
+                onClick={() => { setViewingRequest(null); setViewingReportData(null); setActiveTab('history'); }}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-black transition ${activeTab === 'history' && !viewingRequest && !viewingReportData ? 'bg-white text-blue-700 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 <FileText className="w-4 h-4 text-blue-600" />
-                Historial Solicitudes
+                Control y Reportes
               </button>
             </div>
           )}
@@ -359,14 +382,128 @@ export default function FormularioHerramientas({
       {/* CUERPO PRINCIPAL */}
       <main className="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-6">
         
-        {loadingDetails ? (
+        {loadingDetails || loadingReport ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-base font-bold text-slate-700">Cargando documento...</p>
+            <p className="text-base font-bold text-slate-700">Generando documento y procesando reporte...</p>
           </div>
+        ) : viewingReportData ? (
+
+          /* VISTA IMPRESIÓN REPORTE CONSOLIDADO (DÍA / SEMANAL / MENSUAL) */
+          <div className="space-y-4">
+            
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3 print:hidden">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setViewingReportData(null)}
+                  className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-900 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition border border-slate-300"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Volver al Panel
+                </button>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">REPORTE CONSOLIDADO: {viewingReportData.periodLabel}</h3>
+                  <p className="text-xs text-slate-600 font-bold">Rango: {viewingReportData.startDate} al {viewingReportData.endDate} | {viewingReportData.totalRequests} Solicitud(es)</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => window.print()}
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black shadow transition"
+              >
+                <Printer className="w-4 h-4" />
+                Imprimir Reporte Consolidado
+              </button>
+            </div>
+
+            {/* DOCUMENTO CONSOLIDADO OFICIAL IMPRIMIBLE */}
+            <div className="bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 shadow-xl max-w-4xl mx-auto print:shadow-none print:border-none print:w-full print:p-0 font-sans">
+              
+              <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
+                <div className="flex items-center gap-4">
+                  <img 
+                    src="/logo-ende.png" 
+                    alt="ENDE DEORURO" 
+                    className="h-12 w-auto object-contain"
+                  />
+                  <div>
+                    <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight">ENDE DEORURO - JEFATURA DE ADQUISICIONES</h2>
+                    <p className="text-xs font-extrabold text-blue-800 uppercase tracking-wide">REPORTE CONSOLIDADO PARA COMPRA MASIVA DE HERRAMIENTAS</p>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="inline-block bg-slate-900 text-white font-mono font-bold text-xs px-3 py-1.5 rounded uppercase">
+                    {viewingReportData.periodLabel}
+                  </span>
+                  <p className="text-[10px] text-slate-500 font-bold mt-1 font-mono">FECHA EMISIÓN: {viewingReportData.endDate}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs sm:text-sm mb-6">
+                <div>
+                  <span className="font-bold text-slate-500 block uppercase text-xs">Período Consolidado:</span>
+                  <span className="font-black text-slate-900 text-sm uppercase">{viewingReportData.periodLabel}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-slate-500 block uppercase text-xs">Rango de Fechas:</span>
+                  <span className="font-black text-slate-900 text-sm">{viewingReportData.startDate} - {viewingReportData.endDate}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-slate-500 block uppercase text-xs">Solicitudes Involucradas:</span>
+                  <span className="font-black text-blue-900 text-sm font-mono">{viewingReportData.totalRequests} Lote(s) de Requerimiento</span>
+                </div>
+              </div>
+
+              <h3 className="font-black text-xs sm:text-sm uppercase tracking-wider text-slate-900 mb-3 border-l-4 border-blue-600 pl-2">
+                CANTIDADES TOTALES CONSOLIDADAS A ADQUIRIR EN LOTE
+              </h3>
+
+              <div className="overflow-x-auto mb-8">
+                <table className="w-full border-collapse text-xs sm:text-sm">
+                  <thead>
+                    <tr className="bg-slate-900 text-white font-black uppercase text-left">
+                      <th className="p-3 text-center w-12 border border-slate-900">NRO</th>
+                      <th className="p-3 w-48 border border-slate-900">TIPO DE HERRAMIENTA</th>
+                      <th className="p-3 border border-slate-900">DESCRIPCIÓN DE HERRAMIENTA</th>
+                      <th className="p-3 text-center w-36 border border-slate-900 bg-blue-950">CANTIDAD TOTAL CONSOLIDADA</th>
+                      <th className="p-3 w-44 border border-slate-900">ÁREAS SOLICITANTES</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-300 border border-slate-300">
+                    {viewingReportData.items.map((item: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-slate-50">
+                        <td className="p-3 text-center font-black font-mono border-r border-slate-300">{idx + 1}</td>
+                        <td className="p-3 font-black text-slate-900 uppercase border-r border-slate-300">{item.toolType}</td>
+                        <td className="p-3 text-slate-900 font-bold uppercase border-r border-slate-300">{item.description}</td>
+                        <td className="p-3 text-center font-black text-blue-900 text-base font-mono border-r border-slate-300 bg-blue-50/50">{item.totalQuantity}</td>
+                        <td className="p-3 text-slate-700 font-bold text-xs uppercase">{item.areas.join(', ')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="grid grid-cols-2 gap-12 pt-14 text-center text-xs sm:text-sm">
+                <div>
+                  <div className="border-b-2 border-slate-400 w-3/4 mx-auto mb-2"></div>
+                  <p className="font-black text-slate-900 uppercase">JEFATURA DE ADQUISICIONES Y COMPRAS</p>
+                  <p className="text-xs text-slate-600 font-bold uppercase">ENDE DEORURO</p>
+                </div>
+                <div>
+                  <div className="border-b-2 border-slate-400 w-3/4 mx-auto mb-2"></div>
+                  <p className="font-black text-slate-900 uppercase">GERENCIA TÉCNICA DE OPERACIONES</p>
+                  <p className="text-xs text-slate-600 font-bold uppercase">ENDE DEORURO</p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
         ) : viewingRequest ? (
           
-          /* DOCUMENTO DE IMPRESIÓN */
+          /* COMPROBANTE DE SOLICITUD INDIVIDUAL */
           <div className="space-y-4">
             
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3 print:hidden">
@@ -376,7 +513,7 @@ export default function FormularioHerramientas({
                   className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-900 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition border border-slate-300"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  Volver al Formulario
+                  Volver al Panel
                 </button>
                 <div>
                   <h3 className="text-base font-black text-slate-900">Folio #{viewingRequest.folio}</h3>
@@ -401,7 +538,7 @@ export default function FormularioHerramientas({
                   className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black shadow transition"
                 >
                   <Printer className="w-4 h-4" />
-                  Imprimir Documento
+                  Imprimir Individual
                 </button>
 
                 <button
@@ -414,7 +551,7 @@ export default function FormularioHerramientas({
               </div>
             </div>
 
-            {/* DOCUMENTO OFICIAL INSTITUCIONAL */}
+            {/* VISTA INDIVIDUAL INSTITUCIONAL */}
             <div className="bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 shadow-xl max-w-4xl mx-auto print:shadow-none print:border-none print:w-full print:p-0 font-sans">
               
               <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
@@ -425,7 +562,7 @@ export default function FormularioHerramientas({
                     className="h-12 w-auto object-contain"
                   />
                   <div>
-                    <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight">ENDE ORURO - DEPARTAMENTO TÉCNICO</h2>
+                    <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight">ENDE DEORURO - DEPARTAMENTO TÉCNICO</h2>
                     <p className="text-xs font-extrabold text-slate-700 uppercase tracking-wide">SOLICITUD DE REQUERIMIENTO MASIVO DE HERRAMIENTAS</p>
                   </div>
                 </div>
@@ -485,7 +622,7 @@ export default function FormularioHerramientas({
                 <div>
                   <div className="border-b-2 border-slate-400 w-3/4 mx-auto mb-2"></div>
                   <p className="font-black text-slate-900 uppercase">JEFATURA DE ADQUISICIONES</p>
-                  <p className="text-xs text-slate-600 font-bold uppercase">ENDE ORURO</p>
+                  <p className="text-xs text-slate-600 font-bold uppercase">ENDE DEORURO</p>
                 </div>
               </div>
 
@@ -495,10 +632,10 @@ export default function FormularioHerramientas({
 
         ) : activeTab === 'create' ? (
 
-          /* FORMULARIO BLANCO CON TEXTO GRANDE Y AUTO-MAYÚSCULAS */
+          /* FORMULARIO DE ENVÍO DE SOLICITUD */
           <form onSubmit={handleSubmitRequest} className="space-y-6">
             
-            {/* INFORMACIÓN DEL SOLICITANTE Y ÁREA */}
+            {/* INFORMACIÓN DEL SOLICITANTE Y ÁREA TÉCNICA */}
             <div className="bg-white p-5 sm:p-7 rounded-2xl border border-slate-300 shadow-sm space-y-5">
               
               <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
@@ -510,7 +647,7 @@ export default function FormularioHerramientas({
                     Datos del Supervisor Solicitante
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-600 font-bold">
-                    Escriba su nombre y seleccione su Área Técnica
+                    Escriba su nombre y seleccione su Área Técnica (incluyendo EGPP)
                   </p>
                 </div>
               </div>
@@ -532,10 +669,10 @@ export default function FormularioHerramientas({
                   />
                 </div>
 
-                {/* Selección de las 5 Áreas Técnicas */}
+                {/* Selección de Áreas Técnicas (Incluyendo EGPP) */}
                 <div className="space-y-2">
                   <label className="block text-xs sm:text-sm font-black text-slate-900 uppercase">
-                    Área Técnica de ENDE <span className="text-red-600 text-base">*</span>
+                    Área Técnica de ENDE DEORURO <span className="text-red-600 text-base">*</span>
                   </label>
                   <select
                     value={selectedArea}
@@ -568,7 +705,7 @@ export default function FormularioHerramientas({
 
             </div>
 
-            {/* LISTADO DE HERRAMIENTAS (TEXTO GRANDE Y BOTÓN ELIMINAR ESCRITO) */}
+            {/* LISTADO DE HERRAMIENTAS */}
             <div className="space-y-4">
               
               <div className="flex justify-between items-center px-1">
@@ -591,7 +728,7 @@ export default function FormularioHerramientas({
                     className="bg-white p-5 sm:p-6 rounded-2xl border-2 border-slate-300 shadow-md space-y-4 relative hover:border-blue-500 transition"
                   >
                     
-                    {/* Encabezado Fila + Botón Eliminar Escrito e Intuitivo */}
+                    {/* Encabezado Fila + Botón Eliminar Escrito */}
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-slate-200 pb-3">
                       <div className="flex items-center gap-3">
                         <span className="w-8 h-8 rounded-full bg-blue-700 text-white font-mono font-black text-sm flex items-center justify-center shadow">
@@ -602,7 +739,6 @@ export default function FormularioHerramientas({
                         </span>
                       </div>
 
-                      {/* Botón de Eliminar ESCRITO CLARAMENTE para personas mayores */}
                       <button
                         type="button"
                         onClick={() => handleRemoveRow(index)}
@@ -614,10 +750,9 @@ export default function FormularioHerramientas({
                       </button>
                     </div>
 
-                    {/* Campos de la Herramienta (Tipo de Herramienta LIBRE + Cantidad + Descripción) */}
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
                       
-                      {/* Tipo de Herramienta LIBRE (Input de texto en MAYÚSCULAS) */}
+                      {/* Tipo de Herramienta LIBRE */}
                       <div className="sm:col-span-6 space-y-1.5">
                         <label className="block text-xs sm:text-sm font-black text-slate-900 uppercase">
                           Tipo de Herramienta <span className="text-slate-500 font-bold">(Escriba libremente)</span>
@@ -632,7 +767,7 @@ export default function FormularioHerramientas({
                         />
                       </div>
 
-                      {/* Cantidad con Botones Táctiles Grandes */}
+                      {/* Cantidad */}
                       <div className="sm:col-span-6 space-y-1.5">
                         <label className="block text-xs sm:text-sm font-black text-slate-900 uppercase">
                           Cantidad Solicitada
@@ -672,7 +807,7 @@ export default function FormularioHerramientas({
                         <input
                           type="text"
                           required
-                          placeholder="EJ. ALICATE UNIVERSAL DIELÉCTRICO 1000V DE 8 PULGADAS STANLEY..."
+                          placeholder="EJ. ALICATE UNIVERSAL DIELÉCTRICO 1000V DE 8 PULGADAS..."
                           value={row.description}
                           onChange={(e) => handleRowChange(index, 'description', e.target.value)}
                           className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm sm:text-base font-black uppercase rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-600 transition shadow-inner"
@@ -724,26 +859,25 @@ export default function FormularioHerramientas({
 
         ) : (
 
-          /* HISTORIAL Y CONTROL (PANEL ADMINISTRACIÓN) */
-          <div className="bg-white p-5 sm:p-7 rounded-2xl border border-slate-300 shadow-sm space-y-4">
+          /* PANEL DE CONTROL DE REQUERIMIENTOS Y OPCIONES DE IMPRESIÓN (INDIVIDUAL, POR DÍA, SEMANAL, MENSUAL) */
+          <div className="bg-white p-5 sm:p-7 rounded-2xl border border-slate-300 shadow-sm space-y-6">
             
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 pb-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-4">
               <div>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 uppercase flex items-center gap-2">
                   <FileText className="w-6 h-6 text-blue-700" />
-                  Control de Requerimientos Enviados
+                  Control de Requerimientos y Reportes Consolidados
                 </h3>
                 <p className="text-xs sm:text-sm font-bold text-slate-600">
-                  Solicitudes enviadas por supervisores de área técnica
+                  Visualice solicitudes individuales o genere reportes agrupados por período
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Filter className="w-4 h-4 text-slate-500" />
+              <div className="flex items-center gap-2 w-full md:w-auto">
                 <select
                   value={areaFilter}
                   onChange={(e) => setAreaFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-300 text-slate-900 text-xs sm:text-sm font-black rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-600 w-full sm:w-auto uppercase"
+                  className="bg-slate-50 border-2 border-slate-300 text-slate-900 text-xs sm:text-sm font-black rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-600 w-full md:w-auto uppercase"
                 >
                   <option value="TODAS">TODAS LAS ÁREAS TÉCNICAS</option>
                   {TECHNICAL_AREAS.map((a) => (
@@ -762,6 +896,40 @@ export default function FormularioHerramientas({
               </div>
             </div>
 
+            {/* BOTONES DESTACADOS PARA IMPRESIÓN CONSOLIDADA (INDIVIDUAL, DÍA, SEMANAL, MENSUAL) */}
+            <div className="bg-blue-50/70 p-4 rounded-2xl border border-blue-200 space-y-2">
+              <span className="text-xs font-black text-blue-900 uppercase tracking-wider block">
+                🖨️ OPCIONES DE IMPRESIÓN Y CONSOLIDACIÓN DE COMPRAS
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <button
+                  onClick={() => handleGenerateConsolidatedReport('day')}
+                  className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm py-3 px-4 rounded-xl shadow transition border border-blue-500 uppercase"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Imprimir Consolidado HOY (Día)</span>
+                </button>
+
+                <button
+                  onClick={() => handleGenerateConsolidatedReport('week')}
+                  className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm py-3 px-4 rounded-xl shadow transition border border-indigo-500 uppercase"
+                >
+                  <Layers className="w-4 h-4" />
+                  <span>Imprimir Consolidado SEMANAL</span>
+                </button>
+
+                <button
+                  onClick={() => handleGenerateConsolidatedReport('month')}
+                  className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm py-3 px-4 rounded-xl shadow transition uppercase"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Imprimir Consolidado MENSUAL</span>
+                </button>
+              </div>
+            </div>
+
+            {/* TABLA DE SOLICITUDES REGISTRADAS (IMPRESIÓN INDIVIDUAL Y ACCIONES) */}
             {loadingHistory ? (
               <div className="flex flex-col items-center justify-center py-12 gap-2">
                 <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
@@ -782,7 +950,7 @@ export default function FormularioHerramientas({
                       <th className="p-3">Área Técnica</th>
                       <th className="p-3 text-center">Herramientas</th>
                       <th className="p-3 text-center">Estado</th>
-                      <th className="p-3 text-center">Acciones</th>
+                      <th className="p-3 text-center">Acciones (Individual)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 font-bold">
@@ -822,7 +990,7 @@ export default function FormularioHerramientas({
                             className="flex items-center gap-1 bg-slate-900 hover:bg-slate-800 text-white font-black px-3 py-1.5 rounded-lg transition text-xs"
                           >
                             <Printer className="w-3.5 h-3.5" />
-                            Ver / Imprimir
+                            Imprimir Individual
                           </button>
                           <button
                             onClick={() => handleDeleteRequest(req.id)}
@@ -847,7 +1015,7 @@ export default function FormularioHerramientas({
 
       {/* FOOTER */}
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs sm:text-sm text-slate-600 font-black print:hidden mt-auto">
-        <p>ENDE ORURO - Sistema de Requerimiento de Herramientas © {new Date().getFullYear()}</p>
+        <p>ENDE DEORURO - Sistema de Requerimiento de Herramientas © {new Date().getFullYear()}</p>
       </footer>
 
     </div>

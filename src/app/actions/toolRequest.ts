@@ -223,3 +223,86 @@ export async function deleteToolRequest(requestId: string) {
     return { success: false, error: err?.message };
   }
 }
+
+/**
+  Obtener reporte consolidado agrupado de herramientas por período (Día, Semanal, Mensual)
+ */
+export async function getConsolidatedToolReport(period: 'day' | 'week' | 'month', filterArea?: string) {
+  try {
+    const now = new Date();
+    let startDate = new Date();
+
+    if (period === 'day') {
+      startDate.setHours(0, 0, 0, 0);
+    } else if (period === 'week') {
+      startDate.setDate(now.getDate() - 7);
+    } else if (period === 'month') {
+      startDate.setDate(now.getDate() - 30);
+    }
+
+    let query = supabase
+      .from('tool_requests')
+      .select('*, tool_request_items(*)')
+      .gte('created_at', startDate.toISOString())
+      .order('created_at', { ascending: false });
+
+    if (filterArea && filterArea !== 'TODAS') {
+      query = query.eq('area', filterArea);
+    }
+
+    const { data: requests, error } = await query;
+
+    if (error) {
+      console.warn('Error al obtener reporte consolidado:', error);
+      return { success: false, error: error.message, items: [], totalRequests: 0 };
+    }
+
+    // Agrupar ítems por descripción
+    const mapItems = new Map<string, { toolType: string; description: string; totalQuantity: number; requestCount: number; areas: Set<string> }>();
+
+    (requests || []).forEach((req: any) => {
+      const reqArea = req.area;
+      (req.tool_request_items || []).forEach((item: any) => {
+        const descKey = (item.description || '').trim().toUpperCase();
+        if (!descKey) return;
+
+        if (!mapItems.has(descKey)) {
+          mapItems.set(descKey, {
+            toolType: (item.tool_type || 'HERRAMIENTA').trim().toUpperCase(),
+            description: descKey,
+            totalQuantity: 0,
+            requestCount: 0,
+            areas: new Set<string>()
+          });
+        }
+
+        const entry = mapItems.get(descKey)!;
+        entry.totalQuantity += Number(item.quantity) || 1;
+        entry.requestCount += 1;
+        entry.areas.add(item.area || reqArea);
+      });
+    });
+
+    const consolidatedItems = Array.from(mapItems.values()).map(entry => ({
+      toolType: entry.toolType,
+      description: entry.description,
+      totalQuantity: entry.totalQuantity,
+      requestCount: entry.requestCount,
+      areas: Array.from(entry.areas)
+    })).sort((a, b) => a.description.localeCompare(b.description));
+
+    return {
+      success: true,
+      periodLabel: period === 'day' ? 'HOY (DÍA)' : period === 'week' ? 'ÚLTIMOS 7 DÍAS (SEMANAL)' : 'ÚLTIMOS 30 DÍAS (MENSUAL)',
+      startDate: startDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      endDate: now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      totalRequests: (requests || []).length,
+      items: consolidatedItems
+    };
+
+  } catch (err: any) {
+    console.error('Error in getConsolidatedToolReport:', err);
+    return { success: false, error: err?.message || 'Error al generar el reporte consolidado.', items: [], totalRequests: 0 };
+  }
+}
+

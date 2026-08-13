@@ -44,8 +44,17 @@ export const TECHNICAL_AREAS = [
   'MANTENIMIENTO DE REDES',
   'LINEAS DE TRANSMISION',
   'INGENIERIA Y DESARROLLO',
-  'SISTEMA RURAL'
+  'SISTEMA RURAL',
+  'EGPP'
 ] as const;
+
+export interface ConsolidatedReportItem {
+  toolType: string;
+  description: string;
+  totalQuantity: number;
+  requestCount: number;
+  areas: string[];
+}
 
 export const TOOL_TYPES_PRESETS = [
   'Herramienta Manual',
