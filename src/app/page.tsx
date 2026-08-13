@@ -231,6 +231,19 @@ export default function Home() {
             </button>
           </form>
 
+          <div className="pt-3 border-t border-slate-800 space-y-2">
+            <Link
+              href="/formulario"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-lg transition border border-blue-400/30"
+            >
+              <Wrench className="w-4 h-4 text-amber-300" />
+              <span>Formulario Requerimiento Herramientas</span>
+            </Link>
+            <p className="text-[10px] text-slate-500 font-medium">
+              Acceso directo para supervisores y técnicos
+            </p>
+          </div>
+
           <p className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">
             Seguridad e Higiene Industrial v1.0
           </p>
