@@ -745,7 +745,7 @@ export default function FormularioHerramientas({
                           #{index + 1}
                         </span>
                         <span className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-wider">
-                          Herramienta #{index + 1}
+                          Herramienta o Equipo de Protección Personal #{index + 1}
                         </span>
                       </div>
 
@@ -753,10 +753,10 @@ export default function FormularioHerramientas({
                         type="button"
                         onClick={() => handleRemoveRow(index)}
                         className="bg-red-50 hover:bg-red-100 text-red-700 border-2 border-red-200 hover:border-red-300 font-black text-xs sm:text-sm px-4 py-2 rounded-xl transition flex items-center justify-center gap-2 self-end sm:self-auto shadow-sm"
-                        title="Quitar esta herramienta de la lista"
+                        title="Quitar este ítem de la lista"
                       >
                         <Trash2 className="w-4 h-4 text-red-600" />
-                        <span>BORRAR ESTA HERRAMIENTA</span>
+                        <span>BORRAR ESTE ÍTEM</span>
                       </button>
                     </div>
 
@@ -765,12 +765,12 @@ export default function FormularioHerramientas({
                       {/* Tipo de Herramienta LIBRE */}
                       <div className="sm:col-span-6 space-y-1.5">
                         <label className="block text-xs sm:text-sm font-black text-slate-900 uppercase">
-                          Tipo de Herramienta <span className="text-slate-500 font-bold">(Escriba libremente)</span>
+                          Tipo de Herramienta o Equipo de Protección Personal <span className="text-slate-500 font-bold">(Escriba libremente)</span>
                         </label>
                         <input
                           type="text"
                           required
-                          placeholder="EJ. HERRAMIENTA MANUAL, ELÉCTRICA..."
+                          placeholder="EJ. HERRAMIENTA MANUAL, ELÉCTRICA, EPP..."
                           value={row.toolType}
                           onChange={(e) => handleRowChange(index, 'toolType', e.target.value)}
                           className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm sm:text-base font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600 shadow-inner"
@@ -830,7 +830,7 @@ export default function FormularioHerramientas({
                 ))}
               </div>
 
-              {/* BOTÓN RESALTADO DESTACADO "+ AGREGAR OTRA HERRAMIENTA" */}
+              {/* BOTÓN RESALTADO DESTACADO "+ AGREGAR OTRA HERRAMIENTA O EPP" */}
               <div className="pt-3">
                 <button
                   type="button"
@@ -838,7 +838,7 @@ export default function FormularioHerramientas({
                   className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-black text-sm sm:text-base py-4.5 px-6 rounded-2xl shadow-xl hover:shadow-blue-500/30 transition border-2 border-blue-400 flex items-center justify-center gap-3 tracking-wider uppercase"
                 >
                   <Plus className="w-6 h-6 text-amber-300 stroke-[3]" />
-                  <span>+ AGREGAR OTRA HERRAMIENTA AL PEDIDO</span>
+                  <span>+ AGREGAR OTRA HERRAMIENTA O EPP AL PEDIDO</span>
                 </button>
               </div>
 
@@ -852,12 +852,12 @@ export default function FormularioHerramientas({
                   {isSubmitting ? (
                     <>
                       <RefreshCw className="w-6 h-6 animate-spin text-blue-400" />
-                      <span>ENVIANDO SOLICITUD...</span>
+                      <span>ENVIANDO DATOS...</span>
                     </>
                   ) : (
                     <>
                       <Save className="w-6 h-6 text-emerald-400" />
-                      <span>ENVIAR REQUERIMIENTO MASIVO</span>
+                      <span>SOLO ENVIAR DATOS</span>
                     </>
                   )}
                 </button>
