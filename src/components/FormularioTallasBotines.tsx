@@ -230,24 +230,26 @@ export default function FormularioTallasBotines({
             </div>
           </div>
 
-          {/* Selector de Pestañas */}
-          <div className="flex p-1 bg-slate-800 rounded-xl border border-slate-700 w-full sm:w-auto">
-            <button
-              onClick={() => setActiveTab('create')}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-black transition ${activeTab === 'create' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:text-white'}`}
-            >
-              <Footprints className="w-4 h-4" />
-              Nuevo Registro
-            </button>
+          {/* Selector de Pestañas (Solo si showTabs es true) */}
+          {showTabs && (
+            <div className="flex p-1 bg-slate-800 rounded-xl border border-slate-700 w-full sm:w-auto">
+              <button
+                onClick={() => setActiveTab('create')}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-black transition ${activeTab === 'create' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:text-white'}`}
+              >
+                <Footprints className="w-4 h-4" />
+                Nuevo Registro
+              </button>
 
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-black transition ${activeTab === 'history' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:text-white'}`}
-            >
-              <FileText className="w-4 h-4" />
-              Historial y Reporte
-            </button>
-          </div>
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-black transition ${activeTab === 'history' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:text-white'}`}
+              >
+                <FileText className="w-4 h-4" />
+                Historial y Reporte
+              </button>
+            </div>
+          )}
 
         </div>
       </header>
