@@ -184,3 +184,27 @@ CREATE POLICY "Permitir todo a todos en tool_requests" ON tool_requests FOR ALL 
 DROP POLICY IF EXISTS "Permitir todo a todos en tool_request_items" ON tool_request_items;
 CREATE POLICY "Permitir todo a todos en tool_request_items" ON tool_request_items FOR ALL USING (true) WITH CHECK (true);
 
+-- 15. Crear Secuencia de Folio para Registro de Tallas de Botines
+CREATE SEQUENCE IF NOT EXISTS boot_size_folio_seq START WITH 1001;
+
+-- 16. Tabla de Registros de Tallas de Botines (boot_size_requests)
+CREATE TABLE IF NOT EXISTS boot_size_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    folio INTEGER DEFAULT nextval('boot_size_folio_seq') UNIQUE,
+    registration_code TEXT NOT NULL UNIQUE,
+    full_name TEXT NOT NULL,
+    area TEXT NOT NULL, -- 'ÁREA ADMINISTRATIVA' o 'ÁREA TÉCNICA'
+    position TEXT NOT NULL, -- Cargo / Puesto
+    gender TEXT NOT NULL, -- 'MASCULINO' o 'FEMENINO'
+    boot_size INTEGER NOT NULL CHECK (boot_size >= 35 AND boot_size <= 45),
+    status TEXT DEFAULT 'Registrado',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 17. Habilitar RLS y Políticas de Acceso para Tallas de Botines
+ALTER TABLE boot_size_requests ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Permitir todo a todos en boot_size_requests" ON boot_size_requests;
+CREATE POLICY "Permitir todo a todos en boot_size_requests" ON boot_size_requests FOR ALL USING (true) WITH CHECK (true);
+
+

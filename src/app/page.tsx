@@ -4,12 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ShieldCheck, ClipboardList, Loader2, 
-  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench
+  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench, Footprints
 } from 'lucide-react';
 import { getTransactionDetails, getRecentTransactions, deleteTransaction } from './actions/transaction';
 import TransactionForm from '@/components/TransactionForm';
 import PrintReceipt from '@/components/PrintReceipt';
 import FormularioHerramientas from '@/components/FormularioHerramientas';
+import FormularioTallasBotines from '@/components/FormularioTallasBotines';
 import Swal from 'sweetalert2';
 
 export default function Home() {
@@ -25,7 +26,7 @@ export default function Home() {
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Estados del Dashboard
-  const [activeTab, setActiveTab] = useState<'new' | 'history' | 'toolRequests'>('new');
+  const [activeTab, setActiveTab] = useState<'new' | 'history' | 'toolRequests' | 'bootSizeRequests'>('new');
   const [historyTransactions, setHistoryTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -240,6 +241,13 @@ export default function Home() {
               <Wrench className="w-4 h-4 text-amber-300" />
               <span>Formulario Requerimiento Herramientas</span>
             </Link>
+            <Link
+              href="/tallas"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-500 hover:to-blue-600 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-lg transition border border-indigo-400/30"
+            >
+              <Footprints className="w-4 h-4 text-emerald-400" />
+              <span>Formulario Tallas de Botines</span>
+            </Link>
             <p className="text-[10px] text-slate-500 font-medium">
               Acceso directo para supervisores y técnicos
             </p>
@@ -277,7 +285,16 @@ export default function Home() {
               title="Abrir Formulario de Requerimiento de Herramientas para Técnicos"
             >
               <Wrench className="w-4 h-4 text-amber-300" />
-              <span>Formulario Requerimiento Herramientas</span>
+              <span>Requerimiento Herramientas</span>
+            </Link>
+
+            <Link
+              href="/tallas"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-500 hover:to-blue-600 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-lg transition border border-indigo-400/30"
+              title="Abrir Formulario de Registro de Tallas de Botines"
+            >
+              <Footprints className="w-4 h-4 text-emerald-400" />
+              <span>Tallas Botines</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-1.5 bg-slate-800 px-3 py-2 rounded-xl border border-slate-700 text-slate-300">
@@ -352,6 +369,13 @@ export default function Home() {
                 >
                   <Wrench className="w-4 h-4 text-blue-600" />
                   Requerimientos Herramientas
+                </button>
+                <button
+                  onClick={() => setActiveTab('bootSizeRequests')}
+                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'bootSizeRequests' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  <Footprints className="w-4 h-4 text-blue-600" />
+                  Tallas de Botines
                 </button>
               </div>
             </div>
@@ -456,9 +480,12 @@ export default function Home() {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : activeTab === 'toolRequests' ? (
               /* CONTENIDO DE PESTAÑA: REQUERIMIENTOS DE HERRAMIENTAS (HISTORIAL Y CONTROL) */
               <FormularioHerramientas showTabs={false} initialTab="history" />
+            ) : (
+              /* CONTENIDO DE PESTAÑA: REGISTRO DE TALLAS DE BOTINES (HISTORIAL Y CONSOLIDADO) */
+              <FormularioTallasBotines showTabs={false} initialTab="history" />
             )}
 
           </div>
