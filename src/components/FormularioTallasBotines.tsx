@@ -426,15 +426,39 @@ export default function FormularioTallasBotines({
 
         ) : (
 
-          /* CONTROL HISTORIAL Y CONSOLIDADO PARA ALMACÉN */
-          <div className="space-y-6">
+          /* CONTROL HISTORIAL Y CONSOLIDADO PARA ALMACÉN (CON CLASE print-area) */
+          <div className="print-area space-y-6 font-sans">
             
+            {/* ENCABEZADO INSTITUCIONAL DE IMPRESIÓN (SOLO VISIBLE EN IMPRESIÓN) */}
+            <div className="hidden print:flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
+              <div className="flex items-center gap-4">
+                <img 
+                  src="/logo-ende.png" 
+                  alt="ENDE DEORURO" 
+                  className="h-12 w-auto object-contain"
+                />
+                <div>
+                  <h2 className="text-base font-black uppercase text-slate-900 tracking-tight">ENDE DEORURO - DEPARTAMENTO DE SEGURIDAD INDUSTRIAL</h2>
+                  <p className="text-xs font-extrabold text-blue-900 uppercase tracking-wide">REPORTE CONSOLIDADO Y PEDIDO DE BOTINES DE SEGURIDAD</p>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <span className="inline-block bg-slate-900 text-white font-mono font-bold text-xs px-3 py-1 rounded uppercase">
+                  {areaFilter === 'TODAS' ? 'TODAS LAS ÁREAS' : areaFilter}
+                </span>
+                <p className="text-[10px] text-slate-600 font-bold mt-1 font-mono">
+                  FECHA EMISIÓN: {new Date().toLocaleDateString('es-BO')}
+                </p>
+              </div>
+            </div>
+
             {/* RESUMEN CONSOLIDADO PARA COMPRAS / ALMACÉN */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-300 shadow-sm space-y-4">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4">
+            <div className="bg-white p-6 rounded-3xl border border-slate-300 shadow-sm space-y-4 print:p-0 print:border-none print:shadow-none">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4 print:pb-2">
                 <div>
                   <h3 className="text-base sm:text-lg font-black text-slate-900 uppercase flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-blue-700" />
+                    <Layers className="w-5 h-5 text-blue-700 print:hidden" />
                     Consolidado de Tallas de Botines Solicitadas
                   </h3>
                   <p className="text-xs sm:text-sm font-bold text-slate-600">
@@ -442,11 +466,11 @@ export default function FormularioTallasBotines({
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3 w-full md:w-auto">
+                <div className="flex items-center gap-3 w-full md:w-auto print:hidden">
                   <select
                     value={areaFilter}
                     onChange={(e) => setAreaFilter(e.target.value)}
-                    className="bg-slate-50 border-2 border-slate-300 text-slate-900 text-xs sm:text-sm font-black rounded-xl px-4 py-2.5 uppercase"
+                    className="bg-slate-50 border-2 border-slate-300 text-slate-900 text-xs sm:text-sm font-black rounded-xl px-4 py-2.5 uppercase print:hidden"
                   >
                     <option value="TODAS">TODAS LAS ÁREAS</option>
                     {BOOT_AREAS.map((a) => (
@@ -466,32 +490,32 @@ export default function FormularioTallasBotines({
 
               {/* MATRIZ CONSOLIDADA DE TALLAS */}
               {loadingConsolidated ? (
-                <div className="text-center py-6 text-xs text-slate-500 font-bold">Cargando consolidado...</div>
+                <div className="text-center py-6 text-xs text-slate-500 font-bold print:hidden">Cargando consolidado...</div>
               ) : consolidatedData ? (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 print:grid-cols-6 gap-3">
                     {consolidatedData.summary?.map((item: any) => (
                       <div 
                         key={item.size} 
-                        className={`p-3.5 rounded-2xl border-2 text-center transition ${
-                          item.total > 0 ? 'bg-blue-50/80 border-blue-300' : 'bg-slate-50 border-slate-200 opacity-60'
+                        className={`p-3.5 rounded-2xl border-2 text-center transition print:p-2 print:rounded-xl print:border-slate-400 ${
+                          item.total > 0 ? 'bg-blue-50/80 border-blue-300 print:bg-slate-100' : 'bg-slate-50 border-slate-200 opacity-60 print:opacity-100'
                         }`}
                       >
-                        <span className="text-xs font-black text-slate-500 uppercase block">TALLA</span>
-                        <span className="text-xl sm:text-2xl font-mono font-black text-slate-900">{item.size}</span>
-                        <div className="mt-1 pt-1 border-t border-slate-200 text-[11px] font-bold text-slate-700 space-y-0.5">
-                          <p className="text-blue-900">Total: <strong className="font-mono">{item.total} pares</strong></p>
+                        <span className="text-xs font-black text-slate-500 uppercase block print:text-[10px]">TALLA</span>
+                        <span className="text-xl sm:text-2xl font-mono font-black text-slate-900 print:text-lg">{item.size}</span>
+                        <div className="mt-1 pt-1 border-t border-slate-200 text-[11px] font-bold text-slate-700 space-y-0.5 print:text-[10px]">
+                          <p className="text-blue-900 print:text-slate-900">Total: <strong className="font-mono">{item.total} pares</strong></p>
                           {item.total > 0 && (
-                            <p className="text-[10px] text-slate-500">M: {item.masculino} | F: {item.femenino}</p>
+                            <p className="text-[10px] text-slate-500 print:text-slate-700">M: {item.masculino} | F: {item.femenino}</p>
                           )}
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="bg-slate-900 text-white p-4 rounded-2xl flex justify-between items-center font-black text-sm uppercase">
+                  <div className="bg-slate-900 text-white p-4 rounded-2xl flex justify-between items-center font-black text-sm uppercase print:bg-slate-100 print:text-slate-900 print:border-2 print:border-slate-900 print:p-3">
                     <span>TOTAL GENERAL DE BOTINES REQUERIDOS:</span>
-                    <span className="text-xl font-mono text-emerald-400">{consolidatedData.totalPairs} PARES</span>
+                    <span className="text-xl font-mono text-emerald-400 print:text-slate-900 print:font-black">{consolidatedData.totalPairs} PARES</span>
                   </div>
                 </div>
               ) : null}
@@ -499,18 +523,18 @@ export default function FormularioTallasBotines({
             </div>
 
             {/* TABLA HISTORIAL DE REGISTROS */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-300 shadow-sm space-y-4">
+            <div className="bg-white p-6 rounded-3xl border border-slate-300 shadow-sm space-y-4 print:p-0 print:border-none print:shadow-none print:pt-4">
               
-              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 print:pb-2">
                 <h3 className="text-base font-black text-slate-900 uppercase">
                   Listado Individual de Trabajadores Registrados
                 </h3>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 print:hidden">
                   <select
                     value={genderFilter}
                     onChange={(e) => setGenderFilter(e.target.value)}
-                    className="bg-slate-50 border border-slate-300 text-slate-900 text-xs font-black rounded-xl px-3 py-2 uppercase"
+                    className="bg-slate-50 border border-slate-300 text-slate-900 text-xs font-black rounded-xl px-3 py-2 uppercase print:hidden"
                   >
                     <option value="TODOS">TODOS LOS GÉNEROS</option>
                     <option value="MASCULINO">MASCULINO</option>
@@ -520,7 +544,7 @@ export default function FormularioTallasBotines({
                   <button
                     onClick={() => { fetchHistory(); fetchConsolidated(); }}
                     disabled={loadingHistory}
-                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl transition"
+                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl transition print:hidden"
                     title="Actualizar Lista"
                   >
                     <RefreshCw className={`w-4 h-4 ${loadingHistory ? 'animate-spin' : ''}`} />
@@ -529,7 +553,7 @@ export default function FormularioTallasBotines({
               </div>
 
               {loadingHistory ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-2">
+                <div className="flex flex-col items-center justify-center py-12 gap-2 print:hidden">
                   <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
                   <p className="text-xs text-slate-600 font-bold">Cargando registros...</p>
                 </div>
@@ -538,30 +562,30 @@ export default function FormularioTallasBotines({
                   No hay registros de tallas de botines almacenados para los filtros seleccionados.
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-2xl border border-slate-300">
+                <div className="overflow-x-auto rounded-2xl border border-slate-300 print:border-slate-400 print:rounded-none">
                   <table className="w-full border-collapse text-xs sm:text-sm text-left">
                     <thead>
-                      <tr className="bg-slate-900 text-white font-black uppercase">
-                        <th className="p-3.5 text-center">N° Folio</th>
-                        <th className="p-3.5">Trabajador</th>
-                        <th className="p-3.5">Área / Depto.</th>
-                        <th className="p-3.5">Cargo / Puesto</th>
-                        <th className="p-3.5 text-center">Género</th>
-                        <th className="p-3.5 text-center">Talla Botín</th>
-                        <th className="p-3.5 text-center">Acciones</th>
+                      <tr className="bg-slate-900 text-white font-black uppercase print:bg-slate-200 print:text-slate-900">
+                        <th className="p-3.5 text-center print:p-2 print:border">N° Folio</th>
+                        <th className="p-3.5 print:p-2 print:border">Trabajador</th>
+                        <th className="p-3.5 print:p-2 print:border">Área / Depto.</th>
+                        <th className="p-3.5 print:p-2 print:border">Cargo / Puesto</th>
+                        <th className="p-3.5 text-center print:p-2 print:border">Género</th>
+                        <th className="p-3.5 text-center print:p-2 print:border">Talla Botín</th>
+                        <th className="p-3.5 text-center print:hidden">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 font-bold">
                       {historyList.map((req) => (
                         <tr key={req.id} className="hover:bg-slate-50 transition">
-                          <td className="p-3.5 text-center font-black font-mono text-blue-700">
+                          <td className="p-3.5 text-center font-black font-mono text-blue-700 print:p-2 print:border print:text-slate-900">
                             #{req.folio}
                           </td>
-                          <td className="p-3.5 font-black text-slate-900 uppercase">
+                          <td className="p-3.5 font-black text-slate-900 uppercase print:p-2 print:border">
                             {req.full_name}
                           </td>
-                          <td className="p-3.5 font-black text-slate-800 uppercase text-xs">
-                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-black border ${
+                          <td className="p-3.5 font-black text-slate-800 uppercase text-xs print:p-2 print:border">
+                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-black border print:border-none print:p-0 print:font-bold ${
                               req.area.includes('ADMINISTRATIVA') 
                                 ? 'bg-amber-50 text-amber-900 border-amber-300' 
                                 : 'bg-blue-50 text-blue-900 border-blue-300'
@@ -569,20 +593,20 @@ export default function FormularioTallasBotines({
                               {req.area}
                             </span>
                           </td>
-                          <td className="p-3.5 font-bold text-slate-700 uppercase">
+                          <td className="p-3.5 font-bold text-slate-700 uppercase print:p-2 print:border">
                             {req.position}
                           </td>
-                          <td className="p-3.5 text-center font-black text-xs uppercase">
-                            <span className={`px-2.5 py-0.5 rounded-full ${
+                          <td className="p-3.5 text-center font-black text-xs uppercase print:p-2 print:border">
+                            <span className={`px-2.5 py-0.5 rounded-full print:p-0 ${
                               req.gender === 'MASCULINO' ? 'bg-blue-100 text-blue-900' : 'bg-pink-100 text-pink-900'
                             }`}>
                               {req.gender}
                             </span>
                           </td>
-                          <td className="p-3.5 text-center font-mono font-black text-base text-blue-700">
+                          <td className="p-3.5 text-center font-mono font-black text-base text-blue-700 print:p-2 print:border print:text-slate-900">
                             {req.boot_size}
                           </td>
-                          <td className="p-3.5 text-center">
+                          <td className="p-3.5 text-center print:hidden">
                             <button
                               onClick={() => handleDelete(req.id)}
                               className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition border border-red-200"
