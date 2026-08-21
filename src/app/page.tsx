@@ -482,10 +482,10 @@ export default function Home() {
               </div>
             ) : activeTab === 'toolRequests' ? (
               /* CONTENIDO DE PESTAÑA: REQUERIMIENTOS DE HERRAMIENTAS (HISTORIAL Y CONTROL) */
-              <FormularioHerramientas showTabs={true} initialTab="history" />
+              <FormularioHerramientas showTabs={false} initialTab="history" />
             ) : (
               /* CONTENIDO DE PESTAÑA: REGISTRO DE TALLAS DE BOTINES (HISTORIAL Y CONSOLIDADO) */
-              <FormularioTallasBotines showTabs={true} initialTab="history" />
+              <FormularioTallasBotines showTabs={false} initialTab="history" />
             )}
 
           </div>
