@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ShieldCheck, ClipboardList, Loader2, 
-  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench, Footprints
+  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench, Footprints, FileText
 } from 'lucide-react';
 import { getTransactionDetails, getRecentTransactions, deleteTransaction } from './actions/transaction';
 import TransactionForm from '@/components/TransactionForm';
 import PrintReceipt from '@/components/PrintReceipt';
 import FormularioHerramientas from '@/components/FormularioHerramientas';
 import FormularioTallasBotines from '@/components/FormularioTallasBotines';
+import GeneradorNotaOficial from '@/components/GeneradorNotaOficial';
 import Swal from 'sweetalert2';
 
 export default function Home() {
@@ -26,7 +27,7 @@ export default function Home() {
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Estados del Dashboard
-  const [activeTab, setActiveTab] = useState<'new' | 'history' | 'toolRequests' | 'bootSizeRequests'>('new');
+  const [activeTab, setActiveTab] = useState<'new' | 'history' | 'toolRequests' | 'bootSizeRequests' | 'officialNote'>('new');
   const [historyTransactions, setHistoryTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -248,6 +249,13 @@ export default function Home() {
               <Footprints className="w-4 h-4 text-emerald-400" />
               <span>Formulario Tallas de Botines</span>
             </Link>
+            <Link
+              href="/nota-oficial"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-lg transition border border-slate-700"
+            >
+              <FileText className="w-4 h-4 text-amber-300" />
+              <span>Carpeta 5: Nota Oficial de Compra</span>
+            </Link>
             <p className="text-[10px] text-slate-500 font-medium">
               Acceso directo para supervisores y técnicos
             </p>
@@ -295,6 +303,15 @@ export default function Home() {
             >
               <Footprints className="w-4 h-4 text-emerald-400" />
               <span>Tallas Botines</span>
+            </Link>
+
+            <Link
+              href="/nota-oficial"
+              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-lg transition border border-slate-700"
+              title="Generador de Notas Oficiales de Compra (Carpeta 5)"
+            >
+              <FileText className="w-4 h-4 text-amber-300" />
+              <span>Carpeta 5 (Nota Oficial)</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-1.5 bg-slate-800 px-3 py-2 rounded-xl border border-slate-700 text-slate-300">
@@ -376,6 +393,13 @@ export default function Home() {
                 >
                   <Footprints className="w-4 h-4 text-blue-600" />
                   Tallas de Botines
+                </button>
+                <button
+                  onClick={() => setActiveTab('officialNote')}
+                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'officialNote' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  <FileText className="w-4 h-4 text-blue-600" />
+                  Carpeta 5 (Nota Oficial)
                 </button>
               </div>
             </div>
@@ -483,9 +507,12 @@ export default function Home() {
             ) : activeTab === 'toolRequests' ? (
               /* CONTENIDO DE PESTAÑA: REQUERIMIENTOS DE HERRAMIENTAS (HISTORIAL Y CONTROL) */
               <FormularioHerramientas showTabs={false} initialTab="history" />
-            ) : (
+            ) : activeTab === 'bootSizeRequests' ? (
               /* CONTENIDO DE PESTAÑA: REGISTRO DE TALLAS DE BOTINES (HISTORIAL Y CONSOLIDADO) */
               <FormularioTallasBotines showTabs={false} initialTab="history" />
+            ) : (
+              /* CONTENIDO DE PESTAÑA: CARPETA 5 NOTA OFICIAL */
+              <GeneradorNotaOficial showTabs={false} />
             )}
 
           </div>
