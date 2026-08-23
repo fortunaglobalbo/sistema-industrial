@@ -207,32 +207,6 @@ ALTER TABLE boot_size_requests ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Permitir todo a todos en boot_size_requests" ON boot_size_requests;
 CREATE POLICY "Permitir todo a todos en boot_size_requests" ON boot_size_requests FOR ALL USING (true) WITH CHECK (true);
 
--- 18. Crear Secuencia de Número de Nota Oficial / Carpeta de Compra
-CREATE SEQUENCE IF NOT EXISTS official_note_number_seq START WITH 48;
-
--- 19. Tabla de Notas Oficiales de Solicitud de Compra (Carpeta 5 - official_notes)
-CREATE TABLE IF NOT EXISTS official_notes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    note_number TEXT NOT NULL,
-    issue_date TEXT NOT NULL,
-    recipient_name TEXT NOT NULL,
-    recipient_role TEXT NOT NULL,
-    via_name TEXT NOT NULL,
-    via_role TEXT NOT NULL,
-    sender_name TEXT NOT NULL,
-    sender_role TEXT NOT NULL,
-    object_title TEXT NOT NULL,
-    body_text TEXT NOT NULL,
-    attached_documents TEXT[] DEFAULT ARRAY[]::TEXT[],
-    status TEXT DEFAULT 'Emitido',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
--- 20. Habilitar RLS y Políticas de Acceso para Notas Oficiales
-ALTER TABLE official_notes ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Permitir todo a todos en official_notes" ON official_notes;
-CREATE POLICY "Permitir todo a todos en official_notes" ON official_notes FOR ALL USING (true) WITH CHECK (true);
 
 
 
