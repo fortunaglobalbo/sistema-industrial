@@ -49,6 +49,7 @@ export default function FormularioTallasBotines({
   // Reporte Consolidado
   const [consolidatedData, setConsolidatedData] = useState<any | null>(null);
   const [loadingConsolidated, setLoadingConsolidated] = useState(false);
+  const [isViewingPrintReport, setIsViewingPrintReport] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'history') {
@@ -424,41 +425,198 @@ export default function FormularioTallasBotines({
 
           </form>
 
-        ) : (
-
-          /* CONTROL HISTORIAL Y CONSOLIDADO PARA ALMACÉN (CON CLASE print-area) */
-          <div className="print-area space-y-6 font-sans">
+        ) : isViewingPrintReport ? (
+          
+          /* VISTA DEL DOCUMENTO OFICIAL IMPRIMIBLE CON CLASE print-area */
+          <div className="space-y-4">
             
-            {/* ENCABEZADO INSTITUCIONAL DE IMPRESIÓN (SOLO VISIBLE EN IMPRESIÓN) */}
-            <div className="hidden print:flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
-              <div className="flex items-center gap-4">
-                <img 
-                  src="/logo-ende.png" 
-                  alt="ENDE DEORURO" 
-                  className="h-12 w-auto object-contain"
-                />
+            {/* BARRA SUPERIOR DE ACCIONES (OCULTA EN IMPRESIÓN) */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-blue-50 border border-blue-200 p-4 rounded-2xl shadow-sm print:hidden">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsViewingPrintReport(false)}
+                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Volver a la Gestión</span>
+                </button>
                 <div>
-                  <h2 className="text-base font-black uppercase text-slate-900 tracking-tight">ENDE DEORURO - DEPARTAMENTO DE SEGURIDAD INDUSTRIAL</h2>
-                  <p className="text-xs font-extrabold text-blue-900 uppercase tracking-wide">REPORTE CONSOLIDADO Y PEDIDO DE BOTINES DE SEGURIDAD</p>
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 uppercase">Vista Previa de Impresión Oficial</h3>
+                  <p className="text-xs text-slate-600 font-bold">Consolidado de Tallas de Botines - Área: {areaFilter}</p>
                 </div>
               </div>
 
-              <div className="text-right">
-                <span className="inline-block bg-slate-900 text-white font-mono font-bold text-xs px-3 py-1 rounded uppercase">
-                  {areaFilter === 'TODAS' ? 'TODAS LAS ÁREAS' : areaFilter}
-                </span>
-                <p className="text-[10px] text-slate-600 font-bold mt-1 font-mono">
-                  FECHA EMISIÓN: {new Date().toLocaleDateString('es-BO')}
-                </p>
-              </div>
+              <button
+                onClick={handlePrint}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-xs sm:text-sm font-black shadow-lg transition"
+              >
+                <Printer className="w-4 h-4 text-amber-300" />
+                <span>IMPRIMIR DOCUMENTO OFICIAL</span>
+              </button>
             </div>
 
+            {/* DOCUMENTO OFICIAL CON CLASE print-area */}
+            <div className="print-area bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 shadow-xl max-w-4xl mx-auto print:shadow-none print:border-none print:w-full print:p-0 font-sans">
+              
+              {/* ENCABEZADO INSTITUCIONAL */}
+              <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
+                <div className="flex items-center gap-4">
+                  <img 
+                    src="/logo-ende.png" 
+                    alt="ENDE DEORURO" 
+                    className="h-12 w-auto object-contain"
+                  />
+                  <div>
+                    <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight">ENDE DEORURO - DEPARTAMENTO DE SEGURIDAD INDUSTRIAL</h2>
+                    <p className="text-xs font-extrabold text-blue-800 uppercase tracking-wide">REPORTE CONSOLIDADO DE CALZADO DE SEGURIDAD (TALLAS DE BOTINES)</p>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="inline-block bg-slate-900 text-white font-mono font-bold text-xs px-3 py-1.5 rounded uppercase">
+                    ÁREA: {areaFilter}
+                  </span>
+                  <p className="text-[10px] text-slate-500 font-bold mt-1 font-mono">
+                    FECHA: {new Date().toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                  </p>
+                </div>
+              </div>
+
+              {/* METADATOS Y TOTALES */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs sm:text-sm mb-6">
+                <div>
+                  <span className="font-bold text-slate-500 block uppercase text-xs">Área Técnica / Filtro:</span>
+                  <span className="font-black text-slate-900 text-sm uppercase">{areaFilter}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-slate-500 block uppercase text-xs">Total Trabajadores Registrados:</span>
+                  <span className="font-black text-slate-900 text-sm font-mono">{historyList.length} Persona(s)</span>
+                </div>
+                <div>
+                  <span className="font-bold text-slate-500 block uppercase text-xs">Total Pares Requeridos:</span>
+                  <span className="font-black text-blue-900 text-sm font-mono">{consolidatedData?.totalPairs || 0} Pares</span>
+                </div>
+              </div>
+
+              {/* SECCIÓN 1: MATRIZ CONSOLIDADA POR TALLAS (35 - 45) */}
+              <h3 className="font-black text-xs sm:text-sm uppercase tracking-wider text-slate-900 mb-3 border-l-4 border-blue-600 pl-2">
+                1. RESUMEN CONSOLIDADO DE PARES REQUERIDOS POR TALLA (35 A 45)
+              </h3>
+
+              <div className="overflow-x-auto mb-6">
+                <table className="w-full border-collapse text-xs sm:text-sm">
+                  <thead>
+                    <tr className="bg-slate-900 text-white font-black uppercase text-left">
+                      <th className="p-2.5 text-center w-24 border border-slate-900">TALLA</th>
+                      <th className="p-2.5 text-center border border-slate-900">MASCULINO (VARONES)</th>
+                      <th className="p-2.5 text-center border border-slate-900">FEMENINO (DAMAS)</th>
+                      <th className="p-2.5 text-center border border-slate-900 bg-blue-950 font-bold">TOTAL PARES A ADQUIRIR</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-300 border border-slate-300">
+                    {consolidatedData?.summary?.filter((s: any) => s.total > 0).length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="p-4 text-center text-slate-500 font-bold">
+                          No hay solicitudes registradas para las tallas en el área seleccionada.
+                        </td>
+                      </tr>
+                    ) : (
+                      consolidatedData?.summary?.map((item: any) => (
+                        <tr key={item.size} className={item.total > 0 ? 'bg-blue-50/30' : 'opacity-40'}>
+                          <td className="p-2.5 text-center font-black font-mono text-sm border-r border-slate-300 bg-slate-100">
+                            TALLA {item.size}
+                          </td>
+                          <td className="p-2.5 text-center font-mono font-bold border-r border-slate-300">
+                            {item.masculino}
+                          </td>
+                          <td className="p-2.5 text-center font-mono font-bold border-r border-slate-300">
+                            {item.femenino}
+                          </td>
+                          <td className="p-2.5 text-center font-black text-blue-950 font-mono text-sm border-r border-slate-300 bg-blue-100/50">
+                            {item.total} pares
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                    <tr className="bg-slate-900 text-white font-black">
+                      <td className="p-3 text-center uppercase border border-slate-900">TOTAL GENERAL</td>
+                      <td className="p-3 text-center font-mono border border-slate-900">
+                        {consolidatedData?.summary?.reduce((a: number, b: any) => a + b.masculino, 0) || 0}
+                      </td>
+                      <td className="p-3 text-center font-mono border border-slate-900">
+                        {consolidatedData?.summary?.reduce((a: number, b: any) => a + b.femenino, 0) || 0}
+                      </td>
+                      <td className="p-3 text-center font-mono text-emerald-400 text-base border border-slate-900">
+                        {consolidatedData?.totalPairs || 0} PARES
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* SECCIÓN 2: DETALLE NOMINAL DE PERSONAL REGISTRADO */}
+              <h3 className="font-black text-xs sm:text-sm uppercase tracking-wider text-slate-900 mb-3 border-l-4 border-blue-600 pl-2">
+                2. NÓMINA DETALLADA DE TRABAJADORES REGISTRADOS
+              </h3>
+
+              <div className="overflow-x-auto mb-8">
+                <table className="w-full border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-800 text-white font-black uppercase text-left">
+                      <th className="p-2 text-center w-10 border border-slate-800">N°</th>
+                      <th className="p-2 text-center w-20 border border-slate-800">FOLIO</th>
+                      <th className="p-2 border border-slate-800">NOMBRE COMPLETO</th>
+                      <th className="p-2 border border-slate-800">ÁREA / DEPARTAMENTO</th>
+                      <th className="p-2 border border-slate-800">CARGO / PUESTO</th>
+                      <th className="p-2 text-center border border-slate-800">GÉNERO</th>
+                      <th className="p-2 text-center w-20 border border-slate-800 bg-blue-900">TALLA</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-300 border border-slate-300">
+                    {historyList.map((req, idx) => (
+                      <tr key={req.id} className="hover:bg-slate-50">
+                        <td className="p-2 text-center font-black font-mono border-r border-slate-300">{idx + 1}</td>
+                        <td className="p-2 text-center font-mono font-bold text-blue-700 border-r border-slate-300">#{req.folio}</td>
+                        <td className="p-2 font-black text-slate-900 uppercase border-r border-slate-300">{req.full_name}</td>
+                        <td className="p-2 text-slate-800 font-bold uppercase border-r border-slate-300">{req.area}</td>
+                        <td className="p-2 text-slate-700 font-bold uppercase border-r border-slate-300">{req.position}</td>
+                        <td className="p-2 text-center font-bold uppercase border-r border-slate-300">{req.gender}</td>
+                        <td className="p-2 text-center font-black text-blue-900 font-mono text-sm border-r border-slate-300 bg-blue-50/50">{req.boot_size}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* SECCIÓN 3: FIRMAS OFICIALES */}
+              <div className="grid grid-cols-2 gap-12 pt-10 text-center text-xs sm:text-sm">
+                <div>
+                  <div className="border-b-2 border-slate-400 w-3/4 mx-auto mb-2"></div>
+                  <p className="font-black text-slate-900 uppercase">RESPONSABLE DE SEGURIDAD INDUSTRIAL</p>
+                  <p className="text-xs text-slate-600 font-bold uppercase">ENDE DEORURO</p>
+                </div>
+                <div>
+                  <div className="border-b-2 border-slate-400 w-3/4 mx-auto mb-2"></div>
+                  <p className="font-black text-slate-900 uppercase">JEFATURA DE ALMACÉN Y ADQUISICIONES</p>
+                  <p className="text-xs text-slate-600 font-bold uppercase">ENDE DEORURO</p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        ) : (
+
+          /* CONTROL HISTORIAL Y CONSOLIDADO PARA ALMACÉN */
+          <div className="space-y-6">
+            
             {/* RESUMEN CONSOLIDADO PARA COMPRAS / ALMACÉN */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-300 shadow-sm space-y-4 print:p-0 print:border-none print:shadow-none">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4 print:pb-2">
+            <div className="bg-white p-6 rounded-3xl border border-slate-300 shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4">
                 <div>
                   <h3 className="text-base sm:text-lg font-black text-slate-900 uppercase flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-blue-700 print:hidden" />
+                    <Layers className="w-5 h-5 text-blue-700" />
                     Consolidado de Tallas de Botines Solicitadas
                   </h3>
                   <p className="text-xs sm:text-sm font-bold text-slate-600">
@@ -466,11 +624,11 @@ export default function FormularioTallasBotines({
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3 w-full md:w-auto print:hidden">
+                <div className="flex items-center gap-3 w-full md:w-auto">
                   <select
                     value={areaFilter}
                     onChange={(e) => setAreaFilter(e.target.value)}
-                    className="bg-slate-50 border-2 border-slate-300 text-slate-900 text-xs sm:text-sm font-black rounded-xl px-4 py-2.5 uppercase print:hidden"
+                    className="bg-slate-50 border-2 border-slate-300 text-slate-900 text-xs sm:text-sm font-black rounded-xl px-4 py-2.5 uppercase"
                   >
                     <option value="TODAS">TODAS LAS ÁREAS</option>
                     {BOOT_AREAS.map((a) => (
@@ -479,7 +637,7 @@ export default function FormularioTallasBotines({
                   </select>
 
                   <button
-                    onClick={handlePrint}
+                    onClick={() => setIsViewingPrintReport(true)}
                     className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs px-4 py-2.5 rounded-xl transition print:hidden"
                   >
                     <Printer className="w-4 h-4 text-emerald-400" />
@@ -490,32 +648,32 @@ export default function FormularioTallasBotines({
 
               {/* MATRIZ CONSOLIDADA DE TALLAS */}
               {loadingConsolidated ? (
-                <div className="text-center py-6 text-xs text-slate-500 font-bold print:hidden">Cargando consolidado...</div>
+                <div className="text-center py-6 text-xs text-slate-500 font-bold">Cargando consolidado...</div>
               ) : consolidatedData ? (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 print:grid-cols-6 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
                     {consolidatedData.summary?.map((item: any) => (
                       <div 
                         key={item.size} 
-                        className={`p-3.5 rounded-2xl border-2 text-center transition print:p-2 print:rounded-xl print:border-slate-400 ${
-                          item.total > 0 ? 'bg-blue-50/80 border-blue-300 print:bg-slate-100' : 'bg-slate-50 border-slate-200 opacity-60 print:opacity-100'
+                        className={`p-3.5 rounded-2xl border-2 text-center transition ${
+                          item.total > 0 ? 'bg-blue-50/80 border-blue-300' : 'bg-slate-50 border-slate-200 opacity-60'
                         }`}
                       >
-                        <span className="text-xs font-black text-slate-500 uppercase block print:text-[10px]">TALLA</span>
-                        <span className="text-xl sm:text-2xl font-mono font-black text-slate-900 print:text-lg">{item.size}</span>
-                        <div className="mt-1 pt-1 border-t border-slate-200 text-[11px] font-bold text-slate-700 space-y-0.5 print:text-[10px]">
-                          <p className="text-blue-900 print:text-slate-900">Total: <strong className="font-mono">{item.total} pares</strong></p>
+                        <span className="text-xs font-black text-slate-500 uppercase block">TALLA</span>
+                        <span className="text-xl sm:text-2xl font-mono font-black text-slate-900">{item.size}</span>
+                        <div className="mt-1 pt-1 border-t border-slate-200 text-[11px] font-bold text-slate-700 space-y-0.5">
+                          <p className="text-blue-900">Total: <strong className="font-mono">{item.total} pares</strong></p>
                           {item.total > 0 && (
-                            <p className="text-[10px] text-slate-500 print:text-slate-700">M: {item.masculino} | F: {item.femenino}</p>
+                            <p className="text-[10px] text-slate-500">M: {item.masculino} | F: {item.femenino}</p>
                           )}
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="bg-slate-900 text-white p-4 rounded-2xl flex justify-between items-center font-black text-sm uppercase print:bg-slate-100 print:text-slate-900 print:border-2 print:border-slate-900 print:p-3">
+                  <div className="bg-slate-900 text-white p-4 rounded-2xl flex justify-between items-center font-black text-sm uppercase">
                     <span>TOTAL GENERAL DE BOTINES REQUERIDOS:</span>
-                    <span className="text-xl font-mono text-emerald-400 print:text-slate-900 print:font-black">{consolidatedData.totalPairs} PARES</span>
+                    <span className="text-xl font-mono text-emerald-400">{consolidatedData.totalPairs} PARES</span>
                   </div>
                 </div>
               ) : null}
@@ -523,18 +681,18 @@ export default function FormularioTallasBotines({
             </div>
 
             {/* TABLA HISTORIAL DE REGISTROS */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-300 shadow-sm space-y-4 print:p-0 print:border-none print:shadow-none print:pt-4">
+            <div className="bg-white p-6 rounded-3xl border border-slate-300 shadow-sm space-y-4">
               
-              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 print:pb-2">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                 <h3 className="text-base font-black text-slate-900 uppercase">
                   Listado Individual de Trabajadores Registrados
                 </h3>
 
-                <div className="flex items-center gap-2 print:hidden">
+                <div className="flex items-center gap-2">
                   <select
                     value={genderFilter}
                     onChange={(e) => setGenderFilter(e.target.value)}
-                    className="bg-slate-50 border border-slate-300 text-slate-900 text-xs font-black rounded-xl px-3 py-2 uppercase print:hidden"
+                    className="bg-slate-50 border border-slate-300 text-slate-900 text-xs font-black rounded-xl px-3 py-2 uppercase"
                   >
                     <option value="TODOS">TODOS LOS GÉNEROS</option>
                     <option value="MASCULINO">MASCULINO</option>
@@ -544,7 +702,7 @@ export default function FormularioTallasBotines({
                   <button
                     onClick={() => { fetchHistory(); fetchConsolidated(); }}
                     disabled={loadingHistory}
-                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl transition print:hidden"
+                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl transition"
                     title="Actualizar Lista"
                   >
                     <RefreshCw className={`w-4 h-4 ${loadingHistory ? 'animate-spin' : ''}`} />
@@ -553,7 +711,7 @@ export default function FormularioTallasBotines({
               </div>
 
               {loadingHistory ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-2 print:hidden">
+                <div className="flex flex-col items-center justify-center py-12 gap-2">
                   <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
                   <p className="text-xs text-slate-600 font-bold">Cargando registros...</p>
                 </div>
@@ -562,30 +720,30 @@ export default function FormularioTallasBotines({
                   No hay registros de tallas de botines almacenados para los filtros seleccionados.
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-2xl border border-slate-300 print:border-slate-400 print:rounded-none">
+                <div className="overflow-x-auto rounded-2xl border border-slate-300">
                   <table className="w-full border-collapse text-xs sm:text-sm text-left">
                     <thead>
-                      <tr className="bg-slate-900 text-white font-black uppercase print:bg-slate-200 print:text-slate-900">
-                        <th className="p-3.5 text-center print:p-2 print:border">N° Folio</th>
-                        <th className="p-3.5 print:p-2 print:border">Trabajador</th>
-                        <th className="p-3.5 print:p-2 print:border">Área / Depto.</th>
-                        <th className="p-3.5 print:p-2 print:border">Cargo / Puesto</th>
-                        <th className="p-3.5 text-center print:p-2 print:border">Género</th>
-                        <th className="p-3.5 text-center print:p-2 print:border">Talla Botín</th>
-                        <th className="p-3.5 text-center print:hidden">Acciones</th>
+                      <tr className="bg-slate-900 text-white font-black uppercase">
+                        <th className="p-3.5 text-center">N° Folio</th>
+                        <th className="p-3.5">Trabajador</th>
+                        <th className="p-3.5">Área / Depto.</th>
+                        <th className="p-3.5">Cargo / Puesto</th>
+                        <th className="p-3.5 text-center">Género</th>
+                        <th className="p-3.5 text-center">Talla Botín</th>
+                        <th className="p-3.5 text-center">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 font-bold">
                       {historyList.map((req) => (
                         <tr key={req.id} className="hover:bg-slate-50 transition">
-                          <td className="p-3.5 text-center font-black font-mono text-blue-700 print:p-2 print:border print:text-slate-900">
+                          <td className="p-3.5 text-center font-black font-mono text-blue-700">
                             #{req.folio}
                           </td>
-                          <td className="p-3.5 font-black text-slate-900 uppercase print:p-2 print:border">
+                          <td className="p-3.5 font-black text-slate-900 uppercase">
                             {req.full_name}
                           </td>
-                          <td className="p-3.5 font-black text-slate-800 uppercase text-xs print:p-2 print:border">
-                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-black border print:border-none print:p-0 print:font-bold ${
+                          <td className="p-3.5 font-black text-slate-800 uppercase text-xs">
+                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-black border ${
                               req.area.includes('ADMINISTRATIVA') 
                                 ? 'bg-amber-50 text-amber-900 border-amber-300' 
                                 : 'bg-blue-50 text-blue-900 border-blue-300'
@@ -593,20 +751,20 @@ export default function FormularioTallasBotines({
                               {req.area}
                             </span>
                           </td>
-                          <td className="p-3.5 font-bold text-slate-700 uppercase print:p-2 print:border">
+                          <td className="p-3.5 font-bold text-slate-700 uppercase">
                             {req.position}
                           </td>
-                          <td className="p-3.5 text-center font-black text-xs uppercase print:p-2 print:border">
-                            <span className={`px-2.5 py-0.5 rounded-full print:p-0 ${
+                          <td className="p-3.5 text-center font-black text-xs uppercase">
+                            <span className={`px-2.5 py-0.5 rounded-full ${
                               req.gender === 'MASCULINO' ? 'bg-blue-100 text-blue-900' : 'bg-pink-100 text-pink-900'
                             }`}>
                               {req.gender}
                             </span>
                           </td>
-                          <td className="p-3.5 text-center font-mono font-black text-base text-blue-700 print:p-2 print:border print:text-slate-900">
+                          <td className="p-3.5 text-center font-mono font-black text-base text-blue-700">
                             {req.boot_size}
                           </td>
-                          <td className="p-3.5 text-center print:hidden">
+                          <td className="p-3.5 text-center">
                             <button
                               onClick={() => handleDelete(req.id)}
                               className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition border border-red-200"
