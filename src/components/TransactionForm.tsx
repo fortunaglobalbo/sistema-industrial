@@ -498,13 +498,13 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
       return itemCat === targetCat || itemCat.includes(targetCat) || targetCat.includes(itemCat);
     });
 
-    // Si la categoría es de Botiquines / Medicamentos, incluir los Kits creados
-    if (targetCat.includes('botiqu') || targetCat.includes('medica') || targetCat.includes('primeros auxilios')) {
+    // Si la categoría es Botiquín, mostrar los kits armados en la lista de insumos
+    if (targetCat.includes('botiqu')) {
       const kitItems = availableKits.map((k) => ({
         id: `kit-${k.id}`,
-        name: `${k.name} (Kit con ${k.items ? k.items.length : 0} medicamentos)`,
+        name: k.name,
         category: categoryName,
-        current_stock: 'Disponible',
+        current_stock: 'Kit',
       }));
       return [...kitItems, ...baseMatches];
     }
@@ -512,13 +512,9 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     return baseMatches;
   };
 
-  // Obtener lista única de nombres de categorías combinando categories state y items del inventario
+  // Obtener lista única de nombres de categorías desde la BD/inventario sin agregar duplicados
   const allCategoryNames = Array.from(
     new Set([
-      'EPP (Protección)',
-      'Ropa de Trabajo',
-      'Herramientas',
-      'Botiquines / Primeros Auxilios',
       ...categories.map((c) => c.name),
       ...inventory.map((i) => i.category).filter(Boolean)
     ])
