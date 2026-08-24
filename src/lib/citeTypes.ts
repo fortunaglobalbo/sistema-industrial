@@ -3,7 +3,7 @@ export interface OfficialCiteInput {
   docNumber: string;
   reference: string;
   recipientA: string;
-  signerFirm: string;
+  signerFirm?: string;
   status?: string;
   observations?: string;
 }
@@ -15,7 +15,7 @@ export interface OfficialCiteData {
   doc_number: string;
   reference: string;
   recipient_a: string;
-  signer_firm: string;
+  signer_firm?: string | null;
   status: string;
   observations: string | null;
   created_at: string;

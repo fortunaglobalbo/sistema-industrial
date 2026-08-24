@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, Plus, RefreshCw, Printer, Trash2, Edit2, 
-  Search, ArrowLeft, Calendar, User, Send, CheckCircle2, 
+  Search, ArrowLeft, Calendar, Send, CheckCircle2, 
   Clock, BookOpen, AlertCircle
 } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -36,8 +36,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
   const [issueDate, setIssueDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [docNumber, setDocNumber] = useState('');
   const [reference, setReference] = useState('');
-  const [recipientA, setRecipientA] = useState('GERENCIA GENERAL');
-  const [signerFirm, setSignerFirm] = useState('RESPONSABLE SEGURIDAD INDUSTRIAL');
+  const [recipientA, setRecipientA] = useState('GERENCIA GENERAL - ENDE DEORURO');
   const [status, setStatus] = useState<string>('Enviado');
   const [observations, setObservations] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,7 +61,6 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
     setDocNumber(`CITE-SI-${String(nextNum).padStart(3, '0')}/${currentYear}`);
     setReference('');
     setRecipientA('GERENCIA GENERAL - ENDE DEORURO');
-    setSignerFirm('RESPONSABLE SEGURIDAD INDUSTRIAL');
     setStatus('Enviado');
     setObservations('');
     setViewMode('form');
@@ -74,7 +72,6 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
     setDocNumber(item.doc_number);
     setReference(item.reference);
     setRecipientA(item.recipient_a);
-    setSignerFirm(item.signer_firm);
     setStatus(item.status);
     setObservations(item.observations || '');
     setViewMode('form');
@@ -101,7 +98,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
       docNumber,
       reference,
       recipientA,
-      signerFirm,
+      signerFirm: '',
       status,
       observations
     };
@@ -113,21 +110,21 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
       Swal.fire({
         icon: 'success',
         title: editingId ? 'CITE Actualizado' : 'CITE Registrado',
-        text: `El documento ${docNumber.toUpperCase()} se guardó exitosamente.`,
-        timer: 1800,
+        text: `El documento ${docNumber.toUpperCase()} ha sido registrado correctamente.`,
+        timer: 2000,
         showConfirmButton: false
       });
-      setViewMode('list');
       loadData();
+      setViewMode('list');
     } else {
       Swal.fire({ icon: 'error', title: 'Error al Guardar', text: res.error });
     }
   };
 
-  const handleDelete = async (id: string, doc: string) => {
+  const handleDelete = async (id: string, docNum: string) => {
     const confirm = await Swal.fire({
-      title: `¿Eliminar ${doc}?`,
-      text: 'Se eliminará este CITE del libro oficial de correspondencia.',
+      title: `¿Eliminar CITE ${docNum}?`,
+      text: 'Esta acción no se puede deshacer.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
@@ -152,8 +149,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
     return (
       c.doc_number.toLowerCase().includes(term) ||
       c.reference.toLowerCase().includes(term) ||
-      c.recipient_a.toLowerCase().includes(term) ||
-      c.signer_firm.toLowerCase().includes(term)
+      c.recipient_a.toLowerCase().includes(term)
     );
   });
 
@@ -164,39 +160,52 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
       {viewMode === 'list' && (
         <div className="space-y-6">
           
-          {/* TARJETAS DE RESUMEN DE CITES */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* BANNER DE RESUMEN */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="p-3.5 bg-blue-100 text-blue-700 rounded-2xl">
-                <BookOpen className="w-7 h-7" />
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-700 text-white p-5 rounded-2xl shadow-md flex items-center gap-4">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <BookOpen className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase">Total CITES Registrados</p>
-                <p className="text-2xl font-black font-mono text-slate-900">{cites.length}</p>
-                <p className="text-[11px] text-slate-500 font-semibold">Libro de Correspondencia</p>
+                <p className="text-xs font-extrabold uppercase tracking-wider text-blue-100">Total CITES Registrados</p>
+                <p className="text-3xl font-black font-mono">{cites.length}</p>
+                <p className="text-[11px] text-blue-200">Libro Oficial Correlativo</p>
               </div>
             </div>
 
-            <div className="bg-emerald-50/80 p-5 rounded-2xl border border-emerald-200 shadow-sm flex items-center gap-4">
-              <div className="p-3.5 bg-emerald-600 text-white rounded-2xl shadow">
-                <CheckCircle2 className="w-7 h-7" />
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center gap-4">
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs font-bold text-emerald-800 uppercase">CITES Firmados / Conformes</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Firmados / Aceptados</p>
                 <p className="text-2xl font-black font-mono text-emerald-950">
-                  {cites.filter(c => c.status === 'Firmado' || c.status === 'Enviado').length}
+                  {cites.filter(c => c.status === 'Firmado').length}
                 </p>
-                <p className="text-[11px] text-emerald-700 font-bold">Documentos formalizados</p>
+                <p className="text-[11px] text-emerald-700 font-bold">Con visto bueno</p>
               </div>
             </div>
 
-            <div className="bg-amber-50/80 p-5 rounded-2xl border border-amber-200 shadow-sm flex items-center gap-4">
-              <div className="p-3.5 bg-amber-500 text-white rounded-2xl shadow">
-                <Clock className="w-7 h-7" />
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center gap-4">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                <Send className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs font-bold text-amber-800 uppercase">En Trámite / Revisión</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Enviados</p>
+                <p className="text-2xl font-black font-mono text-blue-950">
+                  {cites.filter(c => c.status === 'Enviado').length}
+                </p>
+                <p className="text-[11px] text-blue-700 font-bold">Remitidos a Gerencia</p>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center gap-4">
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                <Clock className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">En Trámite</p>
                 <p className="text-2xl font-black font-mono text-amber-950">
                   {cites.filter(c => c.status === 'En Trámite').length}
                 </p>
@@ -288,7 +297,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                       <th className="p-3">Número Documento</th>
                       <th className="p-3">Referencia / Asunto</th>
                       <th className="p-3">A (Destinatario)</th>
-                      <th className="p-3">Firma / Remitente</th>
+                      <th className="p-3 text-center">Firma (Física)</th>
                       <th className="p-3 text-center">Estado</th>
                       <th className="p-3 text-center w-24">Acciones</th>
                     </tr>
@@ -314,8 +323,10 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                         <td className="p-3 uppercase text-slate-800 text-xs font-black">
                           {cite.recipient_a}
                         </td>
-                        <td className="p-3 uppercase text-slate-700 text-xs">
-                          {cite.signer_firm}
+                        <td className="p-3 text-center text-xs text-slate-400 font-normal">
+                          <span className="italic text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                            ✍️ Por firmar
+                          </span>
                         </td>
                         <td className="p-3 text-center">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${
@@ -371,10 +382,10 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               </div>
               <div>
                 <h2 className="text-lg sm:text-xl font-black text-slate-900 uppercase">
-                  {editingId ? `Editar CITE ${docNumber}` : 'Registro de Nuevo CITE / Documento a Gerencia'}
+                  {editingId ? `Editar CITE: ${docNumber}` : 'Registrar Nuevo CITE a Gerencia'}
                 </h2>
                 <p className="text-xs text-slate-500 font-bold">
-                  Complete los campos oficiales para el libro de correspondencia
+                  Complete los datos oficiales del documento para el registro en el libro
                 </p>
               </div>
             </div>
@@ -440,7 +451,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               <input
                 type="text"
                 required
-                placeholder="EJ. GERENCIA GENERAL - ING. ... / GERENCIA TÉCNICA..."
+                placeholder="EJ. GERENCIA GENERAL - ENDE DEORURO..."
                 value={recipientA}
                 onChange={(e) => setRecipientA(e.target.value.toUpperCase())}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
@@ -461,27 +472,13 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               />
             </div>
 
-            <div className="space-y-1.5 sm:col-span-2">
+            <div className="space-y-1.5 sm:col-span-3">
               <label className="block text-xs font-black text-slate-900 uppercase">
-                Firma / Remitente Responsable <span className="text-red-600">*</span>
+                Observaciones / Anexos (Opcional)
               </label>
               <input
                 type="text"
-                required
-                placeholder="EJ. RESPONSABLE DE SEGURIDAD INDUSTRIAL..."
-                value={signerFirm}
-                onChange={(e) => setSignerFirm(e.target.value.toUpperCase())}
-                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-black text-slate-900 uppercase">
-                Observaciones / Anexos
-              </label>
-              <input
-                type="text"
-                placeholder="EJ. ADJUNTA 3 HOJAS Y PLANILLA..."
+                placeholder="EJ. ADJUNTA 3 HOJAS Y PLANILLA DE RESPALDO..."
                 value={observations}
                 onChange={(e) => setObservations(e.target.value.toUpperCase())}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3"
@@ -571,10 +568,10 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                   <tr className="bg-slate-900 text-white font-black uppercase text-left">
                     <th className="p-2.5 text-center w-12 border border-slate-900">NRO</th>
                     <th className="p-2.5 text-center w-24 border border-slate-900">FECHA</th>
-                    <th className="p-2.5 w-32 border border-slate-900">NÚMERO DOCUMENTO</th>
+                    <th className="p-2.5 w-36 border border-slate-900">NÚMERO DOCUMENTO</th>
                     <th className="p-2.5 border border-slate-900">REFERENCIA / ASUNTO</th>
-                    <th className="p-2.5 border border-slate-900">A (DESTINATARIO)</th>
-                    <th className="p-2.5 border border-slate-900 w-36">FIRMA / REMITENTE</th>
+                    <th className="p-2.5 border border-slate-900 w-48">A (DESTINATARIO)</th>
+                    <th className="p-2.5 border border-slate-900 w-44 text-center">FIRMA</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 border border-slate-300 font-bold">
@@ -590,13 +587,17 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                         {c.doc_number}
                       </td>
                       <td className="p-2.5 uppercase text-[11px] border-r border-slate-300">
-                        {c.reference}
+                        <p>{c.reference}</p>
+                        {c.observations && (
+                          <p className="text-[9px] text-slate-500 font-normal mt-0.5">Obs: {c.observations}</p>
+                        )}
                       </td>
                       <td className="p-2.5 uppercase text-[11px] border-r border-slate-300 font-black">
                         {c.recipient_a}
                       </td>
-                      <td className="p-2.5 uppercase text-[10px] border-r border-slate-300">
-                        {c.signer_firm}
+                      {/* CELDA DE FIRMA FÍSICA EN BLANCO PARA IMPRIMIR */}
+                      <td className="p-4 border-r border-slate-300 min-h-[3rem] text-center">
+                        &nbsp;
                       </td>
                     </tr>
                   ))}

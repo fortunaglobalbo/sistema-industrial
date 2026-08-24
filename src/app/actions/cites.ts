@@ -20,16 +20,13 @@ export async function saveOfficialCite(data: OfficialCiteInput, existingId?: str
     if (!data.recipientA || !data.recipientA.trim()) {
       return { success: false, error: 'El campo "A" (Destinatario / Gerencia) es obligatorio.' };
     }
-    if (!data.signerFirm || !data.signerFirm.trim()) {
-      return { success: false, error: 'El campo "Firma / Remitente" es obligatorio.' };
-    }
 
     const payload = {
       issue_date: data.issueDate,
       doc_number: data.docNumber.trim().toUpperCase(),
       reference: data.reference.trim().toUpperCase(),
       recipient_a: data.recipientA.trim().toUpperCase(),
-      signer_firm: data.signerFirm.trim().toUpperCase(),
+      signer_firm: data.signerFirm ? data.signerFirm.trim().toUpperCase() : '',
       status: data.status || 'Enviado',
       observations: data.observations ? data.observations.trim().toUpperCase() : null
     };

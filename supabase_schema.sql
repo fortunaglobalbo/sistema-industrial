@@ -258,7 +258,7 @@ CREATE TABLE IF NOT EXISTS official_cites (
     doc_number TEXT NOT NULL,      -- Ej: CITE-SI-045/2026
     reference TEXT NOT NULL,       -- Asunto / Referencia
     recipient_a TEXT NOT NULL,     -- A (Destinatario / Gerencia)
-    signer_firm TEXT NOT NULL,     -- Quien firma / Estado de Firma
+    signer_firm TEXT DEFAULT '',   -- Espacio de firma física al imprimir
     status TEXT DEFAULT 'Enviado', -- Enviado, Firmado, En Trámite, Archivado
     observations TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
