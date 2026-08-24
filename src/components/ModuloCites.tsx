@@ -5,7 +5,7 @@ import {
   FileText, Plus, RefreshCw, Printer, Trash2, Edit2, 
   Search, ArrowLeft, Calendar, Send, CheckCircle2, 
   Clock, BookOpen, Settings2, Sliders, Tag, Sparkles,
-  AlertTriangle, Hash, Wand2, ArrowRight, Check
+  AlertTriangle, Hash, Wand2, ArrowRight, Check, Palette
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { 
@@ -45,7 +45,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
   const [observations, setObservations] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Constructor de CITE Personalizado (Aislado)
+  // Constructor de CITE Personalizado (Aislado con colores visuales)
   const [builderSigla, setBuilderSigla] = useState('EDO-IB');
   const [builderCorrelative, setBuilderCorrelative] = useState<number | string>('');
   const [builderDate, setBuilderDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -150,7 +150,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
     const todayStr = new Date().toISOString().split('T')[0];
     setIssueDate(todayStr);
     
-    // Si ya había un código previo o sugerir uno estándar
+    // Sugerir uno estándar
     const dateObj = new Date();
     const mStr = String(dateObj.getMonth() + 1).padStart(2, '0');
     const yStr = String(dateObj.getFullYear()).slice(-2);
@@ -227,7 +227,6 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
       loadData();
       setViewMode('list');
     } else if (res.isDuplicate) {
-      // Manejo amigable en español para duplicados
       const result = await Swal.fire({
         icon: 'warning',
         title: 'N° Correlativo Duplicado',
@@ -292,6 +291,14 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
       String(c.correlative_number).includes(term)
     );
   });
+
+  // Variables auxiliares calculadas para el desglose de colores
+  const dateObj = builderDate ? new Date(builderDate + 'T00:00:00') : new Date();
+  const builderMonthStr = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const builderYearFullStr = String(dateObj.getFullYear());
+  const builderYearShortStr = builderYearFullStr.slice(-2);
+  const builderNumStr = String(builderCorrelative || 1).padStart(builderDigits, '0');
+  const builderCleanSigla = (builderSigla || 'SIGLA').trim().toUpperCase();
 
   return (
     <div className="space-y-6">
@@ -396,7 +403,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               <button
                 onClick={handleOpenBuilder}
                 className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs px-4 py-3 rounded-xl transition shadow-md hover:shadow-indigo-200"
-                title="Construir formato de CITE personalizado (Siglas + Mes + Año)"
+                title="Construir formato de CITE personalizado con colores"
               >
                 <Wand2 className="w-4 h-4 text-amber-300" />
                 <span>Construir CITE</span>
@@ -523,21 +530,21 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
         </div>
       )}
 
-      {/* VISTA 2: CONSTRUCTOR / ESTUDIO DE CITES PERSONALIZADOS (Aislado, Intuitivo y Fácil) */}
+      {/* VISTA 2: CONSTRUCTOR DE CITES PERSONALIZADOS CON VISTA PREVIA POR COLORES */}
       {viewMode === 'builder' && (
         <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-indigo-200 shadow-xl space-y-6 max-w-4xl mx-auto">
           
           <div className="flex justify-between items-center border-b pb-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-indigo-100 text-indigo-700 rounded-2xl shadow-inner">
-                <Wand2 className="w-6 h-6" />
+                <Palette className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-lg sm:text-xl font-black text-slate-900 uppercase">
-                  Constructor de CITES Personalizados
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 uppercase flex items-center gap-2">
+                  Constructor de CITES por Colores
                 </h2>
                 <p className="text-xs text-slate-500 font-bold">
-                  Configura la sigla, correlativo, detección automática de mes y año con vista previa en tiempo real
+                  Cada componente del CITE está identificado con su propio color para no confundirse
                 </p>
               </div>
             </div>
@@ -552,26 +559,82 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
             </button>
           </div>
 
-          {/* CAJA PRINCIPAL DE VISTA PREVIA */}
-          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-3xl text-center space-y-2 shadow-lg border border-indigo-500/30">
-            <span className="text-[11px] font-mono font-bold text-indigo-300 uppercase tracking-widest block">
-              Vista Previa del Código CITE Generado:
+          {/* CAJA PRINCIPAL DE VISTA PREVIA DESGLOSADA POR COLORES */}
+          <div className="bg-slate-950 border-2 border-indigo-500/40 text-white p-6 sm:p-8 rounded-3xl text-center space-y-5 shadow-2xl">
+            <span className="text-[11px] font-mono font-black text-indigo-300 uppercase tracking-widest block">
+              🎨 Vista Previa Desglosada por Colores en Tiempo Real:
             </span>
-            <p className="text-2xl sm:text-4xl font-black font-mono text-amber-300 tracking-wider break-all">
-              {builderPreview || 'EDO-IB-001/08/26'}
-            </p>
-            <p className="text-xs text-slate-400">
-              Formato automático basado en tus siglas y fecha seleccionada
-            </p>
+
+            {/* CÓDIGO CON BLOQUES DE COLORES */}
+            <div className="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2.5 p-3 sm:p-4 bg-slate-900 border-2 border-slate-800 rounded-2xl font-mono font-black text-xl sm:text-3xl tracking-wide shadow-inner">
+              
+              {/* SIGLA (Púrpura / Índigo) */}
+              <span className="bg-indigo-600/40 text-indigo-300 border-2 border-indigo-400 px-3.5 py-1 rounded-xl shadow" title="1. Sigla / Prefijo">
+                {builderCleanSigla}
+              </span>
+
+              <span className="text-slate-500 font-bold">-</span>
+
+              {/* CORRELATIVO (Verde Esmeralda) */}
+              <span className="bg-emerald-600/40 text-emerald-300 border-2 border-emerald-400 px-3.5 py-1 rounded-xl shadow" title="2. N° Correlativo">
+                {builderNumStr}
+              </span>
+
+              <span className="text-slate-500 font-bold">/</span>
+
+              {/* MES (Azul Cielo) */}
+              {builderFormat === 'SIGLA_NUM_MES_ANIO' && (
+                <>
+                  <span className="bg-sky-600/40 text-sky-300 border-2 border-sky-400 px-3.5 py-1 rounded-xl shadow" title="3. Mes Automático">
+                    {builderMonthStr}
+                  </span>
+                  <span className="text-slate-500 font-bold">/</span>
+                </>
+              )}
+
+              {/* AÑO (Ámbar / Dorado) */}
+              <span className="bg-amber-600/40 text-amber-300 border-2 border-amber-400 px-3.5 py-1 rounded-xl shadow" title="4. Año Automático">
+                {builderFormat === 'SIGLA_NUM_MES_ANIO' ? builderYearShortStr : builderYearFullStr}
+              </span>
+
+            </div>
+
+            {/* GUÍA DE COLORES / LEYENDA VISUAL */}
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-bold pt-1">
+              
+              <div className="flex items-center gap-1.5 bg-indigo-950/80 border border-indigo-500 text-indigo-200 px-3 py-1 rounded-xl">
+                <span className="w-3 h-3 rounded-full bg-indigo-400 inline-block shadow"></span>
+                <span>1. Sigla: <strong className="text-white font-mono">{builderCleanSigla}</strong></span>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-500 text-emerald-200 px-3 py-1 rounded-xl">
+                <span className="w-3 h-3 rounded-full bg-emerald-400 inline-block shadow"></span>
+                <span>2. N° Correlativo: <strong className="text-white font-mono">{builderNumStr}</strong></span>
+              </div>
+
+              {builderFormat === 'SIGLA_NUM_MES_ANIO' && (
+                <div className="flex items-center gap-1.5 bg-sky-950/80 border border-sky-500 text-sky-200 px-3 py-1 rounded-xl">
+                  <span className="w-3 h-3 rounded-full bg-sky-400 inline-block shadow"></span>
+                  <span>3. Mes: <strong className="text-white font-mono">{builderMonthStr}</strong></span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-1.5 bg-amber-950/80 border border-amber-500 text-amber-200 px-3 py-1 rounded-xl">
+                <span className="w-3 h-3 rounded-full bg-amber-400 inline-block shadow"></span>
+                <span>4. Año: <strong className="text-white font-mono">{builderFormat === 'SIGLA_NUM_MES_ANIO' ? builderYearShortStr : builderYearFullStr}</strong></span>
+              </div>
+
+            </div>
+
           </div>
 
-          {/* OPCIONES DE CONFIGURACIÓN DEL CONSTRUCTOR */}
+          {/* OPCIONES DE CONFIGURACIÓN DEL CONSTRUCTOR CON TARJETAS DE COLORES COHERENTES */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
             
-            {/* 1. SIGLA O PREFIJO */}
-            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-              <label className="block text-xs font-black text-slate-900 uppercase flex items-center gap-1.5">
-                <Tag className="w-4 h-4 text-indigo-600" />
+            {/* 1. TARJETA PÚRPURA / ÍNDIGO: SIGLA */}
+            <div className="bg-indigo-50/60 p-5 rounded-2xl border-2 border-indigo-300 space-y-2 shadow-sm">
+              <label className="block text-xs font-black text-indigo-950 uppercase flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-indigo-500 inline-block"></span>
                 1. Sigla / Prefijo del Documento:
               </label>
               <input
@@ -579,17 +642,17 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                 value={builderSigla}
                 onChange={(e) => setBuilderSigla(e.target.value)}
                 placeholder="EJ. EDO-IB, EDO-SI, NOTA..."
-                className="w-full bg-white border-2 border-indigo-300 text-slate-900 text-sm font-black font-mono uppercase rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-600"
+                className="w-full bg-white border-2 border-indigo-400 text-indigo-950 text-sm font-black font-mono uppercase rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-600"
               />
               <div className="flex flex-wrap gap-1.5 pt-1">
-                <span className="text-[10px] text-slate-400 font-bold self-center">Fijar:</span>
+                <span className="text-[10px] text-indigo-700 font-bold self-center">Sugerencias:</span>
                 {quickSiglas.map((s) => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => setBuilderSigla(s)}
                     className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition ${
-                      builderSigla === s ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 hover:bg-indigo-50 border-slate-300'
+                      builderSigla === s ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-indigo-900 hover:bg-indigo-100 border-indigo-300'
                     }`}
                   >
                     {s}
@@ -598,29 +661,11 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               </div>
             </div>
 
-            {/* 2. FECHA Y DETECCIÓN AUTOMÁTICA DE MES/AÑO */}
-            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-              <label className="block text-xs font-black text-slate-900 uppercase flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-blue-600" />
-                2. Fecha del CITE (Extrae Mes y Año):
-              </label>
-              <input
-                type="date"
-                value={builderDate}
-                onChange={(e) => setBuilderDate(e.target.value)}
-                className="w-full bg-white border-2 border-blue-300 text-slate-900 text-sm font-black rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-600"
-              />
-              <div className="flex justify-between text-[11px] font-bold text-slate-600 pt-1 font-mono">
-                <span>Mes detectado: <strong>{builderDate ? String(new Date(builderDate + 'T00:00:00').getMonth() + 1).padStart(2, '0') : '--'}</strong></span>
-                <span>Año detectado: <strong>{builderDate ? String(new Date(builderDate + 'T00:00:00').getFullYear()).slice(-2) : '--'}</strong></span>
-              </div>
-            </div>
-
-            {/* 3. N° CORRELATIVO Y DÍGITOS */}
-            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-              <label className="block text-xs font-black text-slate-900 uppercase flex items-center gap-1.5">
-                <Hash className="w-4 h-4 text-emerald-600" />
-                3. Número Correlativo y Formato:
+            {/* 2. TARJETA VERDE ESMERALDA: CORRELATIVO */}
+            <div className="bg-emerald-50/60 p-5 rounded-2xl border-2 border-emerald-300 space-y-2 shadow-sm">
+              <label className="block text-xs font-black text-emerald-950 uppercase flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                2. Número Correlativo y Dígitos:
               </label>
               <div className="flex gap-2">
                 <input
@@ -629,35 +674,59 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                   value={builderCorrelative}
                   onChange={(e) => setBuilderCorrelative(e.target.value)}
                   placeholder="Ej. 1, 45..."
-                  className="flex-1 bg-white border-2 border-emerald-300 text-slate-900 text-sm font-black font-mono rounded-xl px-4 py-2.5"
+                  className="flex-1 bg-white border-2 border-emerald-400 text-emerald-950 text-sm font-black font-mono rounded-xl px-4 py-2.5"
                 />
                 <select
                   value={builderDigits}
                   onChange={(e) => setBuilderDigits(Number(e.target.value))}
-                  className="bg-white border-2 border-emerald-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                  className="bg-white border-2 border-emerald-400 rounded-xl px-3 py-2 text-xs font-black text-emerald-950"
                 >
                   <option value={3}>3 dígitos (001)</option>
                   <option value={2}>2 dígitos (01)</option>
                   <option value={1}>1 dígito (1)</option>
                 </select>
               </div>
+              <p className="text-[10px] text-emerald-700 font-bold">
+                Formato resultante: <strong>#{builderNumStr}</strong>
+              </p>
             </div>
 
-            {/* 4. ESTILO DE ESTRUCTURA */}
-            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-              <label className="block text-xs font-black text-slate-900 uppercase flex items-center gap-1.5">
-                <Sliders className="w-4 h-4 text-purple-600" />
+            {/* 3. TARJETA AZUL CIELO: MES Y AÑO */}
+            <div className="bg-sky-50/60 p-5 rounded-2xl border-2 border-sky-300 space-y-2 shadow-sm">
+              <label className="block text-xs font-black text-sky-950 uppercase flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-sky-500 inline-block"></span>
+                3. Fecha del CITE (Detecta Mes y Año):
+              </label>
+              <input
+                type="date"
+                value={builderDate}
+                onChange={(e) => setBuilderDate(e.target.value)}
+                className="w-full bg-white border-2 border-sky-400 text-sky-950 text-sm font-black rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-600"
+              />
+              <div className="flex justify-between text-[11px] font-bold text-sky-800 pt-1 font-mono">
+                <span>Mes detectado: <strong className="text-sky-950">{builderMonthStr}</strong></span>
+                <span>Año detectado: <strong className="text-sky-950">{builderYearShortStr} ({builderYearFullStr})</strong></span>
+              </div>
+            </div>
+
+            {/* 4. TARJETA ÁMBAR / ESTRUCTURA */}
+            <div className="bg-amber-50/60 p-5 rounded-2xl border-2 border-amber-300 space-y-2 shadow-sm">
+              <label className="block text-xs font-black text-amber-950 uppercase flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
                 4. Estilo de Separadores:
               </label>
               <select
                 value={builderFormat}
                 onChange={(e) => setBuilderFormat(e.target.value as any)}
-                className="w-full bg-white border-2 border-purple-300 text-slate-900 text-xs font-black rounded-xl px-4 py-2.5"
+                className="w-full bg-white border-2 border-amber-400 text-amber-950 text-xs font-black rounded-xl px-4 py-2.5"
               >
                 <option value="SIGLA_NUM_MES_ANIO">SIGLA-NRO/MES/AÑO (ej. EDO-IB-001/04/26)</option>
                 <option value="SIGLA_NUM_ANIO">SIGLA-NRO/AÑO (ej. EDO-IB-001/2026)</option>
                 <option value="SIGLA_SLASH_ANIO">SIGLA/NRO/AÑO (ej. CITE-SI/001/2026)</option>
               </select>
+              <p className="text-[10px] text-amber-800 font-bold">
+                Estructura seleccionada aplicada en la vista previa
+              </p>
             </div>
 
           </div>
@@ -685,7 +754,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
         </div>
       )}
 
-      {/* VISTA 3: FORMULARIO DE REGISTRO (Limpio, Rápido y Directo) */}
+      {/* VISTA 3: FORMULARIO DE REGISTRO */}
       {viewMode === 'form' && (
         <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-slate-300 shadow-xl space-y-6 max-w-4xl mx-auto">
           
@@ -756,7 +825,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                   onClick={handleOpenBuilder}
                   className="text-[10px] font-extrabold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline"
                 >
-                  <Wand2 className="w-3 h-3" />
+                  <Palette className="w-3 h-3" />
                   <span>Abrir Constructor</span>
                 </button>
               </div>
