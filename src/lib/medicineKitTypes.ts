@@ -2,48 +2,28 @@ export interface MedicineItem {
   id?: string;
   name: string;
   quantity: number;
-  unit: string; // 'Tabletas', 'Sobres', 'Frasco', 'Rollos', 'Unidades', 'Caja'
+  unit: string; // 'Tabletas', 'Sobres', 'Frasco', 'Rollos', 'Unidades', 'Caja', 'Tubo', 'Paquete'
 }
 
-export interface MedicineKitDeliveryInput {
-  kitName: string;
-  recipientName: string;
-  recipientCi?: string;
-  recipientPosition: string;
-  recipientArea: string;
-  deliveryDate: string;
+export interface MedicineKitInput {
+  name: string;
+  description?: string;
   items: MedicineItem[];
-  deliveredBy: string;
-  observations?: string;
 }
 
-export interface MedicineKitDeliveryData {
+export interface MedicineKitData {
   id: string;
-  folio: number;
-  kit_name: string;
-  recipient_name: string;
-  recipient_ci: string | null;
-  recipient_position: string;
-  recipient_area: string;
-  delivery_date: string;
+  name: string;
+  description: string | null;
   items: MedicineItem[];
-  delivered_by: string;
-  observations: string | null;
   created_at: string;
 }
 
-// Plantillas preconfiguradas de Kits para armar y entregar rápidamente
-export interface KitTemplate {
-  name: string;
-  description: string;
-  defaultItems: MedicineItem[];
-}
-
-export const PREDEFINED_KITS: KitTemplate[] = [
+export const PREDEFINED_KITS: MedicineKitInput[] = [
   {
     name: 'Kit Básico de Primeros Auxilios',
     description: 'Dotación básica para puestos de trabajo y oficinas',
-    defaultItems: [
+    items: [
       { name: 'Paracetamol 500mg (Analgésico / Antipirético)', quantity: 10, unit: 'Tabletas' },
       { name: 'Ibuprofeno 400mg (Antiinflamatorio)', quantity: 10, unit: 'Tabletas' },
       { name: 'Alcohol Medicinal al 70%', quantity: 1, unit: 'Frasco' },
@@ -57,7 +37,7 @@ export const PREDEFINED_KITS: KitTemplate[] = [
   {
     name: 'Kit Cuadrilla Técnica y Emergencias',
     description: 'Dotación completa para trabajos en campo, subestaciones y líneas',
-    defaultItems: [
+    items: [
       { name: 'Paracetamol 500mg', quantity: 20, unit: 'Tabletas' },
       { name: 'Ibuprofeno 400mg', quantity: 20, unit: 'Tabletas' },
       { name: 'Sales de Rehidratación Oral', quantity: 6, unit: 'Sobres' },
@@ -74,7 +54,7 @@ export const PREDEFINED_KITS: KitTemplate[] = [
   {
     name: 'Kit Botiquín Vehicular / Brigada Móvil',
     description: 'Dotación estándar para camionetas y vehículos de maniobra',
-    defaultItems: [
+    items: [
       { name: 'Paracetamol 500mg', quantity: 10, unit: 'Tabletas' },
       { name: 'Alcohol al 70%', quantity: 1, unit: 'Frasco' },
       { name: 'Gasas Esterilizadas', quantity: 5, unit: 'Sobres' },
@@ -83,10 +63,5 @@ export const PREDEFINED_KITS: KitTemplate[] = [
       { name: 'Esparadrapo', quantity: 1, unit: 'Rollo' },
       { name: 'Solución Antiséptica', quantity: 1, unit: 'Frasco' }
     ]
-  },
-  {
-    name: 'Kit Personalizado / A Medida',
-    description: 'Configure libremente los medicamentos y cantidades',
-    defaultItems: []
   }
 ];
