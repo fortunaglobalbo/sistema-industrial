@@ -239,6 +239,13 @@ export default function Home() {
 
           <div className="pt-3 border-t border-slate-800 space-y-2">
             <Link
+              href="/registros"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-lg transition border border-emerald-400/30"
+            >
+              <PlusCircle className="w-4 h-4 text-amber-300" />
+              <span>Portal de Registros (Clave: 1346)</span>
+            </Link>
+            <Link
               href="/formulario"
               className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-lg transition border border-blue-400/30"
             >
@@ -253,7 +260,7 @@ export default function Home() {
               <span>Formulario Tallas de Botines</span>
             </Link>
             <p className="text-[10px] text-slate-500 font-medium">
-              Acceso directo para supervisores y técnicos
+              Acceso directo para personal autorizado y técnicos
             </p>
           </div>
 
@@ -282,14 +289,23 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
+          <div className="flex flex-wrap items-center gap-2.5 text-xs font-semibold">
+            <Link
+              href="/registros"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-lg transition border border-emerald-400/30"
+              title="Abrir Portal de Registros con PIN 1346"
+            >
+              <PlusCircle className="w-4 h-4 text-amber-300" />
+              <span>Portal Registros (1346)</span>
+            </Link>
+
             <Link
               href="/formulario"
               className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-lg transition border border-blue-400/30"
               title="Abrir Formulario de Requerimiento de Herramientas para Técnicos"
             >
               <Wrench className="w-4 h-4 text-amber-300" />
-              <span>Requerimiento Herramientas</span>
+              <span>Herramientas</span>
             </Link>
 
             <Link
