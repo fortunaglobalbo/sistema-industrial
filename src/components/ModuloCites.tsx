@@ -5,7 +5,7 @@ import {
   FileText, Plus, RefreshCw, Printer, Trash2, Edit2, 
   Search, ArrowLeft, Calendar, Send, CheckCircle2, 
   Clock, BookOpen, Settings2, Sliders, Tag, Sparkles,
-  AlertTriangle, Hash, Wand2
+  AlertTriangle, Hash, Wand2, ArrowRight, Check
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { 
@@ -30,10 +30,10 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('TODOS');
 
-  // Vistas: 'list' | 'form' | 'print'
-  const [viewMode, setViewMode] = useState<'list' | 'form' | 'print'>('list');
+  // Vistas: 'list' | 'form' | 'builder' | 'print'
+  const [viewMode, setViewMode] = useState<'list' | 'form' | 'builder' | 'print'>('list');
 
-  // Form State
+  // Form State (Limpio y directo)
   const [editingId, setEditingId] = useState<string | null>(null);
   const [correlativeNumber, setCorrelativeNumber] = useState<number | string>('');
   const [issueDate, setIssueDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -45,10 +45,13 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
   const [observations, setObservations] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Generador Inteligente de CITES
-  const [sigla, setSigla] = useState('EDO-IB');
-  const [citeFormat, setCiteFormat] = useState<'SIGLA_NUM_MES_ANIO' | 'SIGLA_NUM_ANIO' | 'SIGLA_SLASH_ANIO' | 'MANUAL'>('SIGLA_NUM_MES_ANIO');
-  const [digitCount, setDigitCount] = useState<number>(3); // 3 dígitos: 001
+  // Constructor de CITE Personalizado (Aislado)
+  const [builderSigla, setBuilderSigla] = useState('EDO-IB');
+  const [builderCorrelative, setBuilderCorrelative] = useState<number | string>('');
+  const [builderDate, setBuilderDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [builderFormat, setBuilderFormat] = useState<'SIGLA_NUM_MES_ANIO' | 'SIGLA_NUM_ANIO' | 'SIGLA_SLASH_ANIO' | 'MANUAL'>('SIGLA_NUM_MES_ANIO');
+  const [builderDigits, setBuilderDigits] = useState<number>(3); // 001
+  const [builderPreview, setBuilderPreview] = useState('');
 
   // Parámetros personalizables del Reporte Imprimible
   const [printTitle, setPrintTitle] = useState('ENDE DEORURO - DEPARTAMENTO DE SEGURIDAD INDUSTRIAL');
@@ -83,33 +86,31 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
     loadData();
   }, [filterStatus]);
 
-  // Actualizar automáticamente el número de CITE generado cuando cambian sigla, fecha, correlativo o formato
+  // Generador reactivo en el Constructor de CITE
   useEffect(() => {
-    if (citeFormat === 'MANUAL') return;
-
-    const dateObj = issueDate ? new Date(issueDate + 'T00:00:00') : new Date();
+    const dateObj = builderDate ? new Date(builderDate + 'T00:00:00') : new Date();
     const monthStr = String(dateObj.getMonth() + 1).padStart(2, '0');
     const yearFullStr = String(dateObj.getFullYear());
     const yearShortStr = yearFullStr.slice(-2);
-    const numStr = String(correlativeNumber || 1).padStart(digitCount, '0');
-    const cleanSigla = (sigla || 'CITE').trim().toUpperCase();
+    const numStr = String(builderCorrelative || 1).padStart(builderDigits, '0');
+    const cleanSigla = (builderSigla || 'CITE').trim().toUpperCase();
 
     let generated = '';
-    if (citeFormat === 'SIGLA_NUM_MES_ANIO') {
-      // Formato solicitado: EDO-IB-001/04/26 o EDO-IB-001/08/26
+    if (builderFormat === 'SIGLA_NUM_MES_ANIO') {
+      // EDO-IB-001/04/26 o EDO-IB-001/08/26
       generated = `${cleanSigla}-${numStr}/${monthStr}/${yearShortStr}`;
-    } else if (citeFormat === 'SIGLA_NUM_ANIO') {
-      // Formato: EDO-IB-001/2026
+    } else if (builderFormat === 'SIGLA_NUM_ANIO') {
+      // EDO-IB-001/2026
       generated = `${cleanSigla}-${numStr}/${yearFullStr}`;
-    } else if (citeFormat === 'SIGLA_SLASH_ANIO') {
-      // Formato: CITE-SI/001/2026
+    } else if (builderFormat === 'SIGLA_SLASH_ANIO') {
+      // CITE-SI/001/2026
       generated = `${cleanSigla}/${numStr}/${yearFullStr}`;
+    } else {
+      generated = `${cleanSigla}-${numStr}`;
     }
 
-    if (generated) {
-      setDocNumber(generated);
-    }
-  }, [sigla, correlativeNumber, issueDate, citeFormat, digitCount]);
+    setBuilderPreview(generated);
+  }, [builderSigla, builderCorrelative, builderDate, builderFormat, builderDigits]);
 
   const loadData = async () => {
     setLoading(true);
@@ -118,14 +119,43 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
     setLoading(false);
   };
 
+  // Abrir Constructor Independiente
+  const handleOpenBuilder = async () => {
+    const nextNum = await getNextCiteCorrelative();
+    setBuilderCorrelative(nextNum);
+    const todayStr = new Date().toISOString().split('T')[0];
+    setBuilderDate(todayStr);
+    setViewMode('builder');
+  };
+
+  // Aplicar CITE construido y pasar al formulario de Registro
+  const handleApplyBuilderToForm = () => {
+    setEditingId(null);
+    setCorrelativeNumber(builderCorrelative);
+    setIssueDate(builderDate);
+    setDocNumber(builderPreview);
+    setReference('');
+    setRecipientA('GERENCIA GENERAL');
+    setStatus('Enviado');
+    setCustomStatus('');
+    setObservations('');
+    setViewMode('form');
+  };
+
+  // Abrir Registro Directo
   const handleOpenNew = async () => {
     setEditingId(null);
     const nextNum = await getNextCiteCorrelative();
     setCorrelativeNumber(nextNum);
     const todayStr = new Date().toISOString().split('T')[0];
     setIssueDate(todayStr);
-    setSigla('EDO-IB');
-    setCiteFormat('SIGLA_NUM_MES_ANIO');
+    
+    // Si ya había un código previo o sugerir uno estándar
+    const dateObj = new Date();
+    const mStr = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const yStr = String(dateObj.getFullYear()).slice(-2);
+    setDocNumber(`EDO-IB-${String(nextNum).padStart(3, '0')}/${mStr}/${yStr}`);
+    
     setReference('');
     setRecipientA('GERENCIA GENERAL');
     setStatus('Enviado');
@@ -141,7 +171,6 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
     setDocNumber(item.doc_number);
     setReference(item.reference);
     setRecipientA(item.recipient_a);
-    setCiteFormat('MANUAL'); // Al editar, mantener en modo manual por defecto
     
     if (CITE_STATUS_OPTIONS.includes(item.status as any)) {
       setStatus(item.status);
@@ -198,7 +227,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
       loadData();
       setViewMode('list');
     } else if (res.isDuplicate) {
-      // Manejo amigable e interactivo en español para duplicados
+      // Manejo amigable en español para duplicados
       const result = await Swal.fire({
         icon: 'warning',
         title: 'N° Correlativo Duplicado',
@@ -353,18 +382,30 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               </select>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* BOTONES DE ACCIÓN: CONSTRUCTOR Y REGISTRAR */}
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setViewMode('print')}
-                className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs px-4 py-3 rounded-xl transition shadow"
+                className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs px-3.5 py-3 rounded-xl transition shadow"
               >
                 <Printer className="w-4 h-4 text-emerald-400" />
-                <span>Imprimir Libro de CITES</span>
+                <span>Imprimir Libro</span>
               </button>
 
+              {/* BOTÓN INDEPENDIENTE PARA EL CONSTRUCTOR DE CITES */}
+              <button
+                onClick={handleOpenBuilder}
+                className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs px-4 py-3 rounded-xl transition shadow-md hover:shadow-indigo-200"
+                title="Construir formato de CITE personalizado (Siglas + Mes + Año)"
+              >
+                <Wand2 className="w-4 h-4 text-amber-300" />
+                <span>Construir CITE</span>
+              </button>
+
+              {/* BOTÓN DIRECTO DE REGISTRO */}
               <button
                 onClick={handleOpenNew}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-4 py-3 rounded-xl transition shadow-lg"
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-4 py-3 rounded-xl transition shadow-lg"
               >
                 <Plus className="w-4 h-4 text-amber-300" />
                 <span>+ Registrar CITE</span>
@@ -482,21 +523,21 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
         </div>
       )}
 
-      {/* VISTA 2: FORMULARIO CON GENERADOR INTELIGENTE DE CITES */}
-      {viewMode === 'form' && (
-        <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-slate-300 shadow-xl space-y-6">
+      {/* VISTA 2: CONSTRUCTOR / ESTUDIO DE CITES PERSONALIZADOS (Aislado, Intuitivo y Fácil) */}
+      {viewMode === 'builder' && (
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-indigo-200 shadow-xl space-y-6 max-w-4xl mx-auto">
           
           <div className="flex justify-between items-center border-b pb-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 text-blue-700 rounded-2xl">
-                <FileText className="w-6 h-6" />
+              <div className="p-3 bg-indigo-100 text-indigo-700 rounded-2xl shadow-inner">
+                <Wand2 className="w-6 h-6" />
               </div>
               <div>
                 <h2 className="text-lg sm:text-xl font-black text-slate-900 uppercase">
-                  {editingId ? `Editar CITE: ${docNumber}` : 'Registrar Nuevo CITE Personalizable'}
+                  Constructor de CITES Personalizados
                 </h2>
                 <p className="text-xs text-slate-500 font-bold">
-                  Genera códigos correlativos automáticos con tus siglas, mes y año o escribe libremente
+                  Configura la sigla, correlativo, detección automática de mes y año con vista previa en tiempo real
                 </p>
               </div>
             </div>
@@ -511,105 +552,185 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
             </button>
           </div>
 
-          {/* GENERADOR DE FORMATO DE CITE (SIGLA + CORRELATIVO + MES + AÑO) */}
-          <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-slate-50 border-2 border-blue-200 p-5 rounded-2xl space-y-4 shadow-sm">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <span className="text-xs font-black text-blue-950 uppercase flex items-center gap-1.5">
-                <Wand2 className="w-4 h-4 text-blue-600" />
-                Constructor de Formato de CITE Personalizado:
-              </span>
-              <span className="text-[11px] font-bold text-slate-500">
-                Detecta mes actual y año automáticamente
-              </span>
+          {/* CAJA PRINCIPAL DE VISTA PREVIA */}
+          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-3xl text-center space-y-2 shadow-lg border border-indigo-500/30">
+            <span className="text-[11px] font-mono font-bold text-indigo-300 uppercase tracking-widest block">
+              Vista Previa del Código CITE Generado:
+            </span>
+            <p className="text-2xl sm:text-4xl font-black font-mono text-amber-300 tracking-wider break-all">
+              {builderPreview || 'EDO-IB-001/08/26'}
+            </p>
+            <p className="text-xs text-slate-400">
+              Formato automático basado en tus siglas y fecha seleccionada
+            </p>
+          </div>
+
+          {/* OPCIONES DE CONFIGURACIÓN DEL CONSTRUCTOR */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
+            
+            {/* 1. SIGLA O PREFIJO */}
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
+              <label className="block text-xs font-black text-slate-900 uppercase flex items-center gap-1.5">
+                <Tag className="w-4 h-4 text-indigo-600" />
+                1. Sigla / Prefijo del Documento:
+              </label>
+              <input
+                type="text"
+                value={builderSigla}
+                onChange={(e) => setBuilderSigla(e.target.value)}
+                placeholder="EJ. EDO-IB, EDO-SI, NOTA..."
+                className="w-full bg-white border-2 border-indigo-300 text-slate-900 text-sm font-black font-mono uppercase rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-600"
+              />
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <span className="text-[10px] text-slate-400 font-bold self-center">Fijar:</span>
+                {quickSiglas.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setBuilderSigla(s)}
+                    className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition ${
+                      builderSigla === s ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 hover:bg-indigo-50 border-slate-300'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              
-              {/* Sigla / Prefijo */}
-              <div className="space-y-1">
-                <label className="block text-[11px] font-black text-slate-700 uppercase">
-                  1. Sigla / Prefijo:
-                </label>
-                <input
-                  type="text"
-                  placeholder="EJ. EDO-IB, EDO-SI, CITE..."
-                  value={sigla}
-                  onChange={(e) => {
-                    setSigla(e.target.value.toUpperCase());
-                    if (citeFormat === 'MANUAL') setCiteFormat('SIGLA_NUM_MES_ANIO');
-                  }}
-                  className="w-full bg-white border-2 border-blue-300 rounded-xl px-3 py-2 text-xs sm:text-sm font-black font-mono uppercase text-slate-900 focus:outline-none focus:border-blue-600"
-                />
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {quickSiglas.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => {
-                        setSigla(s);
-                        if (citeFormat === 'MANUAL') setCiteFormat('SIGLA_NUM_MES_ANIO');
-                      }}
-                      className="text-[9px] font-bold bg-white hover:bg-blue-600 hover:text-white text-blue-900 border border-blue-200 px-1.5 py-0.5 rounded transition"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
+            {/* 2. FECHA Y DETECCIÓN AUTOMÁTICA DE MES/AÑO */}
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
+              <label className="block text-xs font-black text-slate-900 uppercase flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                2. Fecha del CITE (Extrae Mes y Año):
+              </label>
+              <input
+                type="date"
+                value={builderDate}
+                onChange={(e) => setBuilderDate(e.target.value)}
+                className="w-full bg-white border-2 border-blue-300 text-slate-900 text-sm font-black rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-600"
+              />
+              <div className="flex justify-between text-[11px] font-bold text-slate-600 pt-1 font-mono">
+                <span>Mes detectado: <strong>{builderDate ? String(new Date(builderDate + 'T00:00:00').getMonth() + 1).padStart(2, '0') : '--'}</strong></span>
+                <span>Año detectado: <strong>{builderDate ? String(new Date(builderDate + 'T00:00:00').getFullYear()).slice(-2) : '--'}</strong></span>
               </div>
+            </div>
 
-              {/* Nro Correlativo */}
-              <div className="space-y-1">
-                <label className="block text-[11px] font-black text-slate-700 uppercase">
-                  2. N° Correlativo:
-                </label>
+            {/* 3. N° CORRELATIVO Y DÍGITOS */}
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
+              <label className="block text-xs font-black text-slate-900 uppercase flex items-center gap-1.5">
+                <Hash className="w-4 h-4 text-emerald-600" />
+                3. Número Correlativo y Formato:
+              </label>
+              <div className="flex gap-2">
                 <input
                   type="number"
                   min="1"
-                  placeholder="Ej. 1, 2, 45..."
-                  value={correlativeNumber}
-                  onChange={(e) => setCorrelativeNumber(e.target.value)}
-                  className="w-full bg-white border-2 border-blue-300 rounded-xl px-3 py-2 text-xs sm:text-sm font-black font-mono text-blue-700 focus:outline-none focus:border-blue-600"
+                  value={builderCorrelative}
+                  onChange={(e) => setBuilderCorrelative(e.target.value)}
+                  placeholder="Ej. 1, 45..."
+                  className="flex-1 bg-white border-2 border-emerald-300 text-slate-900 text-sm font-black font-mono rounded-xl px-4 py-2.5"
                 />
-                <span className="text-[10px] text-slate-500 font-bold block pt-1">
-                  Formatea a {digitCount} dígitos: {String(correlativeNumber || 1).padStart(digitCount, '0')}
-                </span>
-              </div>
-
-              {/* Estilo de Formato */}
-              <div className="space-y-1">
-                <label className="block text-[11px] font-black text-slate-700 uppercase">
-                  3. Estilo de Formato:
-                </label>
                 <select
-                  value={citeFormat}
-                  onChange={(e) => setCiteFormat(e.target.value as any)}
-                  className="w-full bg-white border-2 border-blue-300 rounded-xl px-3 py-2 text-xs font-black text-slate-900"
+                  value={builderDigits}
+                  onChange={(e) => setBuilderDigits(Number(e.target.value))}
+                  className="bg-white border-2 border-emerald-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
                 >
-                  <option value="SIGLA_NUM_MES_ANIO">SIGLA-NRO/MES/AÑO (ej. EDO-IB-001/04/26)</option>
-                  <option value="SIGLA_NUM_ANIO">SIGLA-NRO/AÑO (ej. EDO-IB-001/2026)</option>
-                  <option value="SIGLA_SLASH_ANIO">SIGLA/NRO/AÑO (ej. CITE-SI/001/2026)</option>
-                  <option value="MANUAL">✏️ Formato Manual Libre</option>
+                  <option value={3}>3 dígitos (001)</option>
+                  <option value={2}>2 dígitos (01)</option>
+                  <option value={1}>1 dígito (1)</option>
                 </select>
-                <span className="text-[10px] text-slate-500 font-bold block pt-1">
-                  Mes: {issueDate ? String(new Date(issueDate + 'T00:00:00').getMonth() + 1).padStart(2, '0') : '--'} | Año: {issueDate ? String(new Date(issueDate + 'T00:00:00').getFullYear()).slice(-2) : '--'}
-                </span>
               </div>
-
-              {/* Vista Previa del CITE */}
-              <div className="space-y-1">
-                <label className="block text-[11px] font-black text-slate-700 uppercase">
-                  Código Resultante:
-                </label>
-                <div className="p-2 bg-slate-900 text-amber-300 font-mono font-black text-xs sm:text-sm rounded-xl border border-slate-800 text-center truncate">
-                  {docNumber || 'EDO-IB-001/08/26'}
-                </div>
-              </div>
-
             </div>
+
+            {/* 4. ESTILO DE ESTRUCTURA */}
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
+              <label className="block text-xs font-black text-slate-900 uppercase flex items-center gap-1.5">
+                <Sliders className="w-4 h-4 text-purple-600" />
+                4. Estilo de Separadores:
+              </label>
+              <select
+                value={builderFormat}
+                onChange={(e) => setBuilderFormat(e.target.value as any)}
+                className="w-full bg-white border-2 border-purple-300 text-slate-900 text-xs font-black rounded-xl px-4 py-2.5"
+              >
+                <option value="SIGLA_NUM_MES_ANIO">SIGLA-NRO/MES/AÑO (ej. EDO-IB-001/04/26)</option>
+                <option value="SIGLA_NUM_ANIO">SIGLA-NRO/AÑO (ej. EDO-IB-001/2026)</option>
+                <option value="SIGLA_SLASH_ANIO">SIGLA/NRO/AÑO (ej. CITE-SI/001/2026)</option>
+              </select>
+            </div>
+
+          </div>
+
+          {/* BOTONES DE ACCIÓN DEL CONSTRUCTOR */}
+          <div className="pt-4 border-t flex flex-col sm:flex-row justify-between items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs sm:text-sm px-6 py-3 rounded-xl transition"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              onClick={handleApplyBuilderToForm}
+              className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-black text-xs sm:text-sm px-8 py-3.5 rounded-xl shadow-lg transition flex items-center justify-center gap-2 uppercase tracking-wide"
+            >
+              <span>Usar este CITE y Pasar al Registro</span>
+              <ArrowRight className="w-4 h-4 text-amber-300" />
+            </button>
+          </div>
+
+        </div>
+      )}
+
+      {/* VISTA 3: FORMULARIO DE REGISTRO (Limpio, Rápido y Directo) */}
+      {viewMode === 'form' && (
+        <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-slate-300 shadow-xl space-y-6 max-w-4xl mx-auto">
+          
+          <div className="flex justify-between items-center border-b pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-100 text-blue-700 rounded-2xl">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 uppercase">
+                  {editingId ? `Editar CITE: ${docNumber}` : 'Registrar CITE a Gerencia'}
+                </h2>
+                <p className="text-xs text-slate-500 font-bold">
+                  Ingresa los detalles del documento para registrarlo en el libro oficial
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs px-4 py-2 rounded-xl transition"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Volver</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
             
+            {/* Nro Correlativo */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black text-slate-900 uppercase">
+                N° Correlativo
+              </label>
+              <input
+                type="number"
+                min="1"
+                placeholder="Ej. 1, 2, 45..."
+                value={correlativeNumber}
+                onChange={(e) => setCorrelativeNumber(e.target.value)}
+                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-blue-700 text-sm font-black font-mono rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
+              />
+            </div>
+
             {/* Fecha */}
             <div className="space-y-1.5">
               <label className="block text-xs font-black text-slate-900 uppercase">
@@ -624,20 +745,27 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               />
             </div>
 
-            {/* Número de Documento / CITE */}
-            <div className="space-y-1.5 sm:col-span-3">
-              <label className="block text-xs font-black text-slate-900 uppercase">
-                Número de Documento / CITE Final <span className="text-red-600">*</span>
-              </label>
+            {/* Número de Documento / CITE con botón al constructor */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <div className="flex justify-between items-center">
+                <label className="block text-xs font-black text-slate-900 uppercase">
+                  Número de CITE / Documento <span className="text-red-600">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleOpenBuilder}
+                  className="text-[10px] font-extrabold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline"
+                >
+                  <Wand2 className="w-3 h-3" />
+                  <span>Abrir Constructor</span>
+                </button>
+              </div>
               <input
                 type="text"
                 required
                 placeholder="EJ. EDO-IB-001/04/26, CITE-SI-045/2026..."
                 value={docNumber}
-                onChange={(e) => {
-                  setDocNumber(e.target.value);
-                  setCiteFormat('MANUAL');
-                }}
+                onChange={(e) => setDocNumber(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black font-mono uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -685,7 +813,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               />
             </div>
 
-            {/* Estado del Trámite (Seleccionable o Personalizado) */}
+            {/* Estado del Trámite */}
             <div className="space-y-1.5 sm:col-span-2">
               <label className="block text-xs font-black text-slate-900 uppercase">
                 Estado del Trámite
@@ -739,7 +867,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-black px-7 py-3 rounded-xl transition shadow-lg text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-black px-7 py-3 rounded-xl transition shadow-lg text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -755,7 +883,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
         </form>
       )}
 
-      {/* VISTA 3: PLANILLA OFICIAL IMPRIMIBLE */}
+      {/* VISTA 4: PLANILLA OFICIAL IMPRIMIBLE */}
       {viewMode === 'print' && (
         <div className="space-y-4">
           
