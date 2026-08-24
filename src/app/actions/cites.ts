@@ -4,12 +4,31 @@ import { supabase } from '@/lib/supabase';
 import { OfficialCiteInput, OfficialCiteData } from '@/lib/citeTypes';
 
 /**
- * Registrar o actualizar un CITE en Supabase
+ * Obtener el siguiente número correlativo disponible
+ */
+export async function getNextCiteCorrelative(): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('official_cites')
+      .select('correlative_number')
+      .order('correlative_number', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) return 1;
+    return (data.correlative_number || 0) + 1;
+  } catch {
+    return 1;
+  }
+}
+
+/**
+ * Registrar o actualizar un CITE en Supabase con control de duplicados en español
  */
 export async function saveOfficialCite(data: OfficialCiteInput, existingId?: string) {
   try {
     if (!data.issueDate) {
-      return { success: false, error: 'La fecha es obligatoria.' };
+      return { success: false, error: 'La fecha de emisión es obligatoria.' };
     }
     if (!data.docNumber || !data.docNumber.trim()) {
       return { success: false, error: 'El número de documento / CITE es obligatorio.' };
@@ -21,7 +40,14 @@ export async function saveOfficialCite(data: OfficialCiteInput, existingId?: str
       return { success: false, error: 'El campo "A" (Destinatario / Gerencia) es obligatorio.' };
     }
 
+    // Si no se proporcionó correlativo o es inválido, calcular el siguiente
+    let corrNum = data.correlativeNumber;
+    if (!corrNum || corrNum <= 0) {
+      corrNum = await getNextCiteCorrelative();
+    }
+
     const payload: any = {
+      correlative_number: corrNum,
       issue_date: data.issueDate,
       doc_number: data.docNumber.trim().toUpperCase(),
       reference: data.reference.trim().toUpperCase(),
@@ -31,10 +57,6 @@ export async function saveOfficialCite(data: OfficialCiteInput, existingId?: str
       observations: data.observations ? data.observations.trim().toUpperCase() : null
     };
 
-    if (data.correlativeNumber && data.correlativeNumber > 0) {
-      payload.correlative_number = data.correlativeNumber;
-    }
-
     if (existingId) {
       const { error } = await supabase
         .from('official_cites')
@@ -42,6 +64,15 @@ export async function saveOfficialCite(data: OfficialCiteInput, existingId?: str
         .eq('id', existingId);
 
       if (error) {
+        if (error.code === '23505' || error.message.includes('unique constraint') || error.message.includes('duplicate key')) {
+          const nextAvailable = await getNextCiteCorrelative();
+          return {
+            success: false,
+            isDuplicate: true,
+            nextAvailable,
+            error: `El N° Correlativo #${corrNum} ya está registrado en otro documento.`
+          };
+        }
         return { success: false, error: `Error al actualizar: ${error.message}` };
       }
       return { success: true, id: existingId };
@@ -53,7 +84,15 @@ export async function saveOfficialCite(data: OfficialCiteInput, existingId?: str
         .single();
 
       if (error) {
-        console.warn('Error insertando en official_cites:', error);
+        if (error.code === '23505' || error.message.includes('unique constraint') || error.message.includes('duplicate key')) {
+          const nextAvailable = await getNextCiteCorrelative();
+          return {
+            success: false,
+            isDuplicate: true,
+            nextAvailable,
+            error: `El N° Correlativo #${corrNum} ya está registrado en otro CITE.`
+          };
+        }
         return { success: false, error: `Error al guardar: ${error.message}` };
       }
       return { success: true, id: record.id };
@@ -92,7 +131,8 @@ export async function getOfficialCites(searchTerm?: string, filterStatus?: strin
         (item.doc_number && item.doc_number.toLowerCase().includes(term)) ||
         (item.reference && item.reference.toLowerCase().includes(term)) ||
         (item.recipient_a && item.recipient_a.toLowerCase().includes(term)) ||
-        (item.signer_firm && item.signer_firm.toLowerCase().includes(term))
+        (item.signer_firm && item.signer_firm.toLowerCase().includes(term)) ||
+        String(item.correlative_number).includes(term)
       );
     }
 

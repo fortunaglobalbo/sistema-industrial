@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Droplets, Plus, RefreshCw, Printer, Trash2, 
   CheckCircle2, AlertCircle, ArrowLeft, Calendar, 
-  User, FileText, TrendingDown, TrendingUp
+  User, FileText, TrendingDown, TrendingUp, Table, Info
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { 
@@ -14,6 +14,21 @@ import {
   getWaterMonthlySummary 
 } from '@/app/actions/waterSupply';
 import { WaterSupplyInput, WaterSupplyData } from '@/lib/waterSupplyTypes';
+
+// Cronograma Oficial del Contrato (Cláusula Octava - 440 Bidones)
+export const CONTRACT_WATER_SCHEDULE = [
+  { monthName: 'Febrero', monthNum: 2, quota: 70 },
+  { monthName: 'Marzo', monthNum: 3, quota: 30 },
+  { monthName: 'Abril', monthNum: 4, quota: 35 },
+  { monthName: 'Mayo', monthNum: 5, quota: 30 },
+  { monthName: 'Junio', monthNum: 6, quota: 30 },
+  { monthName: 'Julio', monthNum: 7, quota: 30 },
+  { monthName: 'Agosto', monthNum: 8, quota: 30 },
+  { monthName: 'Septiembre', monthNum: 9, quota: 40 },
+  { monthName: 'Octubre', monthNum: 10, quota: 45 },
+  { monthName: 'Noviembre', monthNum: 11, quota: 50 },
+  { monthName: 'Diciembre', monthNum: 12, quota: 50 },
+];
 
 interface ModuloControlAguaProps {
   showTabs?: boolean;
@@ -28,6 +43,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
     deliveriesCount: 0
   });
   const [loading, setLoading] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   // Filtro de Mes/Año (YYYY-MM)
   const [filterMonth, setFilterMonth] = useState(() => {
@@ -38,12 +54,12 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
   // Vistas: 'list' | 'form' | 'print'
   const [viewMode, setViewMode] = useState<'list' | 'form' | 'print'>('list');
 
-  // Form State
+  // Form State (Default 30 botellones editable)
   const [deliveryDate, setDeliveryDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [receiptNumber, setReceiptNumber] = useState('');
   const [supplierName, setSupplierName] = useState('PROVEEDOR OFICIAL DE AGUA');
-  const [bottlesReceived, setBottlesReceived] = useState<number>(20);
-  const [bottlesContracted, setBottlesContracted] = useState<number>(20);
+  const [bottlesReceived, setBottlesReceived] = useState<number>(30);
+  const [bottlesContracted, setBottlesContracted] = useState<number>(30);
   const [bottleCapacity, setBottleCapacity] = useState('20 Litros');
   const [containerCondition, setContainerCondition] = useState('Conforme y Sellado');
   const [receivedBy, setReceivedBy] = useState('');
@@ -63,17 +79,34 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
     setLoading(false);
   };
 
+  // Función para obtener la cuota de contrato de un mes determinado
+  const getContractQuotaForDate = (dateStr: string) => {
+    if (!dateStr) return 30;
+    const month = new Date(dateStr + 'T00:00:00').getMonth() + 1;
+    const match = CONTRACT_WATER_SCHEDULE.find(s => s.monthNum === month);
+    return match ? match.quota : 30;
+  };
+
   const handleOpenNew = () => {
-    setDeliveryDate(new Date().toISOString().split('T')[0]);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const defaultQuota = getContractQuotaForDate(todayStr);
+    setDeliveryDate(todayStr);
     setReceiptNumber('');
     setSupplierName('PROVEEDOR OFICIAL DE AGUA');
-    setBottlesReceived(20);
-    setBottlesContracted(20);
+    setBottlesReceived(defaultQuota);
+    setBottlesContracted(defaultQuota);
     setBottleCapacity('20 Litros');
     setContainerCondition('Conforme y Sellado');
     setReceivedBy('');
     setObservations('');
     setViewMode('form');
+  };
+
+  const handleDateChange = (newDate: string) => {
+    setDeliveryDate(newDate);
+    const monthQuota = getContractQuotaForDate(newDate);
+    // Sugerir la cuota del cronograma manteniendo editable
+    setBottlesContracted(monthQuota);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,7 +140,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
       Swal.fire({
         icon: 'success',
         title: 'Entrega de Agua Registrada',
-        text: 'La entrega semanal ha sido auditada y guardada correctamente.',
+        text: 'La entrega de agua ha sido auditada y guardada correctamente.',
         timer: 1800,
         showConfirmButton: false
       });
@@ -120,8 +153,8 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
 
   const handleDelete = async (id: string) => {
     const confirm = await Swal.fire({
-      title: '¿Eliminar Entrega?',
-      text: 'Se eliminará este registro de recepción de agua.',
+      title: '¿Eliminar este registro?',
+      text: 'Se eliminará esta entrega de agua del historial mensual.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
@@ -132,7 +165,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
     if (confirm.isConfirmed) {
       const res = await deleteWaterDelivery(id);
       if (res.success) {
-        Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1500, showConfirmButton: false });
+        Swal.fire({ icon: 'success', title: 'Registro eliminado', timer: 1500, showConfirmButton: false });
         loadData();
       } else {
         Swal.fire({ icon: 'error', title: 'Error', text: res.error });
@@ -147,56 +180,49 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
       {viewMode === 'list' && (
         <div className="space-y-6">
           
-          {/* TARJETAS DE MÉTRICAS DEL CONTRATO */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* BANNER DE RESUMEN MENSUAL Y ACCESO AL CRONOGRAMA */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="p-3.5 bg-blue-100 text-blue-700 rounded-2xl">
-                <Droplets className="w-7 h-7" />
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-700 text-white p-5 rounded-2xl shadow-md flex items-center gap-4">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Droplets className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase">Entregas del Mes</p>
-                <p className="text-2xl font-black font-mono text-slate-900">{summary.deliveriesCount}</p>
-                <p className="text-[11px] text-slate-500 font-semibold">Remisiones recibidas</p>
+                <p className="text-xs font-extrabold uppercase tracking-wider text-blue-100">Botellones Recibidos</p>
+                <p className="text-3xl font-black font-mono">{summary.totalReceived}</p>
+                <p className="text-[11px] text-blue-200">En {summary.deliveriesCount} entregas del mes</p>
               </div>
             </div>
 
-            <div className="bg-blue-50/80 p-5 rounded-2xl border border-blue-200 shadow-sm flex items-center gap-4">
-              <div className="p-3.5 bg-blue-600 text-white rounded-2xl shadow">
-                <CheckCircle2 className="w-7 h-7" />
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center gap-4">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                <FileText className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs font-bold text-blue-900 uppercase">Total Recibidos</p>
-                <p className="text-2xl font-black font-mono text-blue-950">{summary.totalReceived} <span className="text-xs font-normal">bidones</span></p>
-                <p className="text-[11px] text-blue-700 font-bold">Botellones de 20 Lts</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Cuota Contratada</p>
+                <p className="text-3xl font-black font-mono text-slate-900">{summary.totalContracted}</p>
+                <p className="text-[11px] text-slate-500">Según Cronograma Contrato</p>
               </div>
             </div>
 
-            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="p-3.5 bg-slate-800 text-white rounded-2xl shadow">
-                <FileText className="w-7 h-7" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-700 uppercase">Pactado en Contrato</p>
-                <p className="text-2xl font-black font-mono text-slate-900">{summary.totalContracted} <span className="text-xs font-normal">bidones</span></p>
-                <p className="text-[11px] text-slate-500 font-semibold">Cuota periódica oficial</p>
-              </div>
-            </div>
-
-            <div className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 ${
-              summary.totalDifference < 0 
-                ? 'bg-rose-50 border-rose-200 text-rose-900' 
-                : summary.totalDifference > 0 
-                ? 'bg-amber-50 border-amber-200 text-amber-900'
-                : 'bg-emerald-50 border-emerald-200 text-emerald-900'
-            }`}>
-              <div className={`p-3.5 text-white rounded-2xl shadow ${
-                summary.totalDifference < 0 ? 'bg-rose-600' : summary.totalDifference > 0 ? 'bg-amber-500' : 'bg-emerald-600'
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center gap-4">
+              <div className={`p-3 rounded-xl ${
+                summary.totalDifference === 0 
+                  ? 'bg-emerald-50 text-emerald-600' 
+                  : summary.totalDifference < 0 
+                  ? 'bg-rose-50 text-rose-600' 
+                  : 'bg-amber-50 text-amber-600'
               }`}>
-                {summary.totalDifference < 0 ? <TrendingDown className="w-7 h-7" /> : <TrendingUp className="w-7 h-7" />}
+                {summary.totalDifference === 0 ? (
+                  <CheckCircle2 className="w-6 h-6" />
+                ) : summary.totalDifference < 0 ? (
+                  <TrendingDown className="w-6 h-6" />
+                ) : (
+                  <TrendingUp className="w-6 h-6" />
+                )}
               </div>
               <div>
-                <p className="text-xs font-bold uppercase">Balance / Saldo</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Balance / Diferencia</p>
                 <p className="text-2xl font-black font-mono">
                   {summary.totalDifference > 0 ? `+${summary.totalDifference}` : summary.totalDifference} <span className="text-xs font-normal">bidones</span>
                 </p>
@@ -206,7 +232,63 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
               </div>
             </div>
 
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-md flex flex-col justify-between">
+              <div>
+                <span className="text-[10px] font-mono font-bold text-amber-300 uppercase">Contrato 11 Meses</span>
+                <p className="text-sm font-black uppercase text-slate-100">Cronograma Total</p>
+                <p className="text-2xl font-black font-mono text-emerald-400">440 Bidones</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowScheduleModal(!showScheduleModal)}
+                className="text-[11px] font-bold text-blue-300 hover:text-white underline text-left mt-2 flex items-center gap-1"
+              >
+                <Table className="w-3.5 h-3.5" />
+                <span>Ver cronograma mensual</span>
+              </button>
+            </div>
+
           </div>
+
+          {/* TABLA DESPLEGABLE DEL CRONOGRAMA OFICIAL */}
+          {showScheduleModal && (
+            <div className="bg-white p-5 rounded-2xl border-2 border-blue-200 shadow-lg space-y-3">
+              <div className="flex justify-between items-center border-b pb-2">
+                <h4 className="text-xs font-black uppercase text-slate-900 flex items-center gap-2">
+                  <Table className="w-4 h-4 text-blue-600" />
+                  Cláusula Octava - Cronograma Oficial de Entregas (Total: 440 Bidones de 20L)
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => setShowScheduleModal(false)}
+                  className="text-xs font-bold text-slate-400 hover:text-slate-700"
+                >
+                  Cerrar ✕
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-center border-collapse">
+                  <thead>
+                    <tr className="bg-slate-900 text-white font-black uppercase">
+                      <th className="p-2 border border-slate-700">Cant. Total</th>
+                      {CONTRACT_WATER_SCHEDULE.map((s) => (
+                        <th key={s.monthName} className="p-2 border border-slate-700">{s.monthName}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="font-mono font-black text-slate-900 bg-blue-50/50">
+                      <td className="p-2.5 border border-slate-300 bg-amber-100 text-amber-950 font-extrabold">440</td>
+                      {CONTRACT_WATER_SCHEDULE.map((s) => (
+                        <td key={s.monthName} className="p-2.5 border border-slate-300">{s.quota}</td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* BARRA DE ACCIONES Y SELECTOR DE MES */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
@@ -238,7 +320,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-4 py-3 rounded-xl transition shadow-lg"
               >
                 <Plus className="w-4 h-4 text-amber-300" />
-                <span>+ Registrar Entrega Semanal</span>
+                <span>+ Registrar Entrega de Agua</span>
               </button>
             </div>
 
@@ -250,7 +332,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
             <div className="flex justify-between items-center border-b pb-3">
               <h3 className="text-base font-black text-slate-900 uppercase flex items-center gap-2">
                 <Droplets className="w-5 h-5 text-blue-600" />
-                Historial de Remisiones y Entregas Semanales ({deliveries.length})
+                Historial de Remisiones y Entregas ({deliveries.length})
               </h3>
 
               <button
@@ -337,7 +419,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
         </div>
       )}
 
-      {/* VISTA 2: FORMULARIO DE REGISTRO */}
+      {/* VISTA 2: FORMULARIO DE REGISTRO (30 BOTELLONES POR DEFECTO Y 100% EDITABLE) */}
       {viewMode === 'form' && (
         <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-slate-300 shadow-xl space-y-6">
           
@@ -348,10 +430,10 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
               </div>
               <div>
                 <h2 className="text-lg sm:text-xl font-black text-slate-900 uppercase">
-                  Registro de Entrega Semanal de Agua
+                  Registro de Entrega de Agua
                 </h2>
                 <p className="text-xs text-slate-500 font-bold">
-                  Auditoría física de recepción de botellones según contrato
+                  Auditoría física de recepción de botellones (Por defecto 30 botellones / mes, configurable)
                 </p>
               </div>
             </div>
@@ -376,7 +458,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 type="date"
                 required
                 value={deliveryDate}
-                onChange={(e) => setDeliveryDate(e.target.value)}
+                onChange={(e) => handleDateChange(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -406,6 +488,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
               />
             </div>
 
+            {/* BOTELLONES RECIBIDOS */}
             <div className="space-y-1.5">
               <label className="block text-xs font-black text-slate-900 uppercase">
                 Botellones Recibidos (Físico) <span className="text-red-600">*</span>
@@ -420,10 +503,14 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
               />
             </div>
 
+            {/* BOTELLONES ESTIPULADOS (CRONOGRAMA / CONTRATO - EDITABLE) */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-black text-slate-900 uppercase">
-                Botellones Estipulados (Contrato) <span className="text-red-600">*</span>
-              </label>
+              <div className="flex justify-between items-center">
+                <label className="block text-xs font-black text-slate-900 uppercase">
+                  Botellones Contrato (Mes) <span className="text-red-600">*</span>
+                </label>
+                <span className="text-[10px] font-bold text-blue-600">Editable</span>
+              </div>
               <input
                 type="number"
                 min="0"
@@ -432,8 +519,22 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 onChange={(e) => setBottlesContracted(parseInt(e.target.value) || 0)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-lg font-black font-mono rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
+              <div className="flex gap-1 pt-1">
+                <span className="text-[10px] text-slate-400 font-bold self-center">Fijar:</span>
+                {[30, 35, 40, 45, 50, 70].map((qty) => (
+                  <button
+                    key={qty}
+                    type="button"
+                    onClick={() => setBottlesContracted(qty)}
+                    className="text-[10px] font-bold bg-slate-100 hover:bg-blue-100 hover:text-blue-700 text-slate-700 px-1.5 py-0.5 rounded transition"
+                  >
+                    {qty}
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* DIFERENCIA AUTOMÁTICA */}
             <div className="space-y-1.5">
               <label className="block text-xs font-black text-slate-900 uppercase">
                 Diferencia Automática
@@ -504,7 +605,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-black px-7 py-3 rounded-xl transition shadow-lg text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-black px-7 py-3 rounded-xl transition shadow-lg text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -520,7 +621,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
         </form>
       )}
 
-      {/* VISTA 3: ACTA OFICIAL IMPRIMIBLE CON CLASE print-area */}
+      {/* VISTA 3: PLANILLA OFICIAL IMPRIMIBLE CON CLASE print-area */}
       {viewMode === 'print' && (
         <div className="space-y-4">
           
@@ -538,12 +639,12 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-xs sm:text-sm font-black shadow-lg transition"
             >
               <Printer className="w-4 h-4 text-amber-300" />
-              <span>IMPRIMIR ACTA DE CONFORMIDAD</span>
+              <span>IMPRIMIR ACTA MENSUAL</span>
             </button>
           </div>
 
           {/* DOCUMENTO OFICIAL IMPRIMIBLE */}
-          <div className="print-area bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 shadow-xl max-w-4xl mx-auto print:shadow-none print:border-none print:w-full print:p-0 font-sans">
+          <div className="print-area bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 shadow-xl max-w-5xl mx-auto print:shadow-none print:border-none print:w-full print:p-0 font-sans">
             
             <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
               <div className="flex items-center gap-4">
@@ -553,14 +654,14 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                   className="h-12 w-auto object-contain"
                 />
                 <div>
-                  <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight">ENDE DEORURO - DEPARTAMENTO DE SERVICIOS GENERALES</h2>
-                  <p className="text-xs font-extrabold text-blue-800 uppercase tracking-wide">ACTA MENSUAL DE AUDITORÍA Y CONFORMIDAD DE SUMINISTRO DE AGUA</p>
+                  <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight">ENDE DEORURO - DEPARTAMENTO DE SEGURIDAD INDUSTRIAL</h2>
+                  <p className="text-xs font-extrabold text-blue-800 uppercase tracking-wide">ACTA MENSUAL DE CONFORMIDAD Y CONTROL DE SUMINISTRO DE AGUA DE MESA (20L)</p>
                 </div>
               </div>
 
               <div className="text-right">
                 <span className="inline-block bg-slate-900 text-white font-mono font-bold text-xs px-3 py-1.5 rounded uppercase">
-                  PERÍODO: {filterMonth}
+                  MES: {filterMonth}
                 </span>
                 <p className="text-[10px] text-slate-500 font-bold mt-1 font-mono">
                   EMISIÓN: {new Date().toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
@@ -568,81 +669,68 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs mb-6 text-center">
-              <div>
-                <span className="text-slate-500 font-bold block uppercase text-[10px]">Entregas Realizadas:</span>
-                <span className="text-base font-black font-mono text-slate-900">{summary.deliveriesCount}</span>
+            <div className="grid grid-cols-3 gap-4 mb-6 text-xs">
+              <div className="border border-slate-300 p-3 rounded-xl bg-slate-50">
+                <span className="text-slate-500 font-bold block text-[10px] uppercase">Total Recibido en Mes</span>
+                <span className="text-base font-black font-mono text-slate-900">{summary.totalReceived} Bidones</span>
               </div>
-              <div>
-                <span className="text-slate-500 font-bold block uppercase text-[10px]">Total Recibidos:</span>
-                <span className="text-base font-black font-mono text-blue-900">{summary.totalReceived} bidones</span>
+              <div className="border border-slate-300 p-3 rounded-xl bg-slate-50">
+                <span className="text-slate-500 font-bold block text-[10px] uppercase">Cuota Contratada</span>
+                <span className="text-base font-black font-mono text-slate-900">{summary.totalContracted} Bidones</span>
               </div>
-              <div>
-                <span className="text-slate-500 font-bold block uppercase text-[10px]">Total Contratados:</span>
-                <span className="text-base font-black font-mono text-slate-900">{summary.totalContracted} bidones</span>
-              </div>
-              <div>
-                <span className="text-slate-500 font-bold block uppercase text-[10px]">Diferencia / Balance:</span>
-                <span className={`text-base font-black font-mono ${summary.totalDifference < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
-                  {summary.totalDifference > 0 ? `+${summary.totalDifference}` : summary.totalDifference} bidones
+              <div className="border border-slate-300 p-3 rounded-xl bg-slate-50">
+                <span className="text-slate-500 font-bold block text-[10px] uppercase">Estado de Cumplimiento</span>
+                <span className={`text-base font-black font-mono ${
+                  summary.totalDifference === 0 ? 'text-emerald-700' : summary.totalDifference < 0 ? 'text-rose-600' : 'text-amber-700'
+                }`}>
+                  {summary.totalDifference === 0 ? '100% Conforme' : summary.totalDifference < 0 ? `${summary.totalDifference} Faltante` : `+${summary.totalDifference} Excedente`}
                 </span>
               </div>
             </div>
-
-            <h3 className="font-black text-xs sm:text-sm uppercase tracking-wider text-slate-900 mb-3 border-l-4 border-blue-600 pl-2">
-              DETALLE MENSUAL DE REMISIONES ENTREGADAS POR EL PROVEEDOR
-            </h3>
 
             <div className="overflow-x-auto mb-8">
               <table className="w-full border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-900 text-white font-black uppercase text-left">
-                    <th className="p-2.5 text-center w-10 border border-slate-900">N°</th>
-                    <th className="p-2.5 text-center w-24 border border-slate-900">FECHA</th>
-                    <th className="p-2.5 border border-slate-900">N° GUÍA / REMISIÓN</th>
-                    <th className="p-2.5 text-center border border-slate-900 bg-blue-950">RECIBIDOS (20L)</th>
-                    <th className="p-2.5 text-center border border-slate-900">CONTRATADOS</th>
-                    <th className="p-2.5 text-center border border-slate-900">DIFERENCIA</th>
-                    <th className="p-2.5 border border-slate-900">RECIBIDO POR</th>
+                    <th className="p-2 text-center w-8 border border-slate-900">N°</th>
+                    <th className="p-2 text-center w-24 border border-slate-900">Fecha</th>
+                    <th className="p-2 w-28 border border-slate-900">N° Remisión</th>
+                    <th className="p-2 text-center w-20 border border-slate-900">Recibidos</th>
+                    <th className="p-2 text-center w-20 border border-slate-900">Contratados</th>
+                    <th className="p-2 text-center w-20 border border-slate-900">Diferencia</th>
+                    <th className="p-2 border border-slate-900">Condición Envases</th>
+                    <th className="p-2 border border-slate-900">Recibido Por</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 border border-slate-300 font-bold">
                   {deliveries.map((del, idx) => (
                     <tr key={del.id} className="hover:bg-slate-50">
-                      <td className="p-2.5 text-center font-mono border-r border-slate-300">{idx + 1}</td>
-                      <td className="p-2.5 text-center font-mono border-r border-slate-300">{del.delivery_date}</td>
-                      <td className="p-2.5 font-mono border-r border-slate-300">{del.receipt_number || 'S/N'}</td>
-                      <td className="p-2.5 text-center font-mono font-black text-blue-950 text-sm border-r border-slate-300 bg-blue-50/40">{del.bottles_received}</td>
-                      <td className="p-2.5 text-center font-mono border-r border-slate-300">{del.bottles_contracted}</td>
-                      <td className="p-2.5 text-center font-mono border-r border-slate-300">
+                      <td className="p-2 text-center font-mono font-black border-r border-slate-300">{idx + 1}</td>
+                      <td className="p-2 text-center font-mono text-xs border-r border-slate-300">{del.delivery_date}</td>
+                      <td className="p-2 font-mono font-bold text-xs border-r border-slate-300">{del.receipt_number || 'S/N'}</td>
+                      <td className="p-2 text-center font-mono font-black text-xs border-r border-slate-300">{del.bottles_received}</td>
+                      <td className="p-2 text-center font-mono text-xs border-r border-slate-300">{del.bottles_contracted}</td>
+                      <td className="p-2 text-center font-mono font-black text-xs border-r border-slate-300">
                         {del.difference === 0 ? '0' : del.difference < 0 ? `${del.difference}` : `+${del.difference}`}
                       </td>
-                      <td className="p-2.5 uppercase text-xs border-r border-slate-300">{del.received_by}</td>
+                      <td className="p-2 text-[11px] border-r border-slate-300">{del.container_condition}</td>
+                      <td className="p-2 uppercase text-[11px] border-r border-slate-300">{del.received_by}</td>
                     </tr>
                   ))}
-                  <tr className="bg-slate-900 text-white font-black">
-                    <td colSpan={3} className="p-3 text-center uppercase border border-slate-900">TOTAL CONSOLIDADO MENSUAL</td>
-                    <td className="p-3 text-center font-mono text-emerald-400 text-base border border-slate-900">{summary.totalReceived} BIDONES</td>
-                    <td className="p-3 text-center font-mono border border-slate-900">{summary.totalContracted} BIDONES</td>
-                    <td className="p-3 text-center font-mono border border-slate-900">
-                      {summary.totalDifference > 0 ? `+${summary.totalDifference}` : summary.totalDifference}
-                    </td>
-                    <td className="p-3 border border-slate-900"></td>
-                  </tr>
                 </tbody>
               </table>
             </div>
 
-            <div className="grid grid-cols-2 gap-12 pt-12 text-center text-xs sm:text-sm">
+            <div className="grid grid-cols-2 gap-12 pt-10 text-center text-xs sm:text-sm">
               <div>
                 <div className="border-b-2 border-slate-400 w-3/4 mx-auto mb-2"></div>
-                <p className="font-black text-slate-900 uppercase">RESPONSABLE DE RECEPCIÓN Y ALMACÉN</p>
+                <p className="font-black text-slate-900 uppercase">RESPONSABLE DE SEGURIDAD INDUSTRIAL</p>
                 <p className="text-xs text-slate-600 font-bold uppercase">ENDE DEORURO</p>
               </div>
               <div>
                 <div className="border-b-2 border-slate-400 w-3/4 mx-auto mb-2"></div>
-                <p className="font-black text-slate-900 uppercase">SUPERVISIÓN ADMINISTRATIVA Y FINANCIERA</p>
-                <p className="text-xs text-slate-600 font-bold uppercase">ENDE DEORURO</p>
+                <p className="font-black text-slate-900 uppercase">REPRESENTANTE EMPRESA PROVEEDORA</p>
+                <p className="text-xs text-slate-600 font-bold uppercase">DISTRIBUIDOR DE AGUA</p>
               </div>
             </div>
 
