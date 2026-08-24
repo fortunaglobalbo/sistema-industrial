@@ -457,7 +457,7 @@ export default function ModuloExtintores({ showTabs = true }: ModuloExtintoresPr
                 required
                 placeholder="EJ. EXT-01, EXT-ALM-02..."
                 value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                onChange={(e) => setCode(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -471,7 +471,7 @@ export default function ModuloExtintores({ showTabs = true }: ModuloExtintoresPr
                 required
                 placeholder="EJ. PASILLO PLANTA ALTA - OFICINA TÉCNICA..."
                 value={location}
-                onChange={(e) => setLocation(e.target.value.toUpperCase())}
+                onChange={(e) => setLocation(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -514,7 +514,7 @@ export default function ModuloExtintores({ showTabs = true }: ModuloExtintoresPr
                 type="text"
                 placeholder="EJ. ING. JUAN PÉREZ..."
                 value={inspectorName}
-                onChange={(e) => setInspectorName(e.target.value.toUpperCase())}
+                onChange={(e) => setInspectorName(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -612,7 +612,7 @@ export default function ModuloExtintores({ showTabs = true }: ModuloExtintoresPr
                 type="text"
                 placeholder="EJ. SOPORTE DE PARED FLOJO, REQUIERE LIMPIEZA EXTERNA..."
                 value={observations}
-                onChange={(e) => setObservations(e.target.value.toUpperCase())}
+                onChange={(e) => setObservations(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3"
               />
             </div>

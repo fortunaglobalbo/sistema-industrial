@@ -292,7 +292,7 @@ export default function FormularioTallasBotines({
                     required
                     placeholder="EJ. JUAN CARLOS MAMANI PÉREZ"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value.toUpperCase())}
+                    onChange={(e) => setFullName(e.target.value)}
                     className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm sm:text-base font-black uppercase rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-600 transition shadow-inner"
                   />
                 </div>
@@ -323,7 +323,7 @@ export default function FormularioTallasBotines({
                     required
                     placeholder="EJ. TÉCNICO DE CAMPO, AUXILIAR ADMINISTRATIVO..."
                     value={position}
-                    onChange={(e) => setPosition(e.target.value.toUpperCase())}
+                    onChange={(e) => setPosition(e.target.value)}
                     className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm sm:text-base font-black uppercase rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-600 transition shadow-inner"
                   />
                 </div>

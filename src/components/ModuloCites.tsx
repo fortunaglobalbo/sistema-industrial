@@ -500,7 +500,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                 required
                 placeholder="EJ. CITE-SI-045/2026, NOTA GG-012, INFORME-01..."
                 value={docNumber}
-                onChange={(e) => setDocNumber(e.target.value.toUpperCase())}
+                onChange={(e) => setDocNumber(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -515,7 +515,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                 required
                 placeholder="EJ. GERENCIA GENERAL, GERENCIA TÉCNICA, DR. NOMBRE APELLIDO..."
                 value={recipientA}
-                onChange={(e) => setRecipientA(e.target.value.toUpperCase())}
+                onChange={(e) => setRecipientA(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
               <div className="flex flex-wrap gap-1.5 pt-1">
@@ -543,7 +543,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                 required
                 placeholder="EJ. REMISIÓN DE INFORME MENSUAL DE SEGURIDAD INDUSTRIAL Y CONTROL DE EPP..."
                 value={reference}
-                onChange={(e) => setReference(e.target.value.toUpperCase())}
+                onChange={(e) => setReference(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -569,7 +569,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                   type="text"
                   placeholder="Especifique el estado..."
                   value={customStatus}
-                  onChange={(e) => setCustomStatus(e.target.value.toUpperCase())}
+                  onChange={(e) => setCustomStatus(e.target.value)}
                   className="w-full bg-white border-2 border-blue-400 text-slate-900 text-xs font-black rounded-xl px-4 py-2 mt-2 uppercase"
                 />
               )}
@@ -584,7 +584,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                 type="text"
                 placeholder="EJ. ADJUNTA 3 HOJAS Y PLANILLA DE RESPALDO..."
                 value={observations}
-                onChange={(e) => setObservations(e.target.value.toUpperCase())}
+                onChange={(e) => setObservations(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3"
               />
             </div>
@@ -663,7 +663,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                   <input
                     type="text"
                     value={printTitle}
-                    onChange={(e) => setPrintTitle(e.target.value.toUpperCase())}
+                    onChange={(e) => setPrintTitle(e.target.value)}
                     className="w-full border rounded-lg p-2 font-bold uppercase"
                   />
                 </div>
@@ -672,7 +672,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                   <input
                     type="text"
                     value={printSubtitle}
-                    onChange={(e) => setPrintSubtitle(e.target.value.toUpperCase())}
+                    onChange={(e) => setPrintSubtitle(e.target.value)}
                     className="w-full border rounded-lg p-2 font-bold uppercase"
                   />
                 </div>
@@ -681,7 +681,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                   <input
                     type="text"
                     value={printSignLeft}
-                    onChange={(e) => setPrintSignLeft(e.target.value.toUpperCase())}
+                    onChange={(e) => setPrintSignLeft(e.target.value)}
                     className="w-full border rounded-lg p-2 font-bold uppercase"
                   />
                 </div>
@@ -690,7 +690,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                   <input
                     type="text"
                     value={printSignRight}
-                    onChange={(e) => setPrintSignRight(e.target.value.toUpperCase())}
+                    onChange={(e) => setPrintSignRight(e.target.value)}
                     className="w-full border rounded-lg p-2 font-bold uppercase"
                   />
                 </div>

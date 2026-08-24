@@ -674,7 +674,7 @@ export default function FormularioHerramientas({
                     required
                     placeholder="EJ. ING. MARIO GÓMEZ"
                     value={supervisorName}
-                    onChange={(e) => setSupervisorName(e.target.value.toUpperCase())}
+                    onChange={(e) => setSupervisorName(e.target.value)}
                     className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm sm:text-base font-black uppercase rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-600 transition shadow-inner"
                   />
                 </div>
@@ -707,7 +707,7 @@ export default function FormularioHerramientas({
                     type="text"
                     placeholder="Escriba el nombre del Área Técnica..."
                     value={customArea}
-                    onChange={(e) => setCustomArea(e.target.value.toUpperCase())}
+                    onChange={(e) => setCustomArea(e.target.value)}
                     className="w-full bg-slate-50 border-2 border-slate-300 text-slate-900 text-sm sm:text-base font-black uppercase rounded-xl px-4 py-3"
                   />
                 </div>

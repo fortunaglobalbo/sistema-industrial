@@ -389,7 +389,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 type="text"
                 placeholder="EJ. REM-2026-8941..."
                 value={receiptNumber}
-                onChange={(e) => setReceiptNumber(e.target.value.toUpperCase())}
+                onChange={(e) => setReceiptNumber(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -401,7 +401,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
               <input
                 type="text"
                 value={supplierName}
-                onChange={(e) => setSupplierName(e.target.value.toUpperCase())}
+                onChange={(e) => setSupplierName(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -473,7 +473,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 required
                 placeholder="EJ. JUAN CARLOS CONDORI - ENCARGADO DE ALMACÉN..."
                 value={receivedBy}
-                onChange={(e) => setReceivedBy(e.target.value.toUpperCase())}
+                onChange={(e) => setReceivedBy(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -486,7 +486,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 type="text"
                 placeholder="EJ. PROVEEDOR SE COMPROMETE A REPONER FALTANTES EL DÍA VIERNES..."
                 value={observations}
-                onChange={(e) => setObservations(e.target.value.toUpperCase())}
+                onChange={(e) => setObservations(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3"
               />
             </div>
