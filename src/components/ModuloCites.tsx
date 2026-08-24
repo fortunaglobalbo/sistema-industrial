@@ -1040,74 +1040,6 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
             </button>
           </div>
 
-          {/* SELECTOR DE CITES CONSTRUIDOS / ALMACENADOS */}
-          {savedTemplates.length > 0 && (
-            <div className="bg-indigo-50/70 border-2 border-indigo-200 p-4 sm:p-5 rounded-2xl space-y-2.5">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-black text-indigo-950 uppercase flex items-center gap-1.5">
-                  <BookmarkCheck className="w-4 h-4 text-indigo-600" />
-                  Seleccionar de mis CITES construidos:
-                </span>
-                <button
-                  type="button"
-                  onClick={handleOpenBuilder}
-                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1"
-                >
-                  <Wand2 className="w-3.5 h-3.5" />
-                  <span>+ Construir / Administrar CITES</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                {savedTemplates.map((tmpl) => {
-                  // Calcular dinámicamente el código del template con la fecha y correlativo actuales
-                  const dateObj = issueDate ? new Date(issueDate + 'T00:00:00') : new Date();
-                  const mStr = String(dateObj.getMonth() + 1).padStart(2, '0');
-                  const yShort = String(dateObj.getFullYear()).slice(-2);
-                  const yFull = String(dateObj.getFullYear());
-                  const cNum = String(correlativeNumber || tmpl.correlative || 1).padStart(tmpl.digits || 3, '0');
-                  const calculatedCode = tmpl.formatStyle === 'MES_ANIO'
-                    ? `${tmpl.sigla}-${cNum}/${mStr}/${yShort}`
-                    : `${tmpl.sigla}-${cNum}/${yFull}`;
-
-                  const isSelected = docNumber === calculatedCode || docNumber === tmpl.previewCode;
-
-                  return (
-                    <button
-                      key={tmpl.id}
-                      type="button"
-                      onClick={() => {
-                        setDocNumber(calculatedCode);
-                        if (tmpl.correlative && (!correlativeNumber || correlativeNumber === 1)) {
-                          setCorrelativeNumber(tmpl.correlative);
-                        }
-                      }}
-                      className={`text-left p-2.5 rounded-xl border-2 transition flex flex-col justify-between ${
-                        isSelected 
-                          ? 'bg-indigo-600 text-white border-indigo-700 shadow-md ring-2 ring-indigo-300' 
-                          : 'bg-white hover:bg-indigo-100/50 text-slate-800 border-indigo-200'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center w-full">
-                        <span className={`text-[10px] font-black uppercase truncate ${isSelected ? 'text-indigo-100' : 'text-indigo-800'}`}>
-                          {tmpl.name}
-                        </span>
-                        {isSelected && (
-                          <span className="text-[9px] bg-white text-indigo-700 px-1.5 py-0.2 rounded-full font-bold">
-                            ✓ Activo
-                          </span>
-                        )}
-                      </div>
-                      <p className={`font-mono font-black text-xs sm:text-sm mt-1 truncate ${isSelected ? 'text-amber-300' : 'text-slate-900'}`}>
-                        {calculatedCode}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
             
             {/* Nro Correlativo */}
@@ -1139,7 +1071,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               />
             </div>
 
-            {/* Número de Documento / CITE con botón al constructor */}
+            {/* Número de Documento / CITE con chips compactos */}
             <div className="space-y-1.5 sm:col-span-2">
               <div className="flex justify-between items-center">
                 <label className="block text-xs font-black text-slate-900 uppercase">
@@ -1151,7 +1083,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                   className="text-[10px] font-extrabold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline"
                 >
                   <Palette className="w-3 h-3" />
-                  <span>Personalizar en Constructor</span>
+                  <span>Constructor</span>
                 </button>
               </div>
               <input
@@ -1162,6 +1094,46 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                 onChange={(e) => setDocNumber(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black font-mono uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
+
+              {/* CHIPS COMPACTOS DE CITES CONSTRUIDOS (OCUPA MÍNIMO ESPACIO) */}
+              {savedTemplates.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1 pt-1">
+                  <span className="text-[10px] text-slate-500 font-bold">Cargar:</span>
+                  {savedTemplates.map((tmpl) => {
+                    const dateObj = issueDate ? new Date(issueDate + 'T00:00:00') : new Date();
+                    const mStr = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const yShort = String(dateObj.getFullYear()).slice(-2);
+                    const yFull = String(dateObj.getFullYear());
+                    const cNum = String(correlativeNumber || tmpl.correlative || 1).padStart(tmpl.digits || 3, '0');
+                    const calculatedCode = tmpl.formatStyle === 'MES_ANIO'
+                      ? `${tmpl.sigla}-${cNum}/${mStr}/${yShort}`
+                      : `${tmpl.sigla}-${cNum}/${yFull}`;
+
+                    const isSelected = docNumber === calculatedCode || docNumber === tmpl.previewCode;
+
+                    return (
+                      <button
+                        key={tmpl.id}
+                        type="button"
+                        onClick={() => {
+                          setDocNumber(calculatedCode);
+                          if (tmpl.correlative && (!correlativeNumber || correlativeNumber === 1)) {
+                            setCorrelativeNumber(tmpl.correlative);
+                          }
+                        }}
+                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border transition ${
+                          isSelected 
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                            : 'bg-indigo-50/70 text-indigo-900 hover:bg-indigo-100 border-indigo-200'
+                        }`}
+                        title={`${tmpl.name} (${calculatedCode})`}
+                      >
+                        {tmpl.name.length > 15 ? tmpl.sigla : tmpl.name}: <span className="font-bold">{calculatedCode}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* A (Destinatario / Gerencia) con chips de sugerencia rápida */}
