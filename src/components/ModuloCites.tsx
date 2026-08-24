@@ -466,48 +466,37 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
             
-            {/* Nro Correlativo */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-black text-slate-900 uppercase">
-                N° Correlativo
-              </label>
-              <input
-                type="number"
-                min="1"
-                placeholder="Ej. 1, 2, 45..."
-                value={correlativeNumber}
-                onChange={(e) => setCorrelativeNumber(e.target.value)}
-                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-blue-700 text-sm font-black font-mono rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
-              />
-            </div>
-
-            {/* Fecha */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-black text-slate-900 uppercase">
-                Fecha de Emisión <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="date"
-                required
-                value={issueDate}
-                onChange={(e) => setIssueDate(e.target.value)}
-                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
-              />
-            </div>
-
-            {/* Número de Documento / CITE (Ingreso 100% manual libre) */}
-            <div className="space-y-1.5 sm:col-span-2">
+            {/* Número de Documento / CITE (Ingreso 100% manual libre y directo) */}
+            <div className="space-y-1.5 sm:col-span-3">
               <label className="block text-xs font-black text-slate-900 uppercase">
                 Número de CITE / Documento <span className="text-red-600">*</span>
               </label>
               <input
                 type="text"
                 required
+                autoFocus
                 placeholder="EJ. EDO-IB-001/04/26, CITE-SI-045/2026..."
                 value={docNumber}
                 onChange={(e) => setDocNumber(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black font-mono uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
+            </div>
+
+            {/* Estado del Trámite */}
+            <div className="space-y-1.5 sm:col-span-1">
+              <label className="block text-xs font-black text-slate-900 uppercase">
+                Estado del Trámite
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full bg-slate-50 border-2 border-slate-300 text-slate-900 text-xs sm:text-sm font-black rounded-xl px-4 py-3 uppercase"
+              >
+                {CITE_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+                <option value="OTRO">OTRO...</option>
+              </select>
             </div>
 
             {/* A (Destinatario / Gerencia) con sugerencias rápidas opcionales */}
@@ -553,35 +542,8 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               />
             </div>
 
-            {/* Estado del Trámite */}
-            <div className="space-y-1.5 sm:col-span-2">
-              <label className="block text-xs font-black text-slate-900 uppercase">
-                Estado del Trámite
-              </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-slate-50 border-2 border-slate-300 text-slate-900 text-xs sm:text-sm font-black rounded-xl px-4 py-3 uppercase"
-              >
-                {CITE_STATUS_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-                <option value="OTRO">OTRO (PERSONALIZADO)...</option>
-              </select>
-
-              {status === 'OTRO' && (
-                <input
-                  type="text"
-                  placeholder="Especifique el estado..."
-                  value={customStatus}
-                  onChange={(e) => setCustomStatus(e.target.value)}
-                  className="w-full bg-white border-2 border-blue-400 text-slate-900 text-xs font-black rounded-xl px-4 py-2 mt-2 uppercase"
-                />
-              )}
-            </div>
-
             {/* Observaciones / Anexos */}
-            <div className="space-y-1.5 sm:col-span-2">
+            <div className="space-y-1.5 sm:col-span-4">
               <label className="block text-xs font-black text-slate-900 uppercase">
                 Observaciones / Anexos (Opcional)
               </label>
