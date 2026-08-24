@@ -151,42 +151,6 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     }
   };
 
-  // Cargar todos los medicamentos de un kit seleccionado a la transacción
-  const handleAppendKit = (kit: MedicineKitData) => {
-    if (!kit.items || kit.items.length === 0) {
-      Swal.fire({ icon: 'warning', title: 'Kit Vacío', text: 'El kit seleccionado no contiene medicamentos.' });
-      return;
-    }
-
-    const currentItems = getValues('items') || [];
-    // Si solo hay un ítem y está vacío, lo removemos
-    if (currentItems.length === 1 && !currentItems[0].itemName) {
-      remove(0);
-    }
-
-    const medCategory = allCategoryNames.find((c) => 
-      c.toLowerCase().includes('med') || c.toLowerCase().includes('bot') || c.toLowerCase().includes('farm')
-    ) || allCategoryNames[0] || 'Medicamentos / Botiquín';
-
-    kit.items.forEach((it) => {
-      append({
-        itemName: `${it.name} (${it.unit})`,
-        category: medCategory,
-        quantity: it.quantity || 1,
-        conditionReason: 'nuevo',
-        photoUrl: null
-      });
-    });
-
-    Swal.fire({
-      icon: 'success',
-      title: 'Kit de Medicamentos Agregado',
-      text: `Se agregaron los ${kit.items.length} insumos de "${kit.name}" al acta.`,
-      timer: 2000,
-      showConfirmButton: false
-    });
-  };
-
   // Buscar trabajador por C.I. o Nombre
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -527,16 +491,34 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
 
   const getFilteredCatalog = (categoryName: string) => {
     if (!categoryName) return inventory;
-    return inventory.filter((item) => {
+    const targetCat = categoryName.toLowerCase().trim();
+
+    const baseMatches = inventory.filter((item) => {
       const itemCat = (item.category || '').toLowerCase().trim();
-      const targetCat = categoryName.toLowerCase().trim();
       return itemCat === targetCat || itemCat.includes(targetCat) || targetCat.includes(itemCat);
     });
+
+    // Si la categoría es de Botiquines / Medicamentos, incluir los Kits creados
+    if (targetCat.includes('botiqu') || targetCat.includes('medica') || targetCat.includes('primeros auxilios')) {
+      const kitItems = availableKits.map((k) => ({
+        id: `kit-${k.id}`,
+        name: `${k.name} (Kit con ${k.items ? k.items.length : 0} medicamentos)`,
+        category: categoryName,
+        current_stock: 'Disponible',
+      }));
+      return [...kitItems, ...baseMatches];
+    }
+
+    return baseMatches;
   };
 
   // Obtener lista única de nombres de categorías combinando categories state y items del inventario
   const allCategoryNames = Array.from(
     new Set([
+      'EPP (Protección)',
+      'Ropa de Trabajo',
+      'Herramientas',
+      'Botiquines / Primeros Auxilios',
       ...categories.map((c) => c.name),
       ...inventory.map((i) => i.category).filter(Boolean)
     ])
@@ -868,43 +850,20 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
           {/* SECCIÓN 2: DETALLE DE INSUMOS (CON CATEGORÍAS DINÁMICAS Y CANTIDADES DECIMALES) */}
           {selectedWorker && !isEditingWorker && (
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
+              <div className="flex justify-between items-center border-b pb-3">
                 <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">2</span>
                   Detalle de Insumos / Equipo Entregado o Descargado
                 </h3>
                 
-                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                  {availableKits.length > 0 && (
-                    <select
-                      onChange={(e) => {
-                        const kit = availableKits.find((k) => k.id === e.target.value);
-                        if (kit) {
-                          handleAppendKit(kit);
-                          e.target.value = '';
-                        }
-                      }}
-                      defaultValue=""
-                      className="text-xs font-black bg-rose-50 hover:bg-rose-100 text-rose-800 border-2 border-rose-300 px-3 py-1.5 rounded-xl transition cursor-pointer"
-                    >
-                      <option value="" disabled>💊 + Cargar Kit de Medicamentos...</option>
-                      {availableKits.map((k) => (
-                        <option key={k.id} value={k.id}>
-                          {k.name} ({k.items ? k.items.length : 0} meds)
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => append({ itemName: '', category: allCategoryNames[0] || 'EPP (Protección)', quantity: 1, conditionReason: transactionType === 'dotacion' ? 'nuevo' : 'desgaste_natural', photoUrl: null })}
-                    className="flex items-center gap-1 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl transition shadow-sm"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Agregar Ítem
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => append({ itemName: '', category: allCategoryNames[0] || 'EPP (Protección)', quantity: 1, conditionReason: transactionType === 'dotacion' ? 'nuevo' : 'desgaste_natural', photoUrl: null })}
+                  className="flex items-center gap-1 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Agregar Ítem
+                </button>
               </div>
 
               {errors.items && (
