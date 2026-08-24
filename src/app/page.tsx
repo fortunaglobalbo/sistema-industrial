@@ -4,13 +4,15 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ShieldCheck, ClipboardList, Loader2, 
-  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench, Footprints, FileText
+  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench, Footprints, Flame, Droplets
 } from 'lucide-react';
 import { getTransactionDetails, getRecentTransactions, deleteTransaction } from './actions/transaction';
 import TransactionForm from '@/components/TransactionForm';
 import PrintReceipt from '@/components/PrintReceipt';
 import FormularioHerramientas from '@/components/FormularioHerramientas';
 import FormularioTallasBotines from '@/components/FormularioTallasBotines';
+import ModuloExtintores from '@/components/ModuloExtintores';
+import ModuloControlAgua from '@/components/ModuloControlAgua';
 import Swal from 'sweetalert2';
 
 export default function Home() {
@@ -26,7 +28,7 @@ export default function Home() {
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Estados del Dashboard
-  const [activeTab, setActiveTab] = useState<'new' | 'history' | 'toolRequests' | 'bootSizeRequests'>('new');
+  const [activeTab, setActiveTab] = useState<'new' | 'history' | 'toolRequests' | 'bootSizeRequests' | 'extinguishers' | 'waterSupply'>('new');
   const [historyTransactions, setHistoryTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -377,6 +379,20 @@ export default function Home() {
                   <Footprints className="w-4 h-4 text-blue-600" />
                   Tallas de Botines
                 </button>
+                <button
+                  onClick={() => setActiveTab('extinguishers')}
+                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'extinguishers' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  <Flame className="w-4 h-4 text-rose-600" />
+                  Control de Extintores
+                </button>
+                <button
+                  onClick={() => setActiveTab('waterSupply')}
+                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'waterSupply' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  <Droplets className="w-4 h-4 text-blue-600" />
+                  Control de Agua
+                </button>
               </div>
             </div>
 
@@ -483,9 +499,15 @@ export default function Home() {
             ) : activeTab === 'toolRequests' ? (
               /* CONTENIDO DE PESTAÑA: REQUERIMIENTOS DE HERRAMIENTAS (HISTORIAL Y CONTROL) */
               <FormularioHerramientas showTabs={false} initialTab="history" />
-            ) : (
+            ) : activeTab === 'bootSizeRequests' ? (
               /* CONTENIDO DE PESTAÑA: REGISTRO DE TALLAS DE BOTINES (HISTORIAL Y CONSOLIDADO) */
               <FormularioTallasBotines showTabs={false} initialTab="history" />
+            ) : activeTab === 'extinguishers' ? (
+              /* CONTENIDO DE PESTAÑA: CONTROL DE EXTINTORES */
+              <ModuloExtintores showTabs={false} />
+            ) : (
+              /* CONTENIDO DE PESTAÑA: CONTROL DE SUMINISTRO DE AGUA */
+              <ModuloControlAgua showTabs={false} />
             )}
 
           </div>

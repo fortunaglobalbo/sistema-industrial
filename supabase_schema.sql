@@ -207,6 +207,48 @@ ALTER TABLE boot_size_requests ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Permitir todo a todos en boot_size_requests" ON boot_size_requests;
 CREATE POLICY "Permitir todo a todos en boot_size_requests" ON boot_size_requests FOR ALL USING (true) WITH CHECK (true);
 
+-- 18. Tabla de Relevamiento e Inspección de Extintores (fire_extinguishers)
+CREATE TABLE IF NOT EXISTS fire_extinguishers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code TEXT NOT NULL UNIQUE,
+    location TEXT NOT NULL,
+    agent_type TEXT NOT NULL, -- PQS, CO2, Agua Presurizada, Acetato de Potasio
+    capacity TEXT NOT NULL,   -- 4 kg, 6 kg, 10 kg, 12 kg, etc.
+    last_recharge_date DATE NOT NULL,
+    expiration_date DATE NOT NULL,
+    pressure_status TEXT DEFAULT 'Correcto (En Verde)',
+    seal_status TEXT DEFAULT 'Intacto',
+    hose_status TEXT DEFAULT 'Buen Estado',
+    signage_status TEXT DEFAULT 'Visible y Reglamentaria',
+    observations TEXT,
+    inspector_name TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE fire_extinguishers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Permitir todo a todos en fire_extinguishers" ON fire_extinguishers;
+CREATE POLICY "Permitir todo a todos en fire_extinguishers" ON fire_extinguishers FOR ALL USING (true) WITH CHECK (true);
+
+-- 19. Tabla de Control y Auditoría de Suministro de Agua (water_supplies)
+CREATE TABLE IF NOT EXISTS water_supplies (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    delivery_date DATE NOT NULL,
+    receipt_number TEXT,
+    supplier_name TEXT DEFAULT 'EMPRESA PROVEEDORA DE AGUA',
+    bottles_received INTEGER NOT NULL CHECK (bottles_received >= 0),
+    bottles_contracted INTEGER NOT NULL CHECK (bottles_contracted >= 0),
+    bottle_capacity TEXT DEFAULT '20 Litros',
+    container_condition TEXT DEFAULT 'Conforme y Sellado',
+    received_by TEXT NOT NULL,
+    observations TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE water_supplies ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Permitir todo a todos en water_supplies" ON water_supplies;
+CREATE POLICY "Permitir todo a todos en water_supplies" ON water_supplies FOR ALL USING (true) WITH CHECK (true);
+
+
 
 
 
