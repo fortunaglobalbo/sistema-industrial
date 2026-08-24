@@ -5,7 +5,8 @@ import {
   FileText, Plus, RefreshCw, Printer, Trash2, Edit2, 
   Search, ArrowLeft, Calendar, Send, CheckCircle2, 
   Clock, BookOpen, Settings2, Sliders, Tag, Sparkles,
-  AlertTriangle, Hash, Wand2, ArrowRight, Check, Palette
+  AlertTriangle, Hash, Wand2, ArrowRight, Check, Palette,
+  Save, Copy, BookmarkCheck, LayoutGrid
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { 
@@ -19,6 +20,25 @@ import {
   OfficialCiteData, 
   CITE_STATUS_OPTIONS 
 } from '@/lib/citeTypes';
+
+export interface SavedCiteTemplate {
+  id: string;
+  name: string;
+  sigla: string;
+  correlative: number;
+  digits: number;
+  formatStyle: 'MES_ANIO' | 'SOLO_ANIO';
+  month: number;
+  year: number;
+  previewCode: string;
+  updatedAt: string;
+}
+
+const MONTH_NAMES = [
+  '01 - Enero', '02 - Febrero', '03 - Marzo', '04 - Abril',
+  '05 - Mayo', '06 - Junio', '07 - Julio', '08 - Agosto',
+  '09 - Septiembre', '10 - Octubre', '11 - Noviembre', '12 - Diciembre'
+];
 
 interface ModuloCitesProps {
   showTabs?: boolean;
@@ -45,13 +65,19 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
   const [observations, setObservations] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Constructor de CITE Personalizado (Aislado con colores visuales)
+  // Constructor de CITEs (Simplificado: Solo Mes y Año, 3 sugerencias, almacenable y editable)
+  const [builderEditingTemplateId, setBuilderEditingTemplateId] = useState<string | null>(null);
+  const [templateName, setTemplateName] = useState('CITE GENERAL');
   const [builderSigla, setBuilderSigla] = useState('EDO-IB');
-  const [builderCorrelative, setBuilderCorrelative] = useState<number | string>('');
-  const [builderDate, setBuilderDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [builderFormat, setBuilderFormat] = useState<'SIGLA_NUM_MES_ANIO' | 'SIGLA_NUM_ANIO' | 'SIGLA_SLASH_ANIO' | 'MANUAL'>('SIGLA_NUM_MES_ANIO');
+  const [builderCorrelative, setBuilderCorrelative] = useState<number>(1);
   const [builderDigits, setBuilderDigits] = useState<number>(3); // 001
+  const [builderMonth, setBuilderMonth] = useState<number>(() => new Date().getMonth() + 1);
+  const [builderYear, setBuilderYear] = useState<number>(() => new Date().getFullYear());
+  const [builderFormatStyle, setBuilderFormatStyle] = useState<'MES_ANIO' | 'SOLO_ANIO'>('MES_ANIO');
   const [builderPreview, setBuilderPreview] = useState('');
+
+  // Formatos / CITES Almacenados en Constructor
+  const [savedTemplates, setSavedTemplates] = useState<SavedCiteTemplate[]>([]);
 
   // Parámetros personalizables del Reporte Imprimible
   const [printTitle, setPrintTitle] = useState('ENDE DEORURO - DEPARTAMENTO DE SEGURIDAD INDUSTRIAL');
@@ -60,15 +86,11 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
   const [printSignRight, setPrintSignRight] = useState('RECEPCIÓN DE GERENCIA GENERAL');
   const [showPrintSettings, setShowPrintSettings] = useState(false);
 
-  // Sugerencias de Siglas de la empresa
+  // EXACTAMENTE 3 sugerencias de siglas solicitadas por el usuario
   const quickSiglas = [
     'EDO-IB',
     'EDO-SI',
-    'CITE-SI',
-    'NOTA-SI',
-    'INF-SI',
-    'MEMO-SI',
-    'EDO-GG'
+    'CITE-SI'
   ];
 
   // Sugerencias de destinatarios (A)
@@ -78,39 +100,87 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
     'GERENCIA COMERCIAL',
     'GERENCIA ADMINISTRATIVA Y FINANCIERA',
     'JEFATURA DE RECURSOS HUMANOS',
-    'SUPERVISIÓN DE SEGURIDAD INDUSTRIAL',
-    'SECRETARÍA DE GERENCIA'
+    'SUPERVISIÓN DE SEGURIDAD INDUSTRIAL'
   ];
 
+  // Cargar CITES de Supabase y plantillas guardadas de localStorage
   useEffect(() => {
     loadData();
+    loadSavedTemplates();
   }, [filterStatus]);
 
-  // Generador reactivo en el Constructor de CITE
+  const loadSavedTemplates = () => {
+    try {
+      const stored = localStorage.getItem('ende_saved_cites_templates_v2');
+      if (stored) {
+        setSavedTemplates(JSON.parse(stored));
+      } else {
+        // Plantillas iniciales por defecto
+        const initial: SavedCiteTemplate[] = [
+          {
+            id: 'tmpl-1',
+            name: 'CITE Inspección y Bajas',
+            sigla: 'EDO-IB',
+            correlative: 1,
+            digits: 3,
+            formatStyle: 'MES_ANIO',
+            month: new Date().getMonth() + 1,
+            year: new Date().getFullYear(),
+            previewCode: `EDO-IB-001/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getFullYear()).slice(-2)}`,
+            updatedAt: new Date().toLocaleDateString()
+          },
+          {
+            id: 'tmpl-2',
+            name: 'CITE Seguridad Industrial',
+            sigla: 'EDO-SI',
+            correlative: 1,
+            digits: 3,
+            formatStyle: 'MES_ANIO',
+            month: new Date().getMonth() + 1,
+            year: new Date().getFullYear(),
+            previewCode: `EDO-SI-001/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getFullYear()).slice(-2)}`,
+            updatedAt: new Date().toLocaleDateString()
+          },
+          {
+            id: 'tmpl-3',
+            name: 'CITE Anual Simple',
+            sigla: 'CITE-SI',
+            correlative: 1,
+            digits: 3,
+            formatStyle: 'SOLO_ANIO',
+            month: new Date().getMonth() + 1,
+            year: new Date().getFullYear(),
+            previewCode: `CITE-SI-001/${new Date().getFullYear()}`,
+            updatedAt: new Date().toLocaleDateString()
+          }
+        ];
+        setSavedTemplates(initial);
+        localStorage.setItem('ende_saved_cites_templates_v2', JSON.stringify(initial));
+      }
+    } catch (e) {
+      console.warn('Error loading saved templates', e);
+    }
+  };
+
+  // Cálculo reactivo del código CITE generado en el Constructor
   useEffect(() => {
-    const dateObj = builderDate ? new Date(builderDate + 'T00:00:00') : new Date();
-    const monthStr = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const yearFullStr = String(dateObj.getFullYear());
-    const yearShortStr = yearFullStr.slice(-2);
+    const cleanSigla = (builderSigla || 'SIGLA').trim().toUpperCase();
     const numStr = String(builderCorrelative || 1).padStart(builderDigits, '0');
-    const cleanSigla = (builderSigla || 'CITE').trim().toUpperCase();
+    const monthStr = String(builderMonth).padStart(2, '0');
+    const yearShortStr = String(builderYear).slice(-2);
+    const yearFullStr = String(builderYear);
 
     let generated = '';
-    if (builderFormat === 'SIGLA_NUM_MES_ANIO') {
-      // EDO-IB-001/04/26 o EDO-IB-001/08/26
+    if (builderFormatStyle === 'MES_ANIO') {
+      // Formato: EDO-IB-001/08/26
       generated = `${cleanSigla}-${numStr}/${monthStr}/${yearShortStr}`;
-    } else if (builderFormat === 'SIGLA_NUM_ANIO') {
-      // EDO-IB-001/2026
-      generated = `${cleanSigla}-${numStr}/${yearFullStr}`;
-    } else if (builderFormat === 'SIGLA_SLASH_ANIO') {
-      // CITE-SI/001/2026
-      generated = `${cleanSigla}/${numStr}/${yearFullStr}`;
     } else {
-      generated = `${cleanSigla}-${numStr}`;
+      // Formato: EDO-IB-001/2026
+      generated = `${cleanSigla}-${numStr}/${yearFullStr}`;
     }
 
     setBuilderPreview(generated);
-  }, [builderSigla, builderCorrelative, builderDate, builderFormat, builderDigits]);
+  }, [builderSigla, builderCorrelative, builderDigits, builderMonth, builderYear, builderFormatStyle]);
 
   const loadData = async () => {
     setLoading(true);
@@ -122,24 +192,104 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
   // Abrir Constructor Independiente
   const handleOpenBuilder = async () => {
     const nextNum = await getNextCiteCorrelative();
+    setBuilderEditingTemplateId(null);
+    setTemplateName('NUEVO FORMATO CITE');
+    setBuilderSigla('EDO-IB');
     setBuilderCorrelative(nextNum);
-    const todayStr = new Date().toISOString().split('T')[0];
-    setBuilderDate(todayStr);
+    setBuilderDigits(3);
+    setBuilderMonth(new Date().getMonth() + 1);
+    setBuilderYear(new Date().getFullYear());
+    setBuilderFormatStyle('MES_ANIO');
     setViewMode('builder');
   };
 
-  // Aplicar CITE construido y pasar al formulario de Registro
-  const handleApplyBuilderToForm = () => {
-    setEditingId(null);
-    setCorrelativeNumber(builderCorrelative);
-    setIssueDate(builderDate);
-    setDocNumber(builderPreview);
-    setReference('');
-    setRecipientA('GERENCIA GENERAL');
-    setStatus('Enviado');
-    setCustomStatus('');
-    setObservations('');
-    setViewMode('form');
+  // Guardar / Almacenar Formato de CITE en el Constructor
+  const handleSaveTemplate = () => {
+    const cleanName = templateName.trim() || `Formato ${builderSigla}`;
+    const newTemplate: SavedCiteTemplate = {
+      id: builderEditingTemplateId || `tmpl-${Date.now()}`,
+      name: cleanName.toUpperCase(),
+      sigla: builderSigla.trim().toUpperCase() || 'EDO-IB',
+      correlative: Number(builderCorrelative) || 1,
+      digits: builderDigits,
+      formatStyle: builderFormatStyle,
+      month: builderMonth,
+      year: builderYear,
+      previewCode: builderPreview,
+      updatedAt: new Date().toLocaleDateString('es-BO')
+    };
+
+    let updatedList: SavedCiteTemplate[] = [];
+    if (builderEditingTemplateId) {
+      updatedList = savedTemplates.map(t => t.id === builderEditingTemplateId ? newTemplate : t);
+      Swal.fire({
+        icon: 'success',
+        title: 'Formato Actualizado',
+        text: `El formato "${newTemplate.name}" (${newTemplate.previewCode}) ha sido actualizado con éxito.`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } else {
+      updatedList = [newTemplate, ...savedTemplates];
+      Swal.fire({
+        icon: 'success',
+        title: 'CITE Almacenado',
+        text: `El formato "${newTemplate.name}" (${newTemplate.previewCode}) ha sido guardado en tus CITES.`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+    }
+
+    setSavedTemplates(updatedList);
+    localStorage.setItem('ende_saved_cites_templates_v2', JSON.stringify(updatedList));
+    setBuilderEditingTemplateId(newTemplate.id);
+  };
+
+  // Cargar formato existente para editarlo en el Constructor
+  const handleEditTemplate = (tmpl: SavedCiteTemplate) => {
+    setBuilderEditingTemplateId(tmpl.id);
+    setTemplateName(tmpl.name);
+    setBuilderSigla(tmpl.sigla);
+    setBuilderCorrelative(tmpl.correlative);
+    setBuilderDigits(tmpl.digits || 3);
+    setBuilderMonth(tmpl.month || new Date().getMonth() + 1);
+    setBuilderYear(tmpl.year || new Date().getFullYear());
+    setBuilderFormatStyle(tmpl.formatStyle || 'MES_ANIO');
+  };
+
+  // Eliminar formato guardado
+  const handleDeleteTemplate = (id: string, name: string) => {
+    Swal.fire({
+      title: `¿Eliminar formato "${name}"?`,
+      text: 'Se quitará de tu lista de CITES guardados.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((res) => {
+      if (res.isConfirmed) {
+        const filtered = savedTemplates.filter(t => t.id !== id);
+        setSavedTemplates(filtered);
+        localStorage.setItem('ende_saved_cites_templates_v2', JSON.stringify(filtered));
+        if (builderEditingTemplateId === id) {
+          setBuilderEditingTemplateId(null);
+        }
+        Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1400, showConfirmButton: false });
+      }
+    });
+  };
+
+  // Copiar código CITE al portapapeles
+  const handleCopyCiteCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    Swal.fire({
+      icon: 'success',
+      title: '¡Copiado!',
+      text: `Código ${code} copiado al portapapeles.`,
+      timer: 1500,
+      showConfirmButton: false
+    });
   };
 
   // Abrir Registro Directo
@@ -292,10 +442,9 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
     );
   });
 
-  // Variables auxiliares calculadas para el desglose de colores
-  const dateObj = builderDate ? new Date(builderDate + 'T00:00:00') : new Date();
-  const builderMonthStr = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const builderYearFullStr = String(dateObj.getFullYear());
+  // Variables desglosadas por colores
+  const builderMonthStr = String(builderMonth).padStart(2, '0');
+  const builderYearFullStr = String(builderYear);
   const builderYearShortStr = builderYearFullStr.slice(-2);
   const builderNumStr = String(builderCorrelative || 1).padStart(builderDigits, '0');
   const builderCleanSigla = (builderSigla || 'SIGLA').trim().toUpperCase();
@@ -403,7 +552,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               <button
                 onClick={handleOpenBuilder}
                 className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs px-4 py-3 rounded-xl transition shadow-md hover:shadow-indigo-200"
-                title="Construir formato de CITE personalizado con colores"
+                title="Construir, almacenar y editar formatos de CITES"
               >
                 <Wand2 className="w-4 h-4 text-amber-300" />
                 <span>Construir CITE</span>
@@ -530,9 +679,9 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
         </div>
       )}
 
-      {/* VISTA 2: CONSTRUCTOR DE CITES PERSONALIZADOS CON VISTA PREVIA POR COLORES */}
+      {/* VISTA 2: CONSTRUCTOR DE CITES (Almacenar, Editar y Ver CITES creados) */}
       {viewMode === 'builder' && (
-        <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-indigo-200 shadow-xl space-y-6 max-w-4xl mx-auto">
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-indigo-200 shadow-xl space-y-6 max-w-5xl mx-auto">
           
           <div className="flex justify-between items-center border-b pb-4">
             <div className="flex items-center gap-3">
@@ -541,10 +690,10 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               </div>
               <div>
                 <h2 className="text-lg sm:text-xl font-black text-slate-900 uppercase flex items-center gap-2">
-                  Constructor de CITES por Colores
+                  Constructor de CITES Personalizados
                 </h2>
                 <p className="text-xs text-slate-500 font-bold">
-                  Cada componente del CITE está identificado con su propio color para no confundirse
+                  {builderEditingTemplateId ? 'Editando formato existente' : 'Crea, almacena y administra tus formatos de CITE'}
                 </p>
               </div>
             </div>
@@ -555,37 +704,37 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs px-4 py-2 rounded-xl transition"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Volver</span>
+              <span>Cerrar</span>
             </button>
           </div>
 
           {/* CAJA PRINCIPAL DE VISTA PREVIA DESGLOSADA POR COLORES */}
-          <div className="bg-slate-950 border-2 border-indigo-500/40 text-white p-6 sm:p-8 rounded-3xl text-center space-y-5 shadow-2xl">
+          <div className="bg-slate-950 border-2 border-indigo-500/40 text-white p-6 sm:p-8 rounded-3xl text-center space-y-4 shadow-2xl">
             <span className="text-[11px] font-mono font-black text-indigo-300 uppercase tracking-widest block">
-              🎨 Vista Previa Desglosada por Colores en Tiempo Real:
+              🎨 Vista Previa Desglosada por Colores:
             </span>
 
             {/* CÓDIGO CON BLOQUES DE COLORES */}
             <div className="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2.5 p-3 sm:p-4 bg-slate-900 border-2 border-slate-800 rounded-2xl font-mono font-black text-xl sm:text-3xl tracking-wide shadow-inner">
               
               {/* SIGLA (Púrpura / Índigo) */}
-              <span className="bg-indigo-600/40 text-indigo-300 border-2 border-indigo-400 px-3.5 py-1 rounded-xl shadow" title="1. Sigla / Prefijo">
+              <span className="bg-indigo-600/40 text-indigo-300 border-2 border-indigo-400 px-3.5 py-1 rounded-xl shadow" title="1. Sigla">
                 {builderCleanSigla}
               </span>
 
               <span className="text-slate-500 font-bold">-</span>
 
               {/* CORRELATIVO (Verde Esmeralda) */}
-              <span className="bg-emerald-600/40 text-emerald-300 border-2 border-emerald-400 px-3.5 py-1 rounded-xl shadow" title="2. N° Correlativo">
+              <span className="bg-emerald-600/40 text-emerald-300 border-2 border-emerald-400 px-3.5 py-1 rounded-xl shadow" title="2. Correlativo">
                 {builderNumStr}
               </span>
 
               <span className="text-slate-500 font-bold">/</span>
 
               {/* MES (Azul Cielo) */}
-              {builderFormat === 'SIGLA_NUM_MES_ANIO' && (
+              {builderFormatStyle === 'MES_ANIO' && (
                 <>
-                  <span className="bg-sky-600/40 text-sky-300 border-2 border-sky-400 px-3.5 py-1 rounded-xl shadow" title="3. Mes Automático">
+                  <span className="bg-sky-600/40 text-sky-300 border-2 border-sky-400 px-3.5 py-1 rounded-xl shadow" title="3. Mes">
                     {builderMonthStr}
                   </span>
                   <span className="text-slate-500 font-bold">/</span>
@@ -593,8 +742,8 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               )}
 
               {/* AÑO (Ámbar / Dorado) */}
-              <span className="bg-amber-600/40 text-amber-300 border-2 border-amber-400 px-3.5 py-1 rounded-xl shadow" title="4. Año Automático">
-                {builderFormat === 'SIGLA_NUM_MES_ANIO' ? builderYearShortStr : builderYearFullStr}
+              <span className="bg-amber-600/40 text-amber-300 border-2 border-amber-400 px-3.5 py-1 rounded-xl shadow" title="4. Año">
+                {builderFormatStyle === 'MES_ANIO' ? builderYearShortStr : builderYearFullStr}
               </span>
 
             </div>
@@ -609,10 +758,10 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
 
               <div className="flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-500 text-emerald-200 px-3 py-1 rounded-xl">
                 <span className="w-3 h-3 rounded-full bg-emerald-400 inline-block shadow"></span>
-                <span>2. N° Correlativo: <strong className="text-white font-mono">{builderNumStr}</strong></span>
+                <span>2. Correlativo: <strong className="text-white font-mono">#{builderNumStr}</strong></span>
               </div>
 
-              {builderFormat === 'SIGLA_NUM_MES_ANIO' && (
+              {builderFormatStyle === 'MES_ANIO' && (
                 <div className="flex items-center gap-1.5 bg-sky-950/80 border border-sky-500 text-sky-200 px-3 py-1 rounded-xl">
                   <span className="w-3 h-3 rounded-full bg-sky-400 inline-block shadow"></span>
                   <span>3. Mes: <strong className="text-white font-mono">{builderMonthStr}</strong></span>
@@ -621,27 +770,41 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
 
               <div className="flex items-center gap-1.5 bg-amber-950/80 border border-amber-500 text-amber-200 px-3 py-1 rounded-xl">
                 <span className="w-3 h-3 rounded-full bg-amber-400 inline-block shadow"></span>
-                <span>4. Año: <strong className="text-white font-mono">{builderFormat === 'SIGLA_NUM_MES_ANIO' ? builderYearShortStr : builderYearFullStr}</strong></span>
+                <span>4. Año: <strong className="text-white font-mono">{builderFormatStyle === 'MES_ANIO' ? builderYearShortStr : builderYearFullStr}</strong></span>
               </div>
 
             </div>
 
           </div>
 
-          {/* OPCIONES DE CONFIGURACIÓN DEL CONSTRUCTOR CON TARJETAS DE COLORES COHERENTES */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
+          {/* NOMBRE O ETIQUETA DEL FORMATO */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-1">
+            <label className="block text-xs font-black text-slate-800 uppercase">
+              Nombre o Etiqueta para Almacenar este CITE:
+            </label>
+            <input
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="EJ. CITE INSPECCIÓN Y BAJAS, NOTAS SEGURIDAD INDUSTRIAL..."
+              className="w-full bg-white border-2 border-slate-300 text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-600"
+            />
+          </div>
+
+          {/* OPCIONES DE CONFIGURACIÓN SIMPLIFICADAS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
             
-            {/* 1. TARJETA PÚRPURA / ÍNDIGO: SIGLA */}
+            {/* 1. TARJETA PÚRPURA: SIGLA (SOLO 3 SUGERENCIAS) */}
             <div className="bg-indigo-50/60 p-5 rounded-2xl border-2 border-indigo-300 space-y-2 shadow-sm">
               <label className="block text-xs font-black text-indigo-950 uppercase flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full bg-indigo-500 inline-block"></span>
-                1. Sigla / Prefijo del Documento:
+                1. Sigla / Prefijo:
               </label>
               <input
                 type="text"
                 value={builderSigla}
                 onChange={(e) => setBuilderSigla(e.target.value)}
-                placeholder="EJ. EDO-IB, EDO-SI, NOTA..."
+                placeholder="EJ. EDO-IB, EDO-SI, CITE-SI..."
                 className="w-full bg-white border-2 border-indigo-400 text-indigo-950 text-sm font-black font-mono uppercase rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-600"
               />
               <div className="flex flex-wrap gap-1.5 pt-1">
@@ -651,8 +814,8 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                     key={s}
                     type="button"
                     onClick={() => setBuilderSigla(s)}
-                    className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition ${
-                      builderSigla === s ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-indigo-900 hover:bg-indigo-100 border-indigo-300'
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition ${
+                      builderSigla === s ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-indigo-900 hover:bg-indigo-100 border-indigo-300'
                     }`}
                   >
                     {s}
@@ -672,7 +835,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                   type="number"
                   min="1"
                   value={builderCorrelative}
-                  onChange={(e) => setBuilderCorrelative(e.target.value)}
+                  onChange={(e) => setBuilderCorrelative(parseInt(e.target.value) || 1)}
                   placeholder="Ej. 1, 45..."
                   className="flex-1 bg-white border-2 border-emerald-400 text-emerald-950 text-sm font-black font-mono rounded-xl px-4 py-2.5"
                 />
@@ -687,68 +850,162 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                 </select>
               </div>
               <p className="text-[10px] text-emerald-700 font-bold">
-                Formato resultante: <strong>#{builderNumStr}</strong>
+                Formato: <strong>#{builderNumStr}</strong>
               </p>
             </div>
 
-            {/* 3. TARJETA AZUL CIELO: MES Y AÑO */}
+            {/* 3. TARJETA AZUL CIELO: FECHA (SOLO MES Y AÑO) */}
             <div className="bg-sky-50/60 p-5 rounded-2xl border-2 border-sky-300 space-y-2 shadow-sm">
               <label className="block text-xs font-black text-sky-950 uppercase flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full bg-sky-500 inline-block"></span>
-                3. Fecha del CITE (Detecta Mes y Año):
+                3. Fecha del CITE (Solo Mes y Año):
               </label>
-              <input
-                type="date"
-                value={builderDate}
-                onChange={(e) => setBuilderDate(e.target.value)}
-                className="w-full bg-white border-2 border-sky-400 text-sky-950 text-sm font-black rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-600"
-              />
-              <div className="flex justify-between text-[11px] font-bold text-sky-800 pt-1 font-mono">
-                <span>Mes detectado: <strong className="text-sky-950">{builderMonthStr}</strong></span>
-                <span>Año detectado: <strong className="text-sky-950">{builderYearShortStr} ({builderYearFullStr})</strong></span>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-bold text-sky-900 block mb-0.5">Mes:</label>
+                  <select
+                    value={builderMonth}
+                    onChange={(e) => setBuilderMonth(Number(e.target.value))}
+                    className="w-full bg-white border-2 border-sky-400 text-sky-950 text-xs font-black rounded-xl px-3 py-2.5"
+                  >
+                    {MONTH_NAMES.map((m, idx) => (
+                      <option key={m} value={idx + 1}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-sky-900 block mb-0.5">Año:</label>
+                  <select
+                    value={builderYear}
+                    onChange={(e) => setBuilderYear(Number(e.target.value))}
+                    className="w-full bg-white border-2 border-sky-400 text-sky-950 text-xs font-black rounded-xl px-3 py-2.5"
+                  >
+                    <option value={2026}>2026</option>
+                    <option value={2027}>2027</option>
+                    <option value={2028}>2028</option>
+                    <option value={2025}>2025</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-            {/* 4. TARJETA ÁMBAR / ESTRUCTURA */}
+            {/* 4. TARJETA ÁMBAR: ESTILO DE SEPARADORES SIMPLIFICADO */}
             <div className="bg-amber-50/60 p-5 rounded-2xl border-2 border-amber-300 space-y-2 shadow-sm">
               <label className="block text-xs font-black text-amber-950 uppercase flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
                 4. Estilo de Separadores:
               </label>
               <select
-                value={builderFormat}
-                onChange={(e) => setBuilderFormat(e.target.value as any)}
-                className="w-full bg-white border-2 border-amber-400 text-amber-950 text-xs font-black rounded-xl px-4 py-2.5"
+                value={builderFormatStyle}
+                onChange={(e) => setBuilderFormatStyle(e.target.value as any)}
+                className="w-full bg-white border-2 border-amber-400 text-amber-950 text-sm font-black rounded-xl px-4 py-2.5"
               >
-                <option value="SIGLA_NUM_MES_ANIO">SIGLA-NRO/MES/AÑO (ej. EDO-IB-001/04/26)</option>
-                <option value="SIGLA_NUM_ANIO">SIGLA-NRO/AÑO (ej. EDO-IB-001/2026)</option>
-                <option value="SIGLA_SLASH_ANIO">SIGLA/NRO/AÑO (ej. CITE-SI/001/2026)</option>
+                <option value="MES_ANIO">Mes / Año</option>
+                <option value="SOLO_ANIO">Solamente Año</option>
               </select>
               <p className="text-[10px] text-amber-800 font-bold">
-                Estructura seleccionada aplicada en la vista previa
+                {builderFormatStyle === 'MES_ANIO' ? 'Incluye mes y año corto' : 'Incluye solo año completo'}
               </p>
             </div>
 
           </div>
 
-          {/* BOTONES DE ACCIÓN DEL CONSTRUCTOR */}
-          <div className="pt-4 border-t flex flex-col sm:flex-row justify-between items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setViewMode('list')}
-              className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs sm:text-sm px-6 py-3 rounded-xl transition"
-            >
-              Cancelar
-            </button>
+          {/* BOTÓN DE ALMACENAR / GUARDAR ESTE FORMATO */}
+          <div className="pt-2 flex flex-col sm:flex-row justify-end items-center gap-3">
+            {builderEditingTemplateId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setBuilderEditingTemplateId(null);
+                  setTemplateName('NUEVO FORMATO CITE');
+                }}
+                className="text-xs text-slate-500 hover:text-slate-800 font-bold underline"
+              >
+                Cancelar edición
+              </button>
+            )}
 
             <button
               type="button"
-              onClick={handleApplyBuilderToForm}
-              className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-black text-xs sm:text-sm px-8 py-3.5 rounded-xl shadow-lg transition flex items-center justify-center gap-2 uppercase tracking-wide"
+              onClick={handleSaveTemplate}
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm px-8 py-3.5 rounded-xl shadow-lg transition flex items-center justify-center gap-2 uppercase tracking-wide"
             >
-              <span>Usar este CITE y Pasar al Registro</span>
-              <ArrowRight className="w-4 h-4 text-amber-300" />
+              <Save className="w-4 h-4 text-amber-300" />
+              <span>{builderEditingTemplateId ? 'Actualizar Formato de CITE' : 'Almacenar Formato de CITE'}</span>
             </button>
+          </div>
+
+          {/* SECCIÓN: VER Y EDITAR LOS FORMATOS CREADOS / ALMACENADOS */}
+          <div className="pt-6 border-t-2 border-slate-200 space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm sm:text-base font-black text-slate-900 uppercase flex items-center gap-2">
+                <BookmarkCheck className="w-5 h-5 text-indigo-600" />
+                Mis Formatos de CITE Almacenados ({savedTemplates.length})
+              </h3>
+              <span className="text-xs text-slate-500 font-bold">Puedes editarlos o copiar su código en cualquier momento</span>
+            </div>
+
+            {savedTemplates.length === 0 ? (
+              <div className="text-center py-8 text-xs text-slate-400 border border-dashed rounded-2xl">
+                No tienes formatos almacenados. ¡Configura uno arriba y presiona &quot;Almacenar Formato de CITE&quot;!
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {savedTemplates.map((tmpl) => (
+                  <div 
+                    key={tmpl.id} 
+                    className={`p-4 rounded-2xl border-2 transition space-y-3 shadow-sm ${
+                      builderEditingTemplateId === tmpl.id ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-300' : 'bg-slate-50 border-slate-200 hover:bg-white'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-xs font-black text-slate-900 uppercase">{tmpl.name}</p>
+                        <p className="text-[10px] text-slate-500 font-bold">Sigla: {tmpl.sigla} | Formato: {tmpl.formatStyle === 'MES_ANIO' ? 'Mes / Año' : 'Solamente Año'}</p>
+                      </div>
+                      <span className="text-[9px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-bold">
+                        {tmpl.updatedAt}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 bg-slate-900 text-amber-300 font-mono font-black text-sm rounded-xl text-center border border-slate-800">
+                      {tmpl.previewCode}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCiteCode(tmpl.previewCode)}
+                        className="text-slate-600 hover:text-blue-700 font-bold flex items-center gap-1 text-[11px]"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copiar</span>
+                      </button>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditTemplate(tmpl)}
+                          className="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-black px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1 transition"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Editar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTemplate(tmpl.id, tmpl.name)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded-lg transition"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
           </div>
 
         </div>
