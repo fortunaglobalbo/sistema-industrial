@@ -3,36 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
-  ShieldCheck, Lock, KeyRound, LogOut, PlusCircle, 
-  FileText, Droplets, Flame, Footprints, Wrench, 
-  Sparkles, CheckCircle2, UserCheck, ArrowRight, BookOpen, HeartPulse
+  Lock, KeyRound, LogOut, FileText, 
+  ArrowRight, BookOpen, ShieldCheck, CheckCircle2
 } from 'lucide-react';
-import TransactionForm from '@/components/TransactionForm';
 import ModuloCites from '@/components/ModuloCites';
-import ModuloExtintores from '@/components/ModuloExtintores';
-import ModuloControlAgua from '@/components/ModuloControlAgua';
-import FormularioTallasBotines from '@/components/FormularioTallasBotines';
-import FormularioHerramientas from '@/components/FormularioHerramientas';
-import PrintReceipt from '@/components/PrintReceipt';
-import { getTransactionDetails } from '@/app/actions/transaction';
-import Swal from 'sweetalert2';
 
-export default function RegistrosColegaPage() {
+export default function RegistrosCitePage() {
   // Estado de Autenticación con Clave para Colega (1346)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [pinInput, setPinInput] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  // Módulos de Registro: 'actas' | 'cites' | 'extintores' | 'agua' | 'tallas' | 'herramientas'
-  const [activeModule, setActiveModule] = useState<'actas' | 'cites' | 'extintores' | 'agua' | 'tallas' | 'herramientas'>('actas');
-
-  // Previsualización e Impresión de Acta tras registrar
-  const [activeTransactionId, setActiveTransactionId] = useState<string | null>(null);
-  const [transactionData, setTransactionData] = useState<any | null>(null);
-  const [itemsData, setItemsData] = useState<any[]>([]);
-
   useEffect(() => {
-    const savedToken = localStorage.getItem('auth_token_registros_colega');
+    const savedToken = localStorage.getItem('auth_token_registros_cite');
     if (savedToken === '1346' || savedToken === '7526197') {
       setIsAuthenticated(true);
     } else {
@@ -46,41 +29,24 @@ export default function RegistrosColegaPage() {
 
     // Acepta la clave solicitada 1346 o la clave maestra
     if (pinInput === '1346' || pinInput === '7526197') {
-      localStorage.setItem('auth_token_registros_colega', pinInput);
+      localStorage.setItem('auth_token_registros_cite', pinInput);
       setIsAuthenticated(true);
       setPinInput('');
     } else {
-      setLoginError('Clave de acceso incorrecta. Verifique con el encargado de Seguridad Industrial.');
+      setLoginError('Clave de acceso incorrecta. Ingrese el PIN asignado (Ej. 1346).');
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('auth_token_registros_colega');
+    localStorage.removeItem('auth_token_registros_cite');
     setIsAuthenticated(false);
-    setActiveTransactionId(null);
-    setTransactionData(null);
-    setItemsData([]);
-  };
-
-  // Cargar detalles de un acta generada
-  const handleTransactionCreated = async (transactionId: string) => {
-    try {
-      const res = await getTransactionDetails(transactionId);
-      if (res.success && res.transaction) {
-        setTransactionData(res.transaction);
-        setItemsData(res.items || []);
-        setActiveTransactionId(transactionId);
-      }
-    } catch (err) {
-      console.error(err);
-    }
   };
 
   // Estado de carga inicial
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
       </div>
     );
   }
@@ -94,7 +60,7 @@ export default function RegistrosColegaPage() {
           
           <div className="text-center space-y-3">
             <div className="inline-flex items-center justify-center p-4 bg-indigo-600/20 text-indigo-400 rounded-3xl border border-indigo-500/30 shadow-inner">
-              <KeyRound className="w-10 h-10" />
+              <FileText className="w-10 h-10" />
             </div>
             
             <div>
@@ -102,10 +68,10 @@ export default function RegistrosColegaPage() {
                 ENDE DEORURO - SEGURIDAD INDUSTRIAL
               </span>
               <h1 className="text-xl sm:text-2xl font-black text-white mt-1">
-                Portal de Registros
+                Registro de CITES Oficiales
               </h1>
               <p className="text-xs text-slate-400 font-bold mt-1">
-                Ingrese la clave de autorización para registrar datos
+                Ingrese la clave de autorización para registrar y gestionar CITES
               </p>
             </div>
           </div>
@@ -134,7 +100,7 @@ export default function RegistrosColegaPage() {
             </div>
 
             {loginError && (
-              <div className="p-3 bg-red-950/80 border border-red-500/50 rounded-xl text-red-300 text-xs font-bold text-center animate-shake">
+              <div className="p-3 bg-red-950/80 border border-red-500/50 rounded-xl text-red-300 text-xs font-bold text-center">
                 {loginError}
               </div>
             )}
@@ -143,14 +109,14 @@ export default function RegistrosColegaPage() {
               type="submit"
               className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-black py-3.5 px-6 rounded-2xl transition shadow-lg shadow-indigo-600/30 text-sm uppercase tracking-wider flex items-center justify-center gap-2"
             >
-              <span>Ingresar al Formulario</span>
+              <span>Ingresar al Registro de CITES</span>
               <ArrowRight className="w-4 h-4 text-amber-300" />
             </button>
           </form>
 
           <div className="pt-2 text-center border-t border-slate-800">
             <p className="text-[11px] text-slate-500">
-              Uso exclusivo para personal autorizado de ENDE Oruro
+              Uso exclusivo para registro de correspondencia y CITES a Gerencia
             </p>
           </div>
 
@@ -160,11 +126,11 @@ export default function RegistrosColegaPage() {
     );
   }
 
-  // PANTALLA PRINCIPAL DE FORMULARIO DE REGISTROS PARA COLEGA
+  // PANTALLA PRINCIPAL EXCLUSIVA PARA CITES (PORTAL /REGISTROS)
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 font-sans pb-12">
       
-      {/* BARRA SUPERIOR DE NAVEGACIÓN */}
+      {/* BARRA SUPERIOR INSTITUCIONAL */}
       <header className="bg-slate-900 text-white shadow-md sticky top-0 z-30 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
           
@@ -177,14 +143,14 @@ export default function RegistrosColegaPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-sm sm:text-base font-black uppercase tracking-tight text-white">
-                  Portal de Registros
+                  Libro y Registro de CITES
                 </h1>
                 <span className="bg-indigo-500/30 text-indigo-300 border border-indigo-400/40 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
                   CLAVE 1346
                 </span>
               </div>
               <p className="text-[10px] text-slate-400 font-bold hidden sm:block">
-                Ingreso y registro ágil de actas, dotaciones, CITES y suministros
+                Registro de correspondencia oficial, informes y notas a Gerencia
               </p>
             </div>
           </div>
@@ -203,154 +169,9 @@ export default function RegistrosColegaPage() {
         </div>
       </header>
 
-      {/* CONTENEDOR PRINCIPAL */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        
-        {/* SELECTOR DE PESTAÑAS DE REGISTRO */}
-        <div className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap gap-1.5 sm:gap-2">
-          
-          <button
-            onClick={() => {
-              setActiveModule('actas');
-              setActiveTransactionId(null);
-            }}
-            className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase transition ${
-              activeModule === 'actas'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
-            }`}
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>1. Acta EPP / Botiquín</span>
-          </button>
-
-          <button
-            onClick={() => setActiveModule('cites')}
-            className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase transition ${
-              activeModule === 'cites'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>2. CITES a Gerencia</span>
-          </button>
-
-          <button
-            onClick={() => setActiveModule('extintores')}
-            className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase transition ${
-              activeModule === 'extintores'
-                ? 'bg-rose-600 text-white shadow-md'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
-            }`}
-          >
-            <Flame className="w-4 h-4" />
-            <span>3. Extintores</span>
-          </button>
-
-          <button
-            onClick={() => setActiveModule('agua')}
-            className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase transition ${
-              activeModule === 'agua'
-                ? 'bg-sky-600 text-white shadow-md'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
-            }`}
-          >
-            <Droplets className="w-4 h-4" />
-            <span>4. Control de Agua</span>
-          </button>
-
-          <button
-            onClick={() => setActiveModule('tallas')}
-            className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase transition ${
-              activeModule === 'tallas'
-                ? 'bg-amber-600 text-white shadow-md'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
-            }`}
-          >
-            <Footprints className="w-4 h-4" />
-            <span>5. Tallas Botines</span>
-          </button>
-
-          <button
-            onClick={() => setActiveModule('herramientas')}
-            className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase transition ${
-              activeModule === 'herramientas'
-                ? 'bg-slate-900 text-white shadow-md'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
-            }`}
-          >
-            <Wrench className="w-4 h-4" />
-            <span>6. Herramientas</span>
-          </button>
-
-        </div>
-
-        {/* CONTENIDO DEL FORMULARIO SELECCIONADO */}
-        <div className="transition-all duration-200">
-          
-          {/* MÓDULO 1: REGISTRAR ACTA EPP / INSUMOS / BOTIQUÍN */}
-          {activeModule === 'actas' && (
-            <div>
-              {activeTransactionId && transactionData ? (
-                <div className="space-y-4">
-                  <div className="bg-emerald-50 border border-emerald-300 p-4 rounded-2xl flex justify-between items-center">
-                    <span className="text-xs sm:text-sm font-black text-emerald-950 uppercase flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                      Acta Registrada con Éxito (#{transactionData.correlative_number || activeTransactionId})
-                    </span>
-                    <button
-                      onClick={() => {
-                        setActiveTransactionId(null);
-                        setTransactionData(null);
-                      }}
-                      className="bg-blue-600 text-white text-xs font-black px-4 py-2 rounded-xl hover:bg-blue-700 transition"
-                    >
-                      + Registrar Otra Acta
-                    </button>
-                  </div>
-                  <PrintReceipt 
-                    transaction={transactionData}
-                    items={itemsData}
-                    onBack={() => {
-                      setActiveTransactionId(null);
-                      setTransactionData(null);
-                    }}
-                  />
-                </div>
-              ) : (
-                <TransactionForm onSuccess={handleTransactionCreated} />
-              )}
-            </div>
-          )}
-
-          {/* MÓDULO 2: CITES A GERENCIA */}
-          {activeModule === 'cites' && (
-            <ModuloCites showTabs={false} />
-          )}
-
-          {/* MÓDULO 3: EXTINTORES */}
-          {activeModule === 'extintores' && (
-            <ModuloExtintores showTabs={false} />
-          )}
-
-          {/* MÓDULO 4: CONTROL DE AGUA */}
-          {activeModule === 'agua' && (
-            <ModuloControlAgua showTabs={false} />
-          )}
-
-          {/* MÓDULO 5: TALLAS DE BOTINES */}
-          {activeModule === 'tallas' && (
-            <FormularioTallasBotines />
-          )}
-
-          {/* MÓDULO 6: HERRAMIENTAS */}
-          {activeModule === 'herramientas' && (
-            <FormularioHerramientas />
-          )}
-
-        </div>
-
+      {/* CONTENIDO PRINCIPAL: EXCLUSIVAMENTE MÓDULO DE CITES */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <ModuloCites showTabs={false} />
       </main>
 
     </div>
