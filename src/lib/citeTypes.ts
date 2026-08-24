@@ -1,4 +1,5 @@
 export interface OfficialCiteInput {
+  correlativeNumber?: number;
   issueDate: string;
   docNumber: string;
   reference: string;
@@ -25,5 +26,7 @@ export const CITE_STATUS_OPTIONS = [
   'Enviado',
   'Firmado',
   'En Trámite',
-  'Archivado'
+  'Archivado',
+  'Aprobado',
+  'Observado'
 ] as const;

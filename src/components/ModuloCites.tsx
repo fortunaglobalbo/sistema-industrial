@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileText, Plus, RefreshCw, Printer, Trash2, Edit2, 
   Search, ArrowLeft, Calendar, Send, CheckCircle2, 
-  Clock, BookOpen, AlertCircle
+  Clock, BookOpen, Settings2, Sliders, Tag, Sparkles
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { 
@@ -31,15 +31,35 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
   // Vistas: 'list' | 'form' | 'print'
   const [viewMode, setViewMode] = useState<'list' | 'form' | 'print'>('list');
 
-  // Form State
+  // Form State (100% Personalizable)
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [correlativeNumber, setCorrelativeNumber] = useState<number | string>('');
   const [issueDate, setIssueDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [docNumber, setDocNumber] = useState('');
   const [reference, setReference] = useState('');
-  const [recipientA, setRecipientA] = useState('GERENCIA GENERAL - ENDE DEORURO');
+  const [recipientA, setRecipientA] = useState('');
   const [status, setStatus] = useState<string>('Enviado');
+  const [customStatus, setCustomStatus] = useState<string>('');
   const [observations, setObservations] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Parámetros personalizables del Reporte Imprimible
+  const [printTitle, setPrintTitle] = useState('ENDE DEORURO - DEPARTAMENTO DE SEGURIDAD INDUSTRIAL');
+  const [printSubtitle, setPrintSubtitle] = useState('LIBRO OFICIAL DE CITES Y CORRESPONDENCIA ENVIADA A GERENCIA');
+  const [printSignLeft, setPrintSignLeft] = useState('RESPONSABLE DE SEGURIDAD INDUSTRIAL');
+  const [printSignRight, setPrintSignRight] = useState('RECEPCIÓN DE GERENCIA GENERAL');
+  const [showPrintSettings, setShowPrintSettings] = useState(false);
+
+  // Sugerencias rápidas para el destinatario (A)
+  const quickRecipients = [
+    'GERENCIA GENERAL',
+    'GERENCIA TÉCNICA',
+    'GERENCIA COMERCIAL',
+    'GERENCIA ADMINISTRATIVA Y FINANCIERA',
+    'JEFATURA DE RECURSOS HUMANOS',
+    'SUPERVISIÓN DE SEGURIDAD INDUSTRIAL',
+    'SECRETARÍA DE GERENCIA'
+  ];
 
   useEffect(() => {
     loadData();
@@ -54,25 +74,35 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
 
   const handleOpenNew = () => {
     setEditingId(null);
-    setIssueDate(new Date().toISOString().split('T')[0]);
-    // Sugerencia de número correlativo
     const currentYear = new Date().getFullYear();
     const nextNum = cites.length + 1;
+    setCorrelativeNumber(nextNum);
+    setIssueDate(new Date().toISOString().split('T')[0]);
     setDocNumber(`CITE-SI-${String(nextNum).padStart(3, '0')}/${currentYear}`);
     setReference('');
-    setRecipientA('GERENCIA GENERAL - ENDE DEORURO');
+    setRecipientA('GERENCIA GENERAL');
     setStatus('Enviado');
+    setCustomStatus('');
     setObservations('');
     setViewMode('form');
   };
 
   const handleEdit = (item: OfficialCiteData) => {
     setEditingId(item.id);
+    setCorrelativeNumber(item.correlative_number);
     setIssueDate(item.issue_date);
     setDocNumber(item.doc_number);
     setReference(item.reference);
     setRecipientA(item.recipient_a);
-    setStatus(item.status);
+    
+    if (CITE_STATUS_OPTIONS.includes(item.status as any)) {
+      setStatus(item.status);
+      setCustomStatus('');
+    } else {
+      setStatus('OTRO');
+      setCustomStatus(item.status);
+    }
+
     setObservations(item.observations || '');
     setViewMode('form');
   };
@@ -92,15 +122,18 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
       return;
     }
 
+    const finalStatus = status === 'OTRO' ? (customStatus.trim() || 'Enviado') : status;
+
     setIsSubmitting(true);
     const payload: OfficialCiteInput = {
+      correlativeNumber: correlativeNumber ? Number(correlativeNumber) : undefined,
       issueDate,
-      docNumber,
-      reference,
-      recipientA,
+      docNumber: docNumber.trim(),
+      reference: reference.trim(),
+      recipientA: recipientA.trim(),
       signerFirm: '',
-      status,
-      observations
+      status: finalStatus,
+      observations: observations.trim() || undefined
     };
 
     const res = await saveOfficialCite(payload, editingId || undefined);
@@ -149,7 +182,8 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
     return (
       c.doc_number.toLowerCase().includes(term) ||
       c.reference.toLowerCase().includes(term) ||
-      c.recipient_a.toLowerCase().includes(term)
+      c.recipient_a.toLowerCase().includes(term) ||
+      String(c.correlative_number).includes(term)
     );
   });
 
@@ -163,7 +197,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
           {/* BANNER DE RESUMEN */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             
-            <div className="bg-gradient-to-br from-blue-500 to-indigo-700 text-white p-5 rounded-2xl shadow-md flex items-center gap-4">
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-800 text-white p-5 rounded-2xl shadow-md flex items-center gap-4">
               <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
                 <BookOpen className="w-6 h-6" />
               </div>
@@ -181,7 +215,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Firmados / Aceptados</p>
                 <p className="text-2xl font-black font-mono text-emerald-950">
-                  {cites.filter(c => c.status === 'Firmado').length}
+                  {cites.filter(c => c.status === 'Firmado' || c.status === 'Aprobado').length}
                 </p>
                 <p className="text-[11px] text-emerald-700 font-bold">Con visto bueno</p>
               </div>
@@ -205,9 +239,9 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                 <Clock className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">En Trámite</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">En Trámite / Otros</p>
                 <p className="text-2xl font-black font-mono text-amber-950">
-                  {cites.filter(c => c.status === 'En Trámite').length}
+                  {cites.filter(c => c.status === 'En Trámite' || c.status === 'Observado').length}
                 </p>
                 <p className="text-[11px] text-amber-700 font-bold">Pendientes de respuesta</p>
               </div>
@@ -297,7 +331,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                       <th className="p-3">Número Documento</th>
                       <th className="p-3">Referencia / Asunto</th>
                       <th className="p-3">A (Destinatario)</th>
-                      <th className="p-3 text-center">Firma (Física)</th>
+                      <th className="p-3 text-center">Firma</th>
                       <th className="p-3 text-center">Estado</th>
                       <th className="p-3 text-center w-24">Acciones</th>
                     </tr>
@@ -330,7 +364,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                         </td>
                         <td className="p-3 text-center">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${
-                            cite.status === 'Firmado' 
+                            cite.status === 'Firmado' || cite.status === 'Aprobado'
                               ? 'bg-emerald-50 text-emerald-800 border-emerald-300' 
                               : cite.status === 'Enviado' 
                               ? 'bg-blue-50 text-blue-800 border-blue-300' 
@@ -371,7 +405,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
         </div>
       )}
 
-      {/* VISTA 2: FORMULARIO DE REGISTRO / EDICIÓN DE CITE */}
+      {/* VISTA 2: FORMULARIO 100% PERSONALIZABLE */}
       {viewMode === 'form' && (
         <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-slate-300 shadow-xl space-y-6">
           
@@ -382,10 +416,10 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               </div>
               <div>
                 <h2 className="text-lg sm:text-xl font-black text-slate-900 uppercase">
-                  {editingId ? `Editar CITE: ${docNumber}` : 'Registrar Nuevo CITE a Gerencia'}
+                  {editingId ? `Editar CITE: ${docNumber}` : 'Registrar Nuevo CITE Personalizable'}
                 </h2>
                 <p className="text-xs text-slate-500 font-bold">
-                  Complete los datos oficiales del documento para el registro en el libro
+                  Todos los campos son editables libremente según el formato de tu documento
                 </p>
               </div>
             </div>
@@ -400,8 +434,24 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
             
+            {/* Nro Correlativo Personalizable */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black text-slate-900 uppercase">
+                Nro Correlativo
+              </label>
+              <input
+                type="number"
+                min="1"
+                placeholder="Ej. 1, 2, 45..."
+                value={correlativeNumber}
+                onChange={(e) => setCorrelativeNumber(e.target.value)}
+                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-blue-700 text-sm font-black font-mono rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
+              />
+            </div>
+
+            {/* Fecha */}
             <div className="space-y-1.5">
               <label className="block text-xs font-black text-slate-900 uppercase">
                 Fecha de Emisión <span className="text-red-600">*</span>
@@ -415,21 +465,91 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-black text-slate-900 uppercase">
-                Número de Documento / CITE <span className="text-red-600">*</span>
-              </label>
+            {/* Número de Documento / CITE */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <div className="flex justify-between items-center">
+                <label className="block text-xs font-black text-slate-900 uppercase">
+                  Número de Documento / CITE <span className="text-red-600">*</span>
+                </label>
+                <div className="flex gap-1 text-[10px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setDocNumber(`CITE-SI-${String(correlativeNumber || 1).padStart(3, '0')}/${new Date().getFullYear()}`)}
+                    className="text-blue-600 hover:bg-blue-50 px-1.5 py-0.5 rounded"
+                  >
+                    + CITE-SI
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDocNumber(`NOTA-SI-${String(correlativeNumber || 1).padStart(3, '0')}/${new Date().getFullYear()}`)}
+                    className="text-blue-600 hover:bg-blue-50 px-1.5 py-0.5 rounded"
+                  >
+                    + NOTA
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDocNumber(`INF-SI-${String(correlativeNumber || 1).padStart(3, '0')}/${new Date().getFullYear()}`)}
+                    className="text-blue-600 hover:bg-blue-50 px-1.5 py-0.5 rounded"
+                  >
+                    + INF
+                  </button>
+                </div>
+              </div>
               <input
                 type="text"
                 required
-                placeholder="EJ. CITE-SI-045/2026..."
+                placeholder="EJ. CITE-SI-045/2026, NOTA GG-012, INFORME-01..."
                 value={docNumber}
                 onChange={(e) => setDocNumber(e.target.value.toUpperCase())}
                 className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
               />
             </div>
 
-            <div className="space-y-1.5">
+            {/* A (Destinatario / Gerencia) con chips de sugerencia rápida */}
+            <div className="space-y-1.5 sm:col-span-4">
+              <label className="block text-xs font-black text-slate-900 uppercase">
+                A (Destinatario / Gerencia) <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="EJ. GERENCIA GENERAL, GERENCIA TÉCNICA, DR. NOMBRE APELLIDO..."
+                value={recipientA}
+                onChange={(e) => setRecipientA(e.target.value.toUpperCase())}
+                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
+              />
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <span className="text-[10px] text-slate-400 font-bold self-center">Sugerencias:</span>
+                {quickRecipients.map((rec) => (
+                  <button
+                    key={rec}
+                    type="button"
+                    onClick={() => setRecipientA(rec)}
+                    className="text-[10px] font-bold bg-slate-100 hover:bg-blue-100 hover:text-blue-700 text-slate-700 px-2 py-1 rounded-lg transition"
+                  >
+                    {rec}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Referencia / Asunto */}
+            <div className="space-y-1.5 sm:col-span-4">
+              <label className="block text-xs font-black text-slate-900 uppercase">
+                Referencia / Asunto <span className="text-red-600">*</span>
+              </label>
+              <textarea
+                rows={3}
+                required
+                placeholder="EJ. REMISIÓN DE INFORME MENSUAL DE SEGURIDAD INDUSTRIAL Y CONTROL DE EPP..."
+                value={reference}
+                onChange={(e) => setReference(e.target.value.toUpperCase())}
+                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
+              />
+            </div>
+
+            {/* Estado del Trámite (Seleccionable o Personalizado) */}
+            <div className="space-y-1.5 sm:col-span-2">
               <label className="block text-xs font-black text-slate-900 uppercase">
                 Estado del Trámite
               </label>
@@ -441,38 +561,22 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                 {CITE_STATUS_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
+                <option value="OTRO">OTRO (PERSONALIZADO)...</option>
               </select>
+
+              {status === 'OTRO' && (
+                <input
+                  type="text"
+                  placeholder="Especifique el estado..."
+                  value={customStatus}
+                  onChange={(e) => setCustomStatus(e.target.value.toUpperCase())}
+                  className="w-full bg-white border-2 border-blue-400 text-slate-900 text-xs font-black rounded-xl px-4 py-2 mt-2 uppercase"
+                />
+              )}
             </div>
 
-            <div className="space-y-1.5 sm:col-span-3">
-              <label className="block text-xs font-black text-slate-900 uppercase">
-                A (Destinatario / Gerencia) <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="EJ. GERENCIA GENERAL - ENDE DEORURO..."
-                value={recipientA}
-                onChange={(e) => setRecipientA(e.target.value.toUpperCase())}
-                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
-              />
-            </div>
-
-            <div className="space-y-1.5 sm:col-span-3">
-              <label className="block text-xs font-black text-slate-900 uppercase">
-                Referencia / Asunto <span className="text-red-600">*</span>
-              </label>
-              <textarea
-                rows={2}
-                required
-                placeholder="EJ. REMISIÓN DE INFORME MENSUAL DE SEGURIDAD INDUSTRIAL Y CONTROL DE EPP..."
-                value={reference}
-                onChange={(e) => setReference(e.target.value.toUpperCase())}
-                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
-              />
-            </div>
-
-            <div className="space-y-1.5 sm:col-span-3">
+            {/* Observaciones / Anexos */}
+            <div className="space-y-1.5 sm:col-span-2">
               <label className="block text-xs font-black text-slate-900 uppercase">
                 Observaciones / Anexos (Opcional)
               </label>
@@ -514,18 +618,28 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
         </form>
       )}
 
-      {/* VISTA 3: PLANILLA OFICIAL IMPRIMIBLE CON CLASE print-area */}
+      {/* VISTA 3: PLANILLA OFICIAL IMPRIMIBLE CON PERSONALIZACIÓN DE ENCABEZADO */}
       {viewMode === 'print' && (
         <div className="space-y-4">
           
-          <div className="flex justify-between items-center bg-blue-50 border border-blue-200 p-4 rounded-2xl shadow-sm print:hidden">
-            <button
-              onClick={() => setViewMode('list')}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Volver al Listado</span>
-            </button>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-blue-50 border border-blue-200 p-4 rounded-2xl shadow-sm print:hidden">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setViewMode('list')}
+                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Volver al Listado</span>
+              </button>
+
+              <button
+                onClick={() => setShowPrintSettings(!showPrintSettings)}
+                className="flex items-center gap-1.5 bg-white border border-blue-300 hover:bg-blue-100 text-blue-800 px-3 py-2 rounded-xl text-xs font-bold transition"
+              >
+                <Settings2 className="w-4 h-4" />
+                <span>Personalizar Encabezados y Firmas</span>
+              </button>
+            </div>
 
             <button
               onClick={() => window.print()}
@@ -535,6 +649,54 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
               <span>IMPRIMIR LIBRO DE CITES</span>
             </button>
           </div>
+
+          {/* PANEL DE PERSONALIZACIÓN DEL REPORTE */}
+          {showPrintSettings && (
+            <div className="bg-white p-5 rounded-2xl border-2 border-blue-200 shadow-md space-y-4 print:hidden">
+              <h4 className="text-xs font-black uppercase text-blue-900 flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-blue-600" />
+                Personalizar Textos del Reporte Imprimible
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Título Institucional:</label>
+                  <input
+                    type="text"
+                    value={printTitle}
+                    onChange={(e) => setPrintTitle(e.target.value.toUpperCase())}
+                    className="w-full border rounded-lg p-2 font-bold uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Subtítulo / Nombre del Libro:</label>
+                  <input
+                    type="text"
+                    value={printSubtitle}
+                    onChange={(e) => setPrintSubtitle(e.target.value.toUpperCase())}
+                    className="w-full border rounded-lg p-2 font-bold uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Pie de Firma Izquierda:</label>
+                  <input
+                    type="text"
+                    value={printSignLeft}
+                    onChange={(e) => setPrintSignLeft(e.target.value.toUpperCase())}
+                    className="w-full border rounded-lg p-2 font-bold uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Pie de Firma Derecha:</label>
+                  <input
+                    type="text"
+                    value={printSignRight}
+                    onChange={(e) => setPrintSignRight(e.target.value.toUpperCase())}
+                    className="w-full border rounded-lg p-2 font-bold uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* DOCUMENTO OFICIAL IMPRIMIBLE */}
           <div className="print-area bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 shadow-xl max-w-5xl mx-auto print:shadow-none print:border-none print:w-full print:p-0 font-sans">
@@ -547,8 +709,8 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                   className="h-12 w-auto object-contain"
                 />
                 <div>
-                  <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight">ENDE DEORURO - DEPARTAMENTO DE SEGURIDAD INDUSTRIAL</h2>
-                  <p className="text-xs font-extrabold text-blue-800 uppercase tracking-wide">LIBRO OFICIAL DE CITES Y CORRESPONDENCIA ENVIADA A GERENCIA</p>
+                  <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight">{printTitle}</h2>
+                  <p className="text-xs font-extrabold text-blue-800 uppercase tracking-wide">{printSubtitle}</p>
                 </div>
               </div>
 
@@ -596,7 +758,7 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
                         {c.recipient_a}
                       </td>
                       {/* CELDA DE FIRMA FÍSICA EN BLANCO PARA IMPRIMIR */}
-                      <td className="p-4 border-r border-slate-300 min-h-[3rem] text-center">
+                      <td className="p-4 border-r border-slate-300 min-h-[3.5rem] text-center">
                         &nbsp;
                       </td>
                     </tr>
@@ -608,12 +770,12 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
             <div className="grid grid-cols-2 gap-12 pt-10 text-center text-xs sm:text-sm">
               <div>
                 <div className="border-b-2 border-slate-400 w-3/4 mx-auto mb-2"></div>
-                <p className="font-black text-slate-900 uppercase">RESPONSABLE DE SEGURIDAD INDUSTRIAL</p>
+                <p className="font-black text-slate-900 uppercase">{printSignLeft}</p>
                 <p className="text-xs text-slate-600 font-bold uppercase">ENDE DEORURO</p>
               </div>
               <div>
                 <div className="border-b-2 border-slate-400 w-3/4 mx-auto mb-2"></div>
-                <p className="font-black text-slate-900 uppercase">RECEPCIÓN DE GERENCIA GENERAL</p>
+                <p className="font-black text-slate-900 uppercase">{printSignRight}</p>
                 <p className="text-xs text-slate-600 font-bold uppercase">ENDE DEORURO</p>
               </div>
             </div>

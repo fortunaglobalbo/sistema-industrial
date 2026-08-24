@@ -21,7 +21,7 @@ export async function saveOfficialCite(data: OfficialCiteInput, existingId?: str
       return { success: false, error: 'El campo "A" (Destinatario / Gerencia) es obligatorio.' };
     }
 
-    const payload = {
+    const payload: any = {
       issue_date: data.issueDate,
       doc_number: data.docNumber.trim().toUpperCase(),
       reference: data.reference.trim().toUpperCase(),
@@ -30,6 +30,10 @@ export async function saveOfficialCite(data: OfficialCiteInput, existingId?: str
       status: data.status || 'Enviado',
       observations: data.observations ? data.observations.trim().toUpperCase() : null
     };
+
+    if (data.correlativeNumber && data.correlativeNumber > 0) {
+      payload.correlative_number = data.correlativeNumber;
+    }
 
     if (existingId) {
       const { error } = await supabase
