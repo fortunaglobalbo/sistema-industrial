@@ -1,0 +1,627 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { 
+  FileText, Plus, RefreshCw, Printer, Trash2, Edit2, 
+  Search, ArrowLeft, Calendar, User, Send, CheckCircle2, 
+  Clock, BookOpen, AlertCircle
+} from 'lucide-react';
+import Swal from 'sweetalert2';
+import { 
+  saveOfficialCite, 
+  getOfficialCites, 
+  deleteOfficialCite 
+} from '@/app/actions/cites';
+import { 
+  OfficialCiteInput, 
+  OfficialCiteData, 
+  CITE_STATUS_OPTIONS 
+} from '@/lib/citeTypes';
+
+interface ModuloCitesProps {
+  showTabs?: boolean;
+}
+
+export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
+  const [cites, setCites] = useState<OfficialCiteData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('TODOS');
+
+  // Vistas: 'list' | 'form' | 'print'
+  const [viewMode, setViewMode] = useState<'list' | 'form' | 'print'>('list');
+
+  // Form State
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [issueDate, setIssueDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [docNumber, setDocNumber] = useState('');
+  const [reference, setReference] = useState('');
+  const [recipientA, setRecipientA] = useState('GERENCIA GENERAL');
+  const [signerFirm, setSignerFirm] = useState('RESPONSABLE SEGURIDAD INDUSTRIAL');
+  const [status, setStatus] = useState<string>('Enviado');
+  const [observations, setObservations] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, [filterStatus]);
+
+  const loadData = async () => {
+    setLoading(true);
+    const list = await getOfficialCites(searchTerm, filterStatus);
+    setCites(list);
+    setLoading(false);
+  };
+
+  const handleOpenNew = () => {
+    setEditingId(null);
+    setIssueDate(new Date().toISOString().split('T')[0]);
+    // Sugerencia de número correlativo
+    const currentYear = new Date().getFullYear();
+    const nextNum = cites.length + 1;
+    setDocNumber(`CITE-SI-${String(nextNum).padStart(3, '0')}/${currentYear}`);
+    setReference('');
+    setRecipientA('GERENCIA GENERAL - ENDE DEORURO');
+    setSignerFirm('RESPONSABLE SEGURIDAD INDUSTRIAL');
+    setStatus('Enviado');
+    setObservations('');
+    setViewMode('form');
+  };
+
+  const handleEdit = (item: OfficialCiteData) => {
+    setEditingId(item.id);
+    setIssueDate(item.issue_date);
+    setDocNumber(item.doc_number);
+    setReference(item.reference);
+    setRecipientA(item.recipient_a);
+    setSignerFirm(item.signer_firm);
+    setStatus(item.status);
+    setObservations(item.observations || '');
+    setViewMode('form');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docNumber.trim()) {
+      Swal.fire({ icon: 'warning', title: 'N° Documento Obligatorio', text: 'Ingrese el número de CITE o documento.' });
+      return;
+    }
+    if (!reference.trim()) {
+      Swal.fire({ icon: 'warning', title: 'Referencia Obligatoria', text: 'Ingrese el asunto o referencia del documento.' });
+      return;
+    }
+    if (!recipientA.trim()) {
+      Swal.fire({ icon: 'warning', title: 'Destinatario (A) Obligatorio', text: 'Especifique a quién va dirigido.' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    const payload: OfficialCiteInput = {
+      issueDate,
+      docNumber,
+      reference,
+      recipientA,
+      signerFirm,
+      status,
+      observations
+    };
+
+    const res = await saveOfficialCite(payload, editingId || undefined);
+    setIsSubmitting(false);
+
+    if (res.success) {
+      Swal.fire({
+        icon: 'success',
+        title: editingId ? 'CITE Actualizado' : 'CITE Registrado',
+        text: `El documento ${docNumber.toUpperCase()} se guardó exitosamente.`,
+        timer: 1800,
+        showConfirmButton: false
+      });
+      setViewMode('list');
+      loadData();
+    } else {
+      Swal.fire({ icon: 'error', title: 'Error al Guardar', text: res.error });
+    }
+  };
+
+  const handleDelete = async (id: string, doc: string) => {
+    const confirm = await Swal.fire({
+      title: `¿Eliminar ${doc}?`,
+      text: 'Se eliminará este CITE del libro oficial de correspondencia.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (confirm.isConfirmed) {
+      const res = await deleteOfficialCite(id);
+      if (res.success) {
+        Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1500, showConfirmButton: false });
+        loadData();
+      } else {
+        Swal.fire({ icon: 'error', title: 'Error', text: res.error });
+      }
+    }
+  };
+
+  const filteredCites = cites.filter((c) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      c.doc_number.toLowerCase().includes(term) ||
+      c.reference.toLowerCase().includes(term) ||
+      c.recipient_a.toLowerCase().includes(term) ||
+      c.signer_firm.toLowerCase().includes(term)
+    );
+  });
+
+  return (
+    <div className="space-y-6">
+      
+      {/* VISTA 1: LISTADO DE CITES */}
+      {viewMode === 'list' && (
+        <div className="space-y-6">
+          
+          {/* TARJETAS DE RESUMEN DE CITES */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="p-3.5 bg-blue-100 text-blue-700 rounded-2xl">
+                <BookOpen className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-500 uppercase">Total CITES Registrados</p>
+                <p className="text-2xl font-black font-mono text-slate-900">{cites.length}</p>
+                <p className="text-[11px] text-slate-500 font-semibold">Libro de Correspondencia</p>
+              </div>
+            </div>
+
+            <div className="bg-emerald-50/80 p-5 rounded-2xl border border-emerald-200 shadow-sm flex items-center gap-4">
+              <div className="p-3.5 bg-emerald-600 text-white rounded-2xl shadow">
+                <CheckCircle2 className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-emerald-800 uppercase">CITES Firmados / Conformes</p>
+                <p className="text-2xl font-black font-mono text-emerald-950">
+                  {cites.filter(c => c.status === 'Firmado' || c.status === 'Enviado').length}
+                </p>
+                <p className="text-[11px] text-emerald-700 font-bold">Documentos formalizados</p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50/80 p-5 rounded-2xl border border-amber-200 shadow-sm flex items-center gap-4">
+              <div className="p-3.5 bg-amber-500 text-white rounded-2xl shadow">
+                <Clock className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-amber-800 uppercase">En Trámite / Revisión</p>
+                <p className="text-2xl font-black font-mono text-amber-950">
+                  {cites.filter(c => c.status === 'En Trámite').length}
+                </p>
+                <p className="text-[11px] text-amber-700 font-bold">Pendientes de respuesta</p>
+              </div>
+            </div>
+
+          </div>
+
+          {/* BARRA DE ACCIONES Y BÚSQUEDA */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+            
+            <div className="flex flex-1 items-center gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Buscar por N° CITE, referencia o destinatario (A)..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                />
+              </div>
+
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-black text-slate-800 uppercase"
+              >
+                <option value="TODOS">TODOS LOS ESTADOS</option>
+                {CITE_STATUS_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt.toUpperCase()}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setViewMode('print')}
+                className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs px-4 py-3 rounded-xl transition shadow"
+              >
+                <Printer className="w-4 h-4 text-emerald-400" />
+                <span>Imprimir Libro de CITES</span>
+              </button>
+
+              <button
+                onClick={handleOpenNew}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-4 py-3 rounded-xl transition shadow-lg"
+              >
+                <Plus className="w-4 h-4 text-amber-300" />
+                <span>+ Registrar CITE</span>
+              </button>
+            </div>
+
+          </div>
+
+          {/* TABLA DE CITES */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="text-base font-black text-slate-900 uppercase flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                Control y Libro de CITES a Gerencia ({filteredCites.length})
+              </h3>
+
+              <button
+                onClick={loadData}
+                disabled={loading}
+                className="p-2 text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                title="Actualizar"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-12 text-xs font-bold text-slate-500">Cargando CITES...</div>
+            ) : filteredCites.length === 0 ? (
+              <div className="text-center py-14 text-slate-400 text-xs font-bold border-2 border-dashed border-slate-200 rounded-2xl">
+                No se encontraron CITES registrados con los filtros aplicados.
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full border-collapse text-xs sm:text-sm text-left">
+                  <thead>
+                    <tr className="bg-slate-900 text-white font-black uppercase text-xs">
+                      <th className="p-3 text-center w-12">Nro</th>
+                      <th className="p-3 text-center w-24">Fecha</th>
+                      <th className="p-3">Número Documento</th>
+                      <th className="p-3">Referencia / Asunto</th>
+                      <th className="p-3">A (Destinatario)</th>
+                      <th className="p-3">Firma / Remitente</th>
+                      <th className="p-3 text-center">Estado</th>
+                      <th className="p-3 text-center w-24">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 font-bold">
+                    {filteredCites.map((cite) => (
+                      <tr key={cite.id} className="hover:bg-slate-50 transition">
+                        <td className="p-3 text-center font-mono font-black text-blue-700 bg-blue-50/40">
+                          #{cite.correlative_number}
+                        </td>
+                        <td className="p-3 text-center font-mono text-slate-700 text-xs">
+                          {cite.issue_date}
+                        </td>
+                        <td className="p-3 font-mono font-black text-slate-900 text-xs">
+                          {cite.doc_number}
+                        </td>
+                        <td className="p-3 uppercase text-slate-900 text-xs max-w-xs">
+                          <p className="line-clamp-2">{cite.reference}</p>
+                          {cite.observations && (
+                            <p className="text-[10px] text-slate-400 font-normal mt-0.5">Obs: {cite.observations}</p>
+                          )}
+                        </td>
+                        <td className="p-3 uppercase text-slate-800 text-xs font-black">
+                          {cite.recipient_a}
+                        </td>
+                        <td className="p-3 uppercase text-slate-700 text-xs">
+                          {cite.signer_firm}
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${
+                            cite.status === 'Firmado' 
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300' 
+                              : cite.status === 'Enviado' 
+                              ? 'bg-blue-50 text-blue-800 border-blue-300' 
+                              : cite.status === 'En Trámite' 
+                              ? 'bg-amber-50 text-amber-800 border-amber-300'
+                              : 'bg-slate-100 text-slate-800 border-slate-300'
+                          }`}>
+                            {cite.status}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => handleEdit(cite)}
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition border border-blue-200"
+                              title="Editar CITE"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(cite.id, cite.doc_number)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition border border-red-200"
+                              title="Eliminar CITE"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+          </div>
+
+        </div>
+      )}
+
+      {/* VISTA 2: FORMULARIO DE REGISTRO / EDICIÓN DE CITE */}
+      {viewMode === 'form' && (
+        <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-slate-300 shadow-xl space-y-6">
+          
+          <div className="flex justify-between items-center border-b pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-100 text-blue-700 rounded-2xl">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 uppercase">
+                  {editingId ? `Editar CITE ${docNumber}` : 'Registro de Nuevo CITE / Documento a Gerencia'}
+                </h2>
+                <p className="text-xs text-slate-500 font-bold">
+                  Complete los campos oficiales para el libro de correspondencia
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs px-4 py-2 rounded-xl transition"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Volver</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+            
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black text-slate-900 uppercase">
+                Fecha de Emisión <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="date"
+                required
+                value={issueDate}
+                onChange={(e) => setIssueDate(e.target.value)}
+                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black text-slate-900 uppercase">
+                Número de Documento / CITE <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="EJ. CITE-SI-045/2026..."
+                value={docNumber}
+                onChange={(e) => setDocNumber(e.target.value.toUpperCase())}
+                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black text-slate-900 uppercase">
+                Estado del Trámite
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full bg-slate-50 border-2 border-slate-300 text-slate-900 text-xs sm:text-sm font-black rounded-xl px-4 py-3 uppercase"
+              >
+                {CITE_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-3">
+              <label className="block text-xs font-black text-slate-900 uppercase">
+                A (Destinatario / Gerencia) <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="EJ. GERENCIA GENERAL - ING. ... / GERENCIA TÉCNICA..."
+                value={recipientA}
+                onChange={(e) => setRecipientA(e.target.value.toUpperCase())}
+                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
+              />
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-3">
+              <label className="block text-xs font-black text-slate-900 uppercase">
+                Referencia / Asunto <span className="text-red-600">*</span>
+              </label>
+              <textarea
+                rows={2}
+                required
+                placeholder="EJ. REMISIÓN DE INFORME MENSUAL DE SEGURIDAD INDUSTRIAL Y CONTROL DE EPP..."
+                value={reference}
+                onChange={(e) => setReference(e.target.value.toUpperCase())}
+                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
+              />
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="block text-xs font-black text-slate-900 uppercase">
+                Firma / Remitente Responsable <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="EJ. RESPONSABLE DE SEGURIDAD INDUSTRIAL..."
+                value={signerFirm}
+                onChange={(e) => setSignerFirm(e.target.value.toUpperCase())}
+                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black text-slate-900 uppercase">
+                Observaciones / Anexos
+              </label>
+              <input
+                type="text"
+                placeholder="EJ. ADJUNTA 3 HOJAS Y PLANILLA..."
+                value={observations}
+                onChange={(e) => setObservations(e.target.value.toUpperCase())}
+                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-sm font-black uppercase rounded-xl px-4 py-3"
+              />
+            </div>
+
+          </div>
+
+          <div className="pt-4 border-t flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-black px-5 py-3 rounded-xl transition text-xs sm:text-sm"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-slate-900 hover:bg-slate-800 text-white font-black px-7 py-3 rounded-xl transition shadow-lg text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Guardando...</span>
+                </>
+              ) : (
+                <span>Guardar CITE</span>
+              )}
+            </button>
+          </div>
+
+        </form>
+      )}
+
+      {/* VISTA 3: PLANILLA OFICIAL IMPRIMIBLE CON CLASE print-area */}
+      {viewMode === 'print' && (
+        <div className="space-y-4">
+          
+          <div className="flex justify-between items-center bg-blue-50 border border-blue-200 p-4 rounded-2xl shadow-sm print:hidden">
+            <button
+              onClick={() => setViewMode('list')}
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Volver al Listado</span>
+            </button>
+
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-xs sm:text-sm font-black shadow-lg transition"
+            >
+              <Printer className="w-4 h-4 text-amber-300" />
+              <span>IMPRIMIR LIBRO DE CITES</span>
+            </button>
+          </div>
+
+          {/* DOCUMENTO OFICIAL IMPRIMIBLE */}
+          <div className="print-area bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 shadow-xl max-w-5xl mx-auto print:shadow-none print:border-none print:w-full print:p-0 font-sans">
+            
+            <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
+              <div className="flex items-center gap-4">
+                <img 
+                  src="/logo-ende.png" 
+                  alt="ENDE DEORURO" 
+                  className="h-12 w-auto object-contain"
+                />
+                <div>
+                  <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight">ENDE DEORURO - DEPARTAMENTO DE SEGURIDAD INDUSTRIAL</h2>
+                  <p className="text-xs font-extrabold text-blue-800 uppercase tracking-wide">LIBRO OFICIAL DE CITES Y CORRESPONDENCIA ENVIADA A GERENCIA</p>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <span className="inline-block bg-slate-900 text-white font-mono font-bold text-xs px-3 py-1.5 rounded uppercase">
+                  REGISTRO CORRELATIVO
+                </span>
+                <p className="text-[10px] text-slate-500 font-bold mt-1 font-mono">
+                  EMISIÓN: {new Date().toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto mb-8">
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-900 text-white font-black uppercase text-left">
+                    <th className="p-2.5 text-center w-12 border border-slate-900">NRO</th>
+                    <th className="p-2.5 text-center w-24 border border-slate-900">FECHA</th>
+                    <th className="p-2.5 w-32 border border-slate-900">NÚMERO DOCUMENTO</th>
+                    <th className="p-2.5 border border-slate-900">REFERENCIA / ASUNTO</th>
+                    <th className="p-2.5 border border-slate-900">A (DESTINATARIO)</th>
+                    <th className="p-2.5 border border-slate-900 w-36">FIRMA / REMITENTE</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-300 border border-slate-300 font-bold">
+                  {cites.map((c) => (
+                    <tr key={c.id} className="hover:bg-slate-50">
+                      <td className="p-2.5 text-center font-mono font-black border-r border-slate-300">
+                        {c.correlative_number}
+                      </td>
+                      <td className="p-2.5 text-center font-mono text-xs border-r border-slate-300">
+                        {c.issue_date}
+                      </td>
+                      <td className="p-2.5 font-mono font-black text-xs border-r border-slate-300">
+                        {c.doc_number}
+                      </td>
+                      <td className="p-2.5 uppercase text-[11px] border-r border-slate-300">
+                        {c.reference}
+                      </td>
+                      <td className="p-2.5 uppercase text-[11px] border-r border-slate-300 font-black">
+                        {c.recipient_a}
+                      </td>
+                      <td className="p-2.5 uppercase text-[10px] border-r border-slate-300">
+                        {c.signer_firm}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="grid grid-cols-2 gap-12 pt-10 text-center text-xs sm:text-sm">
+              <div>
+                <div className="border-b-2 border-slate-400 w-3/4 mx-auto mb-2"></div>
+                <p className="font-black text-slate-900 uppercase">RESPONSABLE DE SEGURIDAD INDUSTRIAL</p>
+                <p className="text-xs text-slate-600 font-bold uppercase">ENDE DEORURO</p>
+              </div>
+              <div>
+                <div className="border-b-2 border-slate-400 w-3/4 mx-auto mb-2"></div>
+                <p className="font-black text-slate-900 uppercase">RECEPCIÓN DE GERENCIA GENERAL</p>
+                <p className="text-xs text-slate-600 font-bold uppercase">ENDE DEORURO</p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+    </div>
+  );
+}

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ShieldCheck, ClipboardList, Loader2, 
-  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench, Footprints, Flame, Droplets
+  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench, Footprints, Flame, Droplets, FileText, HeartPulse
 } from 'lucide-react';
 import { getTransactionDetails, getRecentTransactions, deleteTransaction } from './actions/transaction';
 import TransactionForm from '@/components/TransactionForm';
@@ -13,6 +13,8 @@ import FormularioHerramientas from '@/components/FormularioHerramientas';
 import FormularioTallasBotines from '@/components/FormularioTallasBotines';
 import ModuloExtintores from '@/components/ModuloExtintores';
 import ModuloControlAgua from '@/components/ModuloControlAgua';
+import ModuloCites from '@/components/ModuloCites';
+import ModuloMedicamentosKits from '@/components/ModuloMedicamentosKits';
 import Swal from 'sweetalert2';
 
 export default function Home() {
@@ -28,7 +30,7 @@ export default function Home() {
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Estados del Dashboard
-  const [activeTab, setActiveTab] = useState<'new' | 'history' | 'toolRequests' | 'bootSizeRequests' | 'extinguishers' | 'waterSupply'>('new');
+  const [activeTab, setActiveTab] = useState<'new' | 'history' | 'toolRequests' | 'bootSizeRequests' | 'extinguishers' | 'waterSupply' | 'cites' | 'medicineKits'>('new');
   const [historyTransactions, setHistoryTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -393,6 +395,20 @@ export default function Home() {
                   <Droplets className="w-4 h-4 text-blue-600" />
                   Control de Agua
                 </button>
+                <button
+                  onClick={() => setActiveTab('cites')}
+                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'cites' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  <FileText className="w-4 h-4 text-blue-600" />
+                  CITES a Gerencia
+                </button>
+                <button
+                  onClick={() => setActiveTab('medicineKits')}
+                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'medicineKits' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  <HeartPulse className="w-4 h-4 text-rose-600" />
+                  Kits Medicamentos
+                </button>
               </div>
             </div>
 
@@ -505,9 +521,15 @@ export default function Home() {
             ) : activeTab === 'extinguishers' ? (
               /* CONTENIDO DE PESTAÑA: CONTROL DE EXTINTORES */
               <ModuloExtintores showTabs={false} />
-            ) : (
+            ) : activeTab === 'waterSupply' ? (
               /* CONTENIDO DE PESTAÑA: CONTROL DE SUMINISTRO DE AGUA */
               <ModuloControlAgua showTabs={false} />
+            ) : activeTab === 'cites' ? (
+              /* CONTENIDO DE PESTAÑA: CITES A GERENCIA */
+              <ModuloCites showTabs={false} />
+            ) : (
+              /* CONTENIDO DE PESTAÑA: KITS DE MEDICAMENTOS */
+              <ModuloMedicamentosKits showTabs={false} />
             )}
 
           </div>

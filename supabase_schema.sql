@@ -248,6 +248,49 @@ ALTER TABLE water_supplies ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Permitir todo a todos en water_supplies" ON water_supplies;
 CREATE POLICY "Permitir todo a todos en water_supplies" ON water_supplies FOR ALL USING (true) WITH CHECK (true);
 
+-- 20. Secuencia y Tabla de Control de CITES (Correspondencia a Gerencia)
+CREATE SEQUENCE IF NOT EXISTS cite_correlative_seq START WITH 1;
+
+CREATE TABLE IF NOT EXISTS official_cites (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    correlative_number INTEGER DEFAULT nextval('cite_correlative_seq') UNIQUE,
+    issue_date DATE NOT NULL,
+    doc_number TEXT NOT NULL,      -- Ej: CITE-SI-045/2026
+    reference TEXT NOT NULL,       -- Asunto / Referencia
+    recipient_a TEXT NOT NULL,     -- A (Destinatario / Gerencia)
+    signer_firm TEXT NOT NULL,     -- Quien firma / Estado de Firma
+    status TEXT DEFAULT 'Enviado', -- Enviado, Firmado, En Trámite, Archivado
+    observations TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE official_cites ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Permitir todo a todos en official_cites" ON official_cites;
+CREATE POLICY "Permitir todo a todos en official_cites" ON official_cites FOR ALL USING (true) WITH CHECK (true);
+
+-- 21. Secuencia y Tabla de Entregas y Dotación de Kits de Medicamentos / Botiquines
+CREATE SEQUENCE IF NOT EXISTS medicine_delivery_folio_seq START WITH 101;
+
+CREATE TABLE IF NOT EXISTS medicine_kit_deliveries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    folio INTEGER DEFAULT nextval('medicine_delivery_folio_seq') UNIQUE,
+    kit_name TEXT NOT NULL,        -- Ej: 'Kit Básico Primeros Auxilios', 'Kit Cuadrilla', 'Personalizado'
+    recipient_name TEXT NOT NULL,  -- Nombre de quien recibe
+    recipient_ci TEXT,             -- C.I.
+    recipient_position TEXT NOT NULL, -- Cargo / Puesto
+    recipient_area TEXT NOT NULL,  -- Área / Departamento / Cuadrilla / Móvil
+    delivery_date DATE NOT NULL,
+    items JSONB NOT NULL DEFAULT '[]'::jsonb, -- Lista de medicamentos con cantidades [{ name, quantity, unit }]
+    delivered_by TEXT NOT NULL,    -- Responsable de entrega
+    observations TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE medicine_kit_deliveries ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Permitir todo a todos en medicine_kit_deliveries" ON medicine_kit_deliveries;
+CREATE POLICY "Permitir todo a todos en medicine_kit_deliveries" ON medicine_kit_deliveries FOR ALL USING (true) WITH CHECK (true);
+
+
 
 
 
