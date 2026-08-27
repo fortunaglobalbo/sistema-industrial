@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ShieldCheck, ClipboardList, Loader2, 
-  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench, Footprints, Flame, Droplets, FileText, HeartPulse
+  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench, Footprints, Flame, Droplets, FileText, HeartPulse, FileDown
 } from 'lucide-react';
 import { getTransactionDetails, getRecentTransactions, deleteTransaction } from './actions/transaction';
+import { exportActaToDocx } from '@/lib/exportActaDocx';
 import TransactionForm from '@/components/TransactionForm';
 import PrintReceipt from '@/components/PrintReceipt';
 import FormularioHerramientas from '@/components/FormularioHerramientas';
@@ -33,6 +34,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'new' | 'history' | 'toolRequests' | 'bootSizeRequests' | 'extinguishers' | 'waterSupply' | 'cites' | 'medicineKits'>('new');
   const [historyTransactions, setHistoryTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [downloadingDocxId, setDownloadingDocxId] = useState<string | null>(null);
 
   // Cargar sesión al iniciar
   useEffect(() => {
@@ -107,6 +109,43 @@ export default function Home() {
       });
     } finally {
       setLoadingDetails(false);
+    }
+  };
+
+  // Exportar acta directamente a Word DOCX desde el historial
+  const handleDirectExportDocx = async (transactionId: string) => {
+    setDownloadingDocxId(transactionId);
+    try {
+      const res = await getTransactionDetails(transactionId);
+      if (res.success && res.transaction) {
+        await exportActaToDocx(res.transaction, res.items || []);
+        Swal.fire({
+          icon: 'success',
+          title: '¡Documento Word Descargado!',
+          text: `El acta #${res.transaction.folio || ''} se exportó correctamente.`,
+          timer: 3000,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end',
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: res.error || 'No se pudieron recuperar los datos del acta.',
+          confirmButtonColor: '#3b82f6'
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al exportar',
+        text: 'Ocurrió un error inesperado al generar el archivo Word (.docx).',
+        confirmButtonColor: '#3b82f6'
+      });
+    } finally {
+      setDownloadingDocxId(null);
     }
   };
 
@@ -469,7 +508,7 @@ export default function Home() {
                           <th className="p-3 text-left">Trabajador</th>
                           <th className="p-3 text-left">Operación</th>
                           <th className="p-3 text-left">Autorizado por</th>
-                          <th className="p-3 text-center w-28">Acción</th>
+                          <th className="p-3 text-center w-48">Acciones</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -506,16 +545,29 @@ export default function Home() {
                             <td className="p-3 text-slate-600 font-medium">{t.supervisorName}</td>
                             <td className="p-3 text-center flex items-center justify-center gap-1.5">
                               <button
+                                onClick={() => handleDirectExportDocx(t.id)}
+                                disabled={downloadingDocxId === t.id}
+                                className="flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold px-2 py-1.5 rounded-lg transition shadow-sm cursor-pointer"
+                                title="Descargar Acta en Word (.docx)"
+                              >
+                                {downloadingDocxId === t.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <FileDown className="w-3.5 h-3.5" />
+                                )}
+                                Word
+                              </button>
+                              <button
                                 onClick={() => handleLoadTransactionDetails(t.id)}
-                                className="flex items-center justify-center gap-1 bg-slate-800 hover:bg-slate-900 text-white font-bold px-2.5 py-1.5 rounded-lg transition shadow-sm"
+                                className="flex items-center justify-center gap-1 bg-slate-800 hover:bg-slate-900 text-white font-bold px-2 py-1.5 rounded-lg transition shadow-sm cursor-pointer"
                                 title="Ver / Reimprimir Acta"
                               >
                                 <Printer className="w-3.5 h-3.5" />
-                                Reimprimir
+                                Imprimir
                               </button>
                               <button
                                 onClick={() => handleDeleteTransaction(t.id)}
-                                className="flex items-center justify-center p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-lg transition shadow-sm"
+                                className="flex items-center justify-center p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-lg transition shadow-sm cursor-pointer"
                                 title="Eliminar Transacción de Historial"
                               >
                                 <Trash className="w-3.5 h-3.5" />

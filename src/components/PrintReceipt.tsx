@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
-import { Printer, ArrowLeft } from 'lucide-react';
+import React, { useState } from 'react';
+import { Printer, ArrowLeft, FileDown, Loader2 } from 'lucide-react';
+import { exportActaToDocx } from '@/lib/exportActaDocx';
+import Swal from 'sweetalert2';
 
 interface Worker {
   fullName: string;
@@ -37,8 +39,36 @@ interface PrintReceiptProps {
 }
 
 export default function PrintReceipt({ transaction, items, onBack }: PrintReceiptProps) {
+  const [exportingDocx, setExportingDocx] = useState(false);
+
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleExportDocx = async () => {
+    setExportingDocx(true);
+    try {
+      await exportActaToDocx(transaction, items);
+      Swal.fire({
+        icon: 'success',
+        title: '¡Documento Word Generado!',
+        text: `El acta #${transaction.folio || ''} se descargó correctamente en formato DOCX.`,
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end',
+      });
+    } catch (err: any) {
+      console.error('Error al exportar DOCX:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al exportar',
+        text: 'Ocurrió un problema al generar el documento Word (.docx).',
+        confirmButtonColor: '#3b82f6',
+      });
+    } finally {
+      setExportingDocx(false);
+    }
   };
 
   const formatDate = (isoString: string) => {
@@ -200,13 +230,28 @@ export default function PrintReceipt({ transaction, items, onBack }: PrintReceip
           <ArrowLeft className="w-4 h-4" />
           Volver al Formulario
         </button>
-        <button
-          onClick={handlePrint}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition"
-        >
-          <Printer className="w-4 h-4" />
-          Imprimir Acta (Carta)
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportDocx}
+            disabled={exportingDocx}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition cursor-pointer"
+            title="Descargar documento editable en formato Microsoft Word (.docx)"
+          >
+            {exportingDocx ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileDown className="w-4 h-4" />
+            )}
+            {exportingDocx ? 'Generando Word...' : 'Exportar a Word (DOCX)'}
+          </button>
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition cursor-pointer"
+          >
+            <Printer className="w-4 h-4" />
+            Imprimir Acta (Carta)
+          </button>
+        </div>
       </div>
 
       {/* Contenedor de impresión */}
