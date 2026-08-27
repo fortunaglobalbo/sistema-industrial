@@ -386,7 +386,7 @@ export default function Home() {
               <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold">Vista de Acta - Folio #{transactionData.folio}</p>
-                <p className="mt-0.5">Puedes imprimir este comprobante en formato Carta cuantas veces lo necesites pulsando el botón **"Imprimir Acta"**.</p>
+                <p className="mt-0.5">Puedes imprimir este comprobante en formato Carta pulsando **"Imprimir Acta"** o descargarlo en formato editable pulsando **"Exportar a Word (DOCX)"**.</p>
               </div>
             </div>
             <PrintReceipt
