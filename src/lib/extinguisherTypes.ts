@@ -38,6 +38,7 @@ export const AGENT_TYPES = [
 ] as const;
 
 export const CAPACITIES = [
+  '0.5 kg',
   '1 kg (Vehicular)',
   '2 kg',
   '4 kg',

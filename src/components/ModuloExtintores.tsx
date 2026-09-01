@@ -42,7 +42,7 @@ export default function ModuloExtintores({ showTabs = true }: ModuloExtintoresPr
   const [code, setCode] = useState('');
   const [location, setLocation] = useState('');
   const [agentType, setAgentType] = useState<string>(AGENT_TYPES[0]);
-  const [capacity, setCapacity] = useState<string>(CAPACITIES[3]); // 6 kg
+  const [capacity, setCapacity] = useState<string>('6 kg');
   const [lastRechargeDate, setLastRechargeDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [expirationDate, setExpirationDate] = useState(() => {
     const d = new Date();
@@ -75,7 +75,7 @@ export default function ModuloExtintores({ showTabs = true }: ModuloExtintoresPr
     setCode('');
     setLocation('');
     setAgentType(AGENT_TYPES[0]);
-    setCapacity(CAPACITIES[3]);
+    setCapacity('6 kg');
     const todayStr = new Date().toISOString().split('T')[0];
     setLastRechargeDate(todayStr);
     const d = new Date();
