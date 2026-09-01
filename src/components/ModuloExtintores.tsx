@@ -43,6 +43,8 @@ export default function ModuloExtintores({ showTabs = true }: ModuloExtintoresPr
   const [location, setLocation] = useState('');
   const [agentType, setAgentType] = useState<string>(AGENT_TYPES[0]);
   const [capacity, setCapacity] = useState<string>('6 kg');
+  const [isCustomCapacity, setIsCustomCapacity] = useState(false);
+  const [customCapacity, setCustomCapacity] = useState('');
   const [lastRechargeDate, setLastRechargeDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [expirationDate, setExpirationDate] = useState(() => {
     const d = new Date();
@@ -76,6 +78,8 @@ export default function ModuloExtintores({ showTabs = true }: ModuloExtintoresPr
     setLocation('');
     setAgentType(AGENT_TYPES[0]);
     setCapacity('6 kg');
+    setIsCustomCapacity(false);
+    setCustomCapacity('');
     const todayStr = new Date().toISOString().split('T')[0];
     setLastRechargeDate(todayStr);
     const d = new Date();
@@ -95,7 +99,18 @@ export default function ModuloExtintores({ showTabs = true }: ModuloExtintoresPr
     setCode(item.code);
     setLocation(item.location);
     setAgentType(item.agent_type);
-    setCapacity(item.capacity);
+    
+    const inList = (CAPACITIES as readonly string[]).includes(item.capacity);
+    if (inList) {
+      setIsCustomCapacity(false);
+      setCapacity(item.capacity);
+      setCustomCapacity('');
+    } else {
+      setIsCustomCapacity(true);
+      setCustomCapacity(item.capacity || '');
+      setCapacity(item.capacity || '');
+    }
+
     setLastRechargeDate(item.last_recharge_date);
     setExpirationDate(item.expiration_date);
     setPressureStatus(item.pressure_status);
@@ -129,12 +144,18 @@ export default function ModuloExtintores({ showTabs = true }: ModuloExtintoresPr
       return;
     }
 
+    const finalCapacity = isCustomCapacity ? customCapacity.trim() : capacity;
+    if (!finalCapacity) {
+      Swal.fire({ icon: 'warning', title: 'Capacidad Obligatoria', text: 'Ingrese o seleccione la capacidad del extintor.' });
+      return;
+    }
+
     setIsSubmitting(true);
     const payload: FireExtinguisherInput = {
       code,
       location,
       agentType,
-      capacity,
+      capacity: finalCapacity,
       lastRechargeDate,
       expirationDate,
       pressureStatus,
@@ -492,18 +513,61 @@ export default function ModuloExtintores({ showTabs = true }: ModuloExtintoresPr
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-black text-slate-900 uppercase">
-                Capacidad de Carga <span className="text-red-600">*</span>
-              </label>
-              <select
-                value={capacity}
-                onChange={(e) => setCapacity(e.target.value)}
-                className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-xs sm:text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
-              >
-                {CAPACITIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <div className="flex justify-between items-center">
+                <label className="block text-xs font-black text-slate-900 uppercase">
+                  Capacidad de Carga <span className="text-red-600">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isCustomCapacity) {
+                      setIsCustomCapacity(false);
+                      setCapacity('6 kg');
+                      setCustomCapacity('');
+                    } else {
+                      setIsCustomCapacity(true);
+                      setCustomCapacity(capacity);
+                    }
+                  }}
+                  className="text-[11px] font-black text-blue-600 hover:text-blue-800 underline transition cursor-pointer"
+                >
+                  {isCustomCapacity ? '← Elegir de la lista' : '+ Escribir otra capacidad manual'}
+                </button>
+              </div>
+
+              {isCustomCapacity ? (
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    required
+                    placeholder="EJ. 8 KG, 2.5 KG, 25 KG, 75 L..."
+                    value={customCapacity}
+                    onChange={(e) => setCustomCapacity(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-blue-500 focus:bg-white text-slate-900 text-xs sm:text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none shadow-sm"
+                  />
+                  <p className="text-[10px] text-slate-500 font-bold">
+                    Modo libre: ingresa cualquier peso o volumen personalizado (ej. 8 kg, 20 kg, etc.)
+                  </p>
+                </div>
+              ) : (
+                <select
+                  value={capacity}
+                  onChange={(e) => {
+                    if (e.target.value === '__CUSTOM__') {
+                      setIsCustomCapacity(true);
+                      setCustomCapacity('');
+                    } else {
+                      setCapacity(e.target.value);
+                    }
+                  }}
+                  className="w-full bg-slate-50 border-2 border-slate-300 focus:bg-white text-slate-900 text-xs sm:text-sm font-black uppercase rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600"
+                >
+                  {CAPACITIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                  <option value="__CUSTOM__">✍️ OTRA CAPACIDAD (ESCRIBIR MANUAL)...</option>
+                </select>
+              )}
             </div>
 
             <div className="space-y-1.5">

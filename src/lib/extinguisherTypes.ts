@@ -43,6 +43,7 @@ export const CAPACITIES = [
   '2 kg',
   '4 kg',
   '6 kg',
+  '8 kg',
   '9 kg',
   '10 kg',
   '12 kg',
