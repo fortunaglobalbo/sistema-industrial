@@ -80,6 +80,28 @@ export async function sendTeamChatMessage(senderName: string, senderRole: string
 }
 
 /**
+ * Limpiar todo el historial de mensajes de chat
+ */
+export async function clearTeamChatHistory() {
+  try {
+    const { error } = await supabase
+      .from('team_chat_messages')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (error) {
+      console.warn('Advertencia al limpiar team_chat_messages en Supabase:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error al limpiar chat:', err);
+    return { success: false, error: err?.message || 'Error desconocido' };
+  }
+}
+
+/**
  * Obtener tareas/avisos del cronograma desde Supabase
  */
 export async function getTeamTasks() {

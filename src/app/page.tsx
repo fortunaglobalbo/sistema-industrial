@@ -76,8 +76,8 @@ export default function Home() {
       subtitle: 'Catálogo oficial y composición de botiquines para cuadrillas y personal.',
     },
     notices: {
-      title: 'Cronograma de Actividades y Avisos del Equipo',
-      subtitle: 'Tablón de avisos y calendario para coordinar actividades entre compañeras sin depender de WhatsApp.',
+      title: 'Cronograma de Actividades y Cuadro de Avisos',
+      subtitle: 'Planificación oficial, registro de inspecciones y seguimiento de tareas del área de Seguridad y Salud Ocupacional.',
     },
   };
 
@@ -476,7 +476,7 @@ export default function Home() {
             <button
               onClick={handleLogout}
               className="flex items-center gap-1 bg-red-950/20 hover:bg-red-900/40 text-red-400 border border-red-950 hover:border-red-900/50 px-3 py-2 rounded-xl transition cursor-pointer"
-              title="Cerrar sesión / Cambiar de compañera"
+              title="Cerrar sesión / Cambiar de usuario"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Cambiar</span>
