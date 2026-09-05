@@ -4,16 +4,20 @@ import React, { useState, useEffect } from 'react';
 import { 
   CalendarDays, Plus, CheckCircle2, Clock, 
   AlertCircle, Trash2, Calendar, User, Tag, 
-  MessageSquare, Sparkles, Filter, Check
+  MessageSquare, Sparkles, Filter, Check, RefreshCw
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { TEAM_MEMBERS_LIST } from '@/lib/teamAuth';
+import { 
+  getTeamTasks, createTeamTask, toggleTeamTaskComplete, deleteTeamTask, TeamTaskRecord 
+} from '@/app/actions/teamCollab';
 
 export interface SafetyNotice {
   id: string;
   title: string;
   date: string;
   responsible: string;
-  category: 'Inspección' | 'Recepción Agua' | 'Entrega EPP' | 'Reunión' | 'Auditoría' | 'General';
+  category: string;
   priority: 'Alta' | 'Media' | 'Informativa';
   notes: string;
   completed: boolean;
@@ -25,7 +29,7 @@ const DEFAULT_NOTICES: SafetyNotice[] = [
     id: 'not-1',
     title: 'Recepción y Control de Botellones Aquabel',
     date: new Date().toISOString().split('T')[0],
-    responsible: 'Dra. Tatiana / Salud Ocupacional',
+    responsible: 'Tatiana Torres',
     category: 'Recepción Agua',
     priority: 'Alta',
     notes: 'Verificar sellos de seguridad y registrar conformidad de las recargas recibidas.',
@@ -36,7 +40,7 @@ const DEFAULT_NOTICES: SafetyNotice[] = [
     id: 'not-2',
     title: 'Revisión y Relevamiento de Extintores en Transmisión',
     date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
-    responsible: 'Equipo de Seguridad Industrial',
+    responsible: 'Gabriela',
     category: 'Inspección',
     priority: 'Media',
     notes: 'Inspección trimestral de manómetros, precintos y mangueras en subestaciones.',
@@ -47,7 +51,7 @@ const DEFAULT_NOTICES: SafetyNotice[] = [
     id: 'not-3',
     title: 'Entrega y Reposición de Botiquines a Mantenimiento Rural',
     date: new Date(Date.now() + 86400000 * 4).toISOString().split('T')[0],
-    responsible: 'Dra. Tatiana Torres',
+    responsible: 'Paola',
     category: 'Entrega EPP',
     priority: 'Media',
     notes: 'Entrega de kits vehiculares revisados con insumos vigentes.',
@@ -58,78 +62,148 @@ const DEFAULT_NOTICES: SafetyNotice[] = [
 
 export default function ModuloAvisosCronograma() {
   const [notices, setNotices] = useState<SafetyNotice[]>([]);
+  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('Todas');
 
   // Form State
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [responsible, setResponsible] = useState('Salud Ocupacional / Seguridad Industrial');
-  const [category, setCategory] = useState<SafetyNotice['category']>('General');
-  const [priority, setPriority] = useState<SafetyNotice['priority']>('Media');
+  const [responsible, setResponsible] = useState('Tatiana Torres');
+  const [categorySelect, setCategorySelect] = useState('General');
+  const [customCategory, setCustomCategory] = useState('');
+  const [priority, setPriority] = useState<'Alta' | 'Media' | 'Informativa'>('Media');
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
     loadNotices();
   }, []);
 
-  const loadNotices = () => {
+  const loadNotices = async () => {
+    setLoading(true);
     try {
+      // Intentar cargar desde Supabase
+      const res = await getTeamTasks();
+      if (res.success && res.data && res.data.length > 0) {
+        const mapped: SafetyNotice[] = res.data.map((r) => ({
+          id: r.id,
+          title: r.title,
+          date: r.scheduled_date,
+          responsible: r.responsible,
+          category: r.category,
+          priority: (r.priority as any) || 'Media',
+          notes: r.notes || '',
+          completed: r.completed,
+          createdAt: r.created_at
+        }));
+        setNotices(mapped);
+        localStorage.setItem('safety_team_notices_v1', JSON.stringify(mapped));
+      } else {
+        // Fallback a localStorage
+        const saved = localStorage.getItem('safety_team_notices_v1');
+        if (saved) {
+          setNotices(JSON.parse(saved));
+        } else {
+          setNotices(DEFAULT_NOTICES);
+          localStorage.setItem('safety_team_notices_v1', JSON.stringify(DEFAULT_NOTICES));
+        }
+      }
+    } catch (e) {
       const saved = localStorage.getItem('safety_team_notices_v1');
       if (saved) {
         setNotices(JSON.parse(saved));
       } else {
         setNotices(DEFAULT_NOTICES);
-        localStorage.setItem('safety_team_notices_v1', JSON.stringify(DEFAULT_NOTICES));
       }
-    } catch (e) {
-      setNotices(DEFAULT_NOTICES);
+    } finally {
+      setLoading(false);
     }
   };
 
   const saveNoticesToStorage = (updated: SafetyNotice[]) => {
     setNotices(updated);
-    localStorage.setItem('safety_team_notices_v1', JSON.stringify(updated));
+    try {
+      localStorage.setItem('safety_team_notices_v1', JSON.stringify(updated));
+    } catch (err) {
+      console.warn('Error guardando en localStorage:', err);
+    }
   };
 
-  const handleCreateNotice = (e: React.FormEvent) => {
+  const handleCreateNotice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       Swal.fire({ icon: 'warning', title: 'Título requerido', text: 'Especifique la actividad o aviso a coordinar.' });
       return;
     }
 
+    const finalCategory = categorySelect === 'Otro'
+      ? (customCategory.trim() || 'Otro')
+      : categorySelect;
+
+    const tempId = `notice-${Date.now()}`;
     const newNotice: SafetyNotice = {
-      id: `notice-${Date.now()}`,
+      id: tempId,
       title: title.trim(),
       date,
       responsible: responsible.trim(),
-      category,
+      category: finalCategory,
       priority,
       notes: notes.trim(),
       completed: false,
       createdAt: new Date().toISOString()
     };
 
+    // Actualización optimista
     const updated = [newNotice, ...notices];
     saveNoticesToStorage(updated);
 
     Swal.fire({
       icon: 'success',
       title: 'Aviso Publicado',
-      text: 'La actividad ha sido programada en el cronograma visible para todo el equipo.',
+      text: `Actividad asignada a ${responsible}. Visible para todo el equipo.`,
       timer: 1800,
       showConfirmButton: false
     });
 
+    // Enviar a Supabase en background
+    try {
+      const res = await createTeamTask({
+        title: newNotice.title,
+        scheduled_date: newNotice.date,
+        responsible: newNotice.responsible,
+        category: newNotice.category,
+        priority: newNotice.priority,
+        notes: newNotice.notes,
+        created_by: responsible
+      });
+      if (res.success && res.data) {
+        setNotices((prev) => prev.map((n) => (n.id === tempId ? { ...n, id: res.data!.id } : n)));
+      }
+    } catch (err) {
+      console.warn('Guardado en base de datos en espera de conexión:', err);
+    }
+
+    // Reset form
     setTitle('');
     setNotes('');
+    setCategorySelect('General');
+    setCustomCategory('');
     setShowModal(false);
   };
 
-  const handleToggleComplete = (id: string) => {
-    const updated = notices.map((n) => (n.id === id ? { ...n, completed: !n.completed } : n));
+  const handleToggleComplete = async (id: string) => {
+    const target = notices.find((n) => n.id === id);
+    if (!target) return;
+
+    const newCompleted = !target.completed;
+    const updated = notices.map((n) => (n.id === id ? { ...n, completed: newCompleted } : n));
     saveNoticesToStorage(updated);
+
+    try {
+      await toggleTeamTaskComplete(id, newCompleted);
+    } catch (err) {
+      console.warn('Error alternando tarea en Supabase:', err);
+    }
   };
 
   const handleDelete = (id: string, noticeTitle: string) => {
@@ -141,13 +215,23 @@ export default function ModuloAvisosCronograma() {
       confirmButtonColor: '#ef4444',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
-    }).then((res) => {
+    }).then(async (res) => {
       if (res.isConfirmed) {
         const updated = notices.filter((n) => n.id !== id);
         saveNoticesToStorage(updated);
+
+        try {
+          await deleteTeamTask(id);
+        } catch (err) {
+          console.warn('Error eliminando en Supabase:', err);
+        }
       }
     });
   };
+
+  const availableCategories = Array.from(
+    new Set(['Todas', 'Recepción Agua', 'Entrega EPP', 'Inspección', 'Reunión', 'Auditoría', 'General', ...notices.map((n) => n.category)])
+  );
 
   const filteredNotices = notices.filter((n) => {
     if (filterCategory === 'Todas') return true;
@@ -156,6 +240,19 @@ export default function ModuloAvisosCronograma() {
 
   const pendingCount = notices.filter((n) => !n.completed).length;
   const completedCount = notices.filter((n) => n.completed).length;
+
+  const getResponsibleBadge = (resp: string) => {
+    if (resp.includes('Tatiana')) {
+      return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+    }
+    if (resp.includes('Gabriela')) {
+      return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+    }
+    if (resp.includes('Paola')) {
+      return 'bg-amber-100 text-amber-800 border-amber-200';
+    }
+    return 'bg-purple-100 text-purple-800 border-purple-200';
+  };
 
   return (
     <div className="space-y-6">
@@ -168,24 +265,35 @@ export default function ModuloAvisosCronograma() {
           </div>
           <div>
             <span className="text-[10px] font-mono font-bold text-purple-200 uppercase tracking-widest">
-              Coordinación Interna de Salud y Seguridad
+              Coordinación Interna • Tatiana • Gabriela • Paola
             </span>
             <h3 className="text-lg font-black tracking-tight">
               Cronograma de Actividades y Cuadro de Avisos
             </h3>
             <p className="text-xs text-indigo-200 mt-0.5">
-              Organización de tareas, recepciones e inspecciones entre compañeras para no depender de mensajes sueltos de WhatsApp.
+              Organización de tareas, inspecciones y recepciones con asignación directa y categorías personalizables.
             </p>
           </div>
         </div>
 
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs px-4 py-3 rounded-xl shadow-lg transition transform hover:scale-[1.02]"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ Publicar Nuevo Aviso / Actividad</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadNotices}
+            disabled={loading}
+            className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition disabled:opacity-50"
+            title="Actualizar actividades"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs px-4 py-3 rounded-xl shadow-lg transition transform hover:scale-[1.02]"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Publicar Nuevo Aviso / Actividad</span>
+          </button>
+        </div>
       </div>
 
       {/* METRICAS Y FILTROS */}
@@ -218,15 +326,13 @@ export default function ModuloAvisosCronograma() {
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="text-xs font-bold bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none"
+            className="text-xs font-bold bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none max-w-[170px] truncate"
           >
-            <option value="Todas">Todas las áreas</option>
-            <option value="Recepción Agua">Recepción Agua</option>
-            <option value="Entrega EPP">Entrega EPP</option>
-            <option value="Inspección">Inspección</option>
-            <option value="Reunión">Reunión</option>
-            <option value="Auditoría">Auditoría</option>
-            <option value="General">General</option>
+            {availableCategories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat === 'Todas' ? 'Todas las categorías' : cat}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -241,6 +347,7 @@ export default function ModuloAvisosCronograma() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredNotices.map((notice) => {
               const isPast = new Date(notice.date + 'T23:59:59') < new Date() && !notice.completed;
+              const respClass = getResponsibleBadge(notice.responsible);
 
               return (
                 <div
@@ -255,15 +362,7 @@ export default function ModuloAvisosCronograma() {
                 >
                   <div className="space-y-2">
                     <div className="flex justify-between items-start gap-2">
-                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                        notice.category === 'Recepción Agua' 
-                          ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                          : notice.category === 'Entrega EPP' 
-                          ? 'bg-purple-50 text-purple-700 border-purple-200' 
-                          : notice.category === 'Inspección' 
-                          ? 'bg-rose-50 text-rose-700 border-rose-200' 
-                          : 'bg-slate-100 text-slate-700 border-slate-200'
-                      }`}>
+                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border bg-slate-100 text-slate-800 border-slate-200 truncate max-w-[140px]" title={notice.category}>
                         {notice.category}
                       </span>
 
@@ -295,8 +394,11 @@ export default function ModuloAvisosCronograma() {
                         <Calendar className="w-3.5 h-3.5 text-blue-500" />
                         {notice.date}
                       </span>
-                      <span className="flex items-center gap-1 truncate max-w-[140px]" title={notice.responsible}>
-                        <User className="w-3 h-3 text-slate-400" />
+                      <span 
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border ${respClass} truncate max-w-[160px]`} 
+                        title={`Encargada: ${notice.responsible}`}
+                      >
+                        <User className="w-3 h-3" />
                         {notice.responsible}
                       </span>
                     </div>
@@ -337,10 +439,10 @@ export default function ModuloAvisosCronograma() {
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
             <div className="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-5 flex justify-between items-center">
               <div>
-                <h4 className="text-base font-black tracking-tight">Publicar Aviso / Coordinar Fecha</h4>
-                <p className="text-xs text-purple-200">Visible inmediatamente para todas las compañeras</p>
+                <h4 className="text-base font-black tracking-tight">Publicar Aviso / Coordinar Actividad</h4>
+                <p className="text-xs text-purple-200">Asigna la responsable y programa la fecha en el cronograma</p>
               </div>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white text-lg font-bold">
                 ✕
               </button>
             </div>
@@ -360,7 +462,24 @@ export default function ModuloAvisosCronograma() {
                 />
               </div>
 
+              {/* RESPONSABLE Y FECHA */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">
+                    Responsable / Encargada *
+                  </label>
+                  <select
+                    value={responsible}
+                    onChange={(e) => setResponsible(e.target.value)}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-900 bg-white focus:outline-none focus:border-indigo-600"
+                  >
+                    <option value="Tatiana Torres">Tatiana Torres (Supervisión)</option>
+                    <option value="Gabriela">Gabriela (Seguridad Industrial)</option>
+                    <option value="Paola">Paola (Salud Ocupacional)</option>
+                    <option value="Todas / Equipo">Todas / Equipo</option>
+                  </select>
+                </div>
+
                 <div>
                   <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">
                     Fecha Programada *
@@ -373,14 +492,17 @@ export default function ModuloAvisosCronograma() {
                     required
                   />
                 </div>
+              </div>
 
+              {/* CATEGORÍA Y PRIORIDAD */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">
                     Categoría
                   </label>
                   <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as any)}
+                    value={categorySelect}
+                    onChange={(e) => setCategorySelect(e.target.value)}
                     className="w-full border border-slate-300 rounded-xl px-3 py-2 font-bold bg-white focus:outline-none focus:border-indigo-600"
                   >
                     <option value="Recepción Agua">Recepción Agua</option>
@@ -389,21 +511,8 @@ export default function ModuloAvisosCronograma() {
                     <option value="Reunión">Reunión</option>
                     <option value="Auditoría">Auditoría</option>
                     <option value="General">General</option>
+                    <option value="Otro">Otro (Escribir categoría)</option>
                   </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">
-                    Responsable / Encargada
-                  </label>
-                  <input
-                    type="text"
-                    value={responsible}
-                    onChange={(e) => setResponsible(e.target.value)}
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:border-indigo-600"
-                  />
                 </div>
 
                 <div>
@@ -421,6 +530,23 @@ export default function ModuloAvisosCronograma() {
                   </select>
                 </div>
               </div>
+
+              {/* CAMPO SI ELIGE OTRO EN CATEGORÍA */}
+              {categorySelect === 'Otro' && (
+                <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-200 animate-in fade-in">
+                  <label className="text-[10px] font-bold text-amber-900 block mb-1 uppercase">
+                    Escriba la Categoría Personalizada *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Capacitación, Simulacro, Fumigación, Mantenimiento..."
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    className="w-full border border-amber-300 rounded-xl px-3 py-2 font-bold text-slate-900 bg-white focus:outline-none focus:border-amber-600"
+                    required
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">

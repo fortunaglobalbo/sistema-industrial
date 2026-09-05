@@ -18,11 +18,14 @@ import ModuloCites from '@/components/ModuloCites';
 import ModuloMedicamentosKits from '@/components/ModuloMedicamentosKits';
 import ModuloAvisosCronograma from '@/components/ModuloAvisosCronograma';
 import TransactionItemsModal from '@/components/TransactionItemsModal';
+import FloatingTeamChat from '@/components/FloatingTeamChat';
+import { TEAM_USERS, getUserByPin, TeamUser } from '@/lib/teamAuth';
 import Swal from 'sweetalert2';
 
 export default function Home() {
   // Estados de Autenticación
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [currentUser, setCurrentUser] = useState<TeamUser | null>(null);
   const [pinInput, setPinInput] = useState('');
   const [loginError, setLoginError] = useState('');
 
@@ -82,7 +85,15 @@ export default function Home() {
   useEffect(() => {
     try {
       const savedToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token_sistema_industrial') : null;
-      setIsAuthenticated(savedToken === '7526197');
+      if (savedToken && TEAM_USERS[savedToken]) {
+        setCurrentUser(TEAM_USERS[savedToken]);
+        setIsAuthenticated(true);
+      } else if (savedToken === '7526197') {
+        setCurrentUser(TEAM_USERS['7526197']);
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
     } catch {
       setIsAuthenticated(false);
     }
@@ -115,23 +126,28 @@ export default function Home() {
     }
   };
 
-  // Validar PIN de seguridad
+  // Validar PIN de seguridad (Tatiana: 7526197, Gabriela: 1010, Paola: 1212)
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
-    if (pinInput === '7526197') {
-      localStorage.setItem('auth_token_sistema_industrial', '7526197');
+    const trimmedPin = pinInput.trim();
+    const user = getUserByPin(trimmedPin);
+
+    if (user) {
+      localStorage.setItem('auth_token_sistema_industrial', user.pin);
+      setCurrentUser(user);
       setIsAuthenticated(true);
       setPinInput('');
     } else {
-      setLoginError('Código de seguridad incorrecto. Intente de nuevo.');
+      setLoginError('Código de seguridad incorrecto. Verifique su PIN (Tatiana, Gabriela o Paola).');
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('auth_token_sistema_industrial');
     setIsAuthenticated(false);
+    setCurrentUser(null);
     setActiveTransactionId(null);
     setTransactionData(null);
     setItemsData([]);
@@ -302,8 +318,36 @@ export default function Home() {
           </div>
           
           <div>
-            <h2 className="text-xl font-black text-white tracking-tight uppercase">Acceso Restringido</h2>
-            <p className="text-xs text-slate-400 mt-1 font-medium">Ingrese el código de acceso de seguridad industrial</p>
+            <h2 className="text-xl font-black text-white tracking-tight uppercase">Acceso Autorizado</h2>
+            <p className="text-xs text-slate-400 mt-1 font-medium">Seguridad Industrial y Salud Ocupacional</p>
+            
+            {/* Etiquetas de las tres compañeras */}
+            <div className="flex flex-wrap justify-center gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => setPinInput('7526197')}
+                className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-700/50 transition cursor-pointer"
+                title="PIN: 7526197"
+              >
+                Tatiana Torres
+              </button>
+              <button
+                type="button"
+                onClick={() => setPinInput('1010')}
+                className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-700/50 transition cursor-pointer"
+                title="PIN: 1010"
+              >
+                Gabriela
+              </button>
+              <button
+                type="button"
+                onClick={() => setPinInput('1212')}
+                className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 border border-amber-700/50 transition cursor-pointer"
+                title="PIN: 1212"
+              >
+                Paola
+              </button>
+            </div>
           </div>
 
           {loginError && (
@@ -317,10 +361,11 @@ export default function Home() {
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
                 type="password"
-                placeholder="Código de seguridad..."
+                placeholder="Ingrese su PIN de 4 a 7 dígitos..."
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
                 className="w-full text-center tracking-widest text-lg font-bold border border-slate-700 bg-slate-800/50 hover:bg-slate-800 rounded-xl pl-10 pr-3 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition text-white"
+                autoFocus
               />
             </div>
             <button
@@ -411,17 +456,30 @@ export default function Home() {
               <span>Tallas Botines</span>
             </Link>
 
-            <div className="hidden md:flex items-center gap-1.5 bg-slate-800 px-3 py-2 rounded-xl border border-slate-700 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Almacén Central Activo</span>
-            </div>
+            {currentUser && (
+              <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-black shadow-sm ${
+                currentUser.color === 'indigo'
+                  ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-200'
+                  : currentUser.color === 'emerald'
+                  ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+                  : 'bg-amber-950/80 border-amber-500/50 text-amber-200'
+              }`}>
+                <span className={`w-2.5 h-2.5 rounded-full ${
+                  currentUser.color === 'indigo' ? 'bg-indigo-400' :
+                  currentUser.color === 'emerald' ? 'bg-emerald-400' : 'bg-amber-400'
+                } animate-pulse`}></span>
+                <span>{currentUser.name}</span>
+                <span className="text-[10px] font-normal opacity-80">({currentUser.shortName})</span>
+              </div>
+            )}
+
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1 bg-red-950/20 hover:bg-red-900/40 text-red-400 border border-red-950 hover:border-red-900/50 px-3 py-2 rounded-xl transition"
-              title="Cerrar sesión"
+              className="flex items-center gap-1 bg-red-950/20 hover:bg-red-900/40 text-red-400 border border-red-950 hover:border-red-900/50 px-3 py-2 rounded-xl transition cursor-pointer"
+              title="Cerrar sesión / Cambiar de compañera"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Bloquear</span>
+              <span>Cambiar</span>
             </button>
           </div>
         </div>
@@ -693,6 +751,9 @@ export default function Home() {
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400 font-semibold print:hidden mt-auto">
         <p>Sistema de Seguridad Industrial - ENDE ORURO © {new Date().getFullYear()}</p>
       </footer>
+
+      {/* Burbuja Flotante de Chat Interno (Tatiana • Gabriela • Paola) */}
+      <FloatingTeamChat currentUser={currentUser} />
     </div>
   );
 }

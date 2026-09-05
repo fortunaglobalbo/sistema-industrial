@@ -301,6 +301,43 @@ ALTER TABLE water_withdrawals ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Permitir todo a todos en water_withdrawals" ON water_withdrawals;
 CREATE POLICY "Permitir todo a todos en water_withdrawals" ON water_withdrawals FOR ALL USING (true) WITH CHECK (true);
 
+-- 23. Tabla de Mensajería Interna del Equipo (team_chat_messages)
+CREATE TABLE IF NOT EXISTS team_chat_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sender_name TEXT NOT NULL,          -- 'Tatiana Torres', 'Gabriela', 'Paola'
+    sender_role TEXT NOT NULL,          -- 'Supervisión Seguridad Industrial', 'Seguridad Industrial', 'Salud Ocupacional'
+    message TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_chat_messages_created ON team_chat_messages(created_at DESC);
+
+ALTER TABLE team_chat_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Permitir todo a todos en team_chat_messages" ON team_chat_messages;
+CREATE POLICY "Permitir todo a todos en team_chat_messages" ON team_chat_messages FOR ALL USING (true) WITH CHECK (true);
+
+-- 24. Tabla de Tareas y Avisos del Cronograma (team_tasks)
+CREATE TABLE IF NOT EXISTS team_tasks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    scheduled_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    responsible TEXT NOT NULL,          -- 'Tatiana Torres', 'Gabriela', 'Paola', 'Todas / Equipo'
+    category TEXT NOT NULL,             -- 'Inspección', 'Recepción Agua', 'Entrega EPP', 'Reunión', 'Auditoría', 'General', o personalizado
+    priority TEXT NOT NULL DEFAULT 'Media', -- 'Alta', 'Media', 'Informativa'
+    notes TEXT,
+    completed BOOLEAN DEFAULT false,
+    created_by TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_tasks_date ON team_tasks(scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_team_tasks_responsible ON team_tasks(responsible);
+
+ALTER TABLE team_tasks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Permitir todo a todos en team_tasks" ON team_tasks;
+CREATE POLICY "Permitir todo a todos en team_tasks" ON team_tasks FOR ALL USING (true) WITH CHECK (true);
+
+
 
 
 
