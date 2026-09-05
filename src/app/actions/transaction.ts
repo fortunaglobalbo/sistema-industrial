@@ -670,14 +670,15 @@ export async function getRecentTransactions() {
     const totalCount = data.length;
     return data.map((t, index) => {
       const folio = String(totalCount - index).padStart(5, '0');
+      const workerObj = Array.isArray(t.workers) ? t.workers[0] : t.workers;
       return {
         id: t.id,
         folio,
         createdAt: t.created_at,
         transactionType: t.transaction_type,
         supervisorName: t.supervisor_name,
-        workerName: t.workers ? (t.workers as any).full_name : 'Desconocido',
-        workerCi: t.workers ? (t.workers as any).ci : '',
+        workerName: workerObj ? (workerObj as any).full_name : 'Desconocido',
+        workerCi: workerObj ? (workerObj as any).ci : '',
       };
     });
   } catch (error) {
