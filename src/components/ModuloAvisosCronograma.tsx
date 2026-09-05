@@ -473,9 +473,9 @@ export default function ModuloAvisosCronograma() {
                     onChange={(e) => setResponsible(e.target.value)}
                     className="w-full border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-900 bg-white focus:outline-none focus:border-indigo-600"
                   >
-                    <option value="Tatiana Torres">Tatiana Torres (Supervisión)</option>
-                    <option value="Gabriela">Gabriela (Seguridad Industrial)</option>
-                    <option value="Paola">Paola (Salud Ocupacional)</option>
+                    <option value="Tatiana Torres">Tatiana Torres</option>
+                    <option value="Gabriela">Gabriela</option>
+                    <option value="Paola">Paola</option>
                     <option value="Todas / Equipo">Todas / Equipo</option>
                   </select>
                 </div>
