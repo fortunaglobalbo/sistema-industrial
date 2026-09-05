@@ -101,7 +101,7 @@ export async function getWaterDeliveries(monthYear?: string) {
       .select('*')
       .order('delivery_date', { ascending: false });
 
-    if (monthYear) {
+    if (monthYear && monthYear !== 'all') {
       query = query.gte('delivery_date', `${monthYear}-01`).lte('delivery_date', `${monthYear}-31`);
     }
 
@@ -114,7 +114,7 @@ export async function getWaterDeliveries(monthYear?: string) {
 
     return (data || []).map((item: any) => ({
       ...item,
-      difference: item.bottles_received - item.bottles_contracted
+      difference: Number(item.bottles_received || 0) - Number(item.bottles_contracted || 0)
     }));
   } catch (error) {
     console.error('Error en getWaterDeliveries:', error);
@@ -145,17 +145,16 @@ export async function deleteWaterDelivery(id: string) {
 export async function getWaterMonthlySummary(monthYear?: string) {
   try {
     const data = await getWaterDeliveries(monthYear);
-    const totalReceived = data.reduce((acc, curr: any) => acc + (curr.bottles_received || 0), 0);
-    const totalContracted = data.reduce((acc, curr: any) => acc + (curr.bottles_contracted || 0), 0);
+    const totalReceived = data.reduce((acc, curr: any) => acc + (Number(curr.bottles_received) || 0), 0);
+    const totalContracted = data.reduce((acc, curr: any) => acc + (Number(curr.bottles_contracted) || 0), 0);
     const totalDifference = totalReceived - totalContracted;
-    const deliveriesCount = data.length;
 
     return {
       success: true,
       totalReceived,
       totalContracted,
       totalDifference,
-      deliveriesCount,
+      deliveriesCount: data.length,
       records: data
     };
   } catch (error: any) {
@@ -359,7 +358,7 @@ export async function getWaterWithdrawals(monthYear?: string) {
       .select('*')
       .order('withdrawal_date', { ascending: false });
 
-    if (monthYear) {
+    if (monthYear && monthYear !== 'all') {
       query = query.gte('withdrawal_date', `${monthYear}-01`).lte('withdrawal_date', `${monthYear}-31`);
     }
 
@@ -368,11 +367,17 @@ export async function getWaterWithdrawals(monthYear?: string) {
     if (error) {
       // Fallback si la tabla no está creada aún en Supabase: buscar en water_supplies con marca 'SALIDA_SECTOR'
       if (error.code === 'PGRST205' || error.message?.includes('schema cache') || error.code === '42P01') {
-        const { data: fbData } = await supabase
+        let fbQuery = supabase
           .from('water_supplies')
           .select('*')
           .eq('supplier_name', 'SALIDA_SECTOR')
           .order('delivery_date', { ascending: false });
+
+        if (monthYear && monthYear !== 'all') {
+          fbQuery = fbQuery.gte('delivery_date', `${monthYear}-01`).lte('delivery_date', `${monthYear}-31`);
+        }
+
+        const { data: fbData } = await fbQuery;
 
         return (fbData || []).map((d: any) => {
           const obs = d.observations || '';

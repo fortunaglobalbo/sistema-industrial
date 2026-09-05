@@ -579,13 +579,35 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     return baseMatches;
   };
 
-  // Obtener lista única de nombres de categorías desde la BD/inventario sin agregar duplicados
-  const allCategoryNames = Array.from(
+  // Función de coincidencia inteligente de categorías (soporta 'epp' como 'EPP (Protección)')
+  const matchesCategory = (itemCategory: string, filterCategory: string) => {
+    if (!filterCategory || filterCategory === 'all') return true;
+    const i = (itemCategory || '').toLowerCase().trim();
+    const f = filterCategory.toLowerCase().trim();
+    if (i === f) return true;
+    if (f.includes('epp') && i.includes('epp')) return true;
+    if ((f.includes('ropa') || f.includes('indumentaria')) && (i.includes('ropa') || i.includes('indumentaria'))) return true;
+    if (f.includes('herramienta') && i.includes('herramienta')) return true;
+    if ((f.includes('botiqu') || f.includes('medicamento') || f.includes('auxilio')) && 
+        (i.includes('botiqu') || i.includes('medicamento') || i.includes('auxilio'))) return true;
+    return i.includes(f) || f.includes(i);
+  };
+
+  // Obtener lista consolidada de categorías únicas para mostrar en filtros
+  const rawCategories = Array.from(
     new Set([
       ...categories.map((c) => c.name),
       ...inventory.map((i) => i.category).filter(Boolean)
     ])
   );
+
+  // Evitar duplicados de categorías en minúsculas si ya existen las descriptivas
+  const allCategoryNames = rawCategories.filter((cat) => {
+    const l = cat.toLowerCase().trim();
+    if (l === 'epp' && rawCategories.some((x) => x.toLowerCase().includes('epp ('))) return false;
+    if (l === 'ropa' && rawCategories.some((x) => x.toLowerCase().includes('ropa de'))) return false;
+    return true;
+  });
 
   // Filtrar insumos para el visor dinámico de stock
   const filteredInventoryItems = inventory.filter((item) => {
@@ -596,9 +618,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
 
     if (!matchesSearch) return false;
 
-    if (selectedCategoryFilter === 'all') return true;
-
-    return (item.category || '').toLowerCase().trim() === selectedCategoryFilter.toLowerCase().trim();
+    return matchesCategory(item.category, selectedCategoryFilter);
   });
 
   const lowStockCount = inventory.filter((i) => i.current_stock > 0 && i.current_stock <= 10).length;
@@ -1278,8 +1298,8 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                   Todos ({inventory.length})
                 </button>
                 {allCategoryNames.map((cat) => {
-                  const count = inventory.filter((i) => (i.category || '').toLowerCase() === cat.toLowerCase()).length;
-                  const isSelected = selectedCategoryFilter.toLowerCase() === cat.toLowerCase();
+                  const count = inventory.filter((i) => matchesCategory(i.category, cat)).length;
+                  const isSelected = matchesCategory(cat, selectedCategoryFilter) && selectedCategoryFilter !== 'all';
                   return (
                     <button
                       key={cat}
