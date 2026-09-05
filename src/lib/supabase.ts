@@ -7,13 +7,13 @@ const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const rawKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Si en Vercel no se configuró o quedó con placeholder, usar la URL y Clave reales del proyecto
-const supabaseUrl = (rawUrl && !rawUrl.includes('placeholder') && !rawUrl.includes('tu-proyecto'))
-  ? rawUrl
-  : DEFAULT_SUPABASE_URL;
+const cleanUrl = rawUrl?.trim().replace(/^["']|["']$/g, '');
+const cleanKey = rawKey?.trim().replace(/^["']|["']$/g, '');
 
-const supabaseAnonKey = (rawKey && !rawKey.includes('placeholder') && !rawKey.includes('tu-anon-key'))
-  ? rawKey
-  : DEFAULT_SUPABASE_ANON_KEY;
+const isUrlValid = Boolean(cleanUrl && cleanUrl.startsWith('https://') && !cleanUrl.includes('placeholder') && !cleanUrl.includes('tu-proyecto'));
+const isKeyValid = Boolean(cleanKey && cleanKey.length > 30 && !cleanKey.includes('placeholder') && !cleanKey.includes('tu-anon-key'));
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(
+  isUrlValid ? cleanUrl! : DEFAULT_SUPABASE_URL,
+  isKeyValid ? cleanKey! : DEFAULT_SUPABASE_ANON_KEY
+);

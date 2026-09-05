@@ -78,14 +78,21 @@ export default function Home() {
     },
   };
 
-  // Cargar sesión al iniciar
+  // Cargar sesión al iniciar de forma ultra segura
   useEffect(() => {
-    const savedToken = localStorage.getItem('auth_token_sistema_industrial');
-    if (savedToken === '7526197') {
-      setIsAuthenticated(true);
-    } else {
+    try {
+      const savedToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token_sistema_industrial') : null;
+      setIsAuthenticated(savedToken === '7526197');
+    } catch {
       setIsAuthenticated(false);
     }
+
+    // Timer de seguridad: si tras 800ms sigue en null, mostrar la pantalla de PIN sin trabarse
+    const safetyTimer = setTimeout(() => {
+      setIsAuthenticated((prev) => (prev === null ? false : prev));
+    }, 800);
+
+    return () => clearTimeout(safetyTimer);
   }, []);
 
   // Cargar historial de transacciones al cambiar a la pestaña de historial
@@ -97,9 +104,15 @@ export default function Home() {
 
   const loadHistory = async () => {
     setLoadingHistory(true);
-    const data = await getRecentTransactions();
-    setHistoryTransactions(data);
-    setLoadingHistory(false);
+    try {
+      const data = await getRecentTransactions();
+      setHistoryTransactions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error al cargar historial de actas:', err);
+      setHistoryTransactions([]);
+    } finally {
+      setLoadingHistory(false);
+    }
   };
 
   // Validar PIN de seguridad

@@ -16,8 +16,9 @@ import {
   getAnnualContractAudit,
   createWaterWithdrawal,
   getWaterWithdrawals,
-  deleteWaterWithdrawal,
+  deleteWaterWithdrawal, 
   getWaterInventoryBalance,
+  getWaterDashboardData,
   OFFICIAL_CONTRACT_SCHEDULE
 } from '@/app/actions/waterSupply';
 import { 
@@ -49,8 +50,8 @@ interface ModuloControlAguaProps {
 }
 
 export default function ModuloControlAgua({ showTabs = true }: ModuloControlAguaProps) {
-  // Pestaña activa por defecto: 'salidas' para que vea de inmediato la cámara con IA y el control de áreas
-  const [subTab, setSubTab] = useState<'salidas' | 'recepciones' | 'matriz'>('salidas');
+  // Pestaña activa por defecto: 'recepciones' para ver de inmediato los ingresos de Aquabel
+  const [subTab, setSubTab] = useState<'salidas' | 'recepciones' | 'matriz'>('recepciones');
   const [viewMode, setViewMode] = useState<'list' | 'form' | 'print'>('list');
 
   // Estados de Recepciones (Entradas Proveedor Aquabel)
@@ -132,43 +133,43 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
   const loadAllData = async () => {
     setLoading(true);
     try {
-      const list = await getWaterDeliveries(filterMonth);
-      const sum = await getWaterMonthlySummary(filterMonth);
-      setDeliveries(Array.isArray(list) ? list : []);
-      if (sum) {
-        setSummary({
-          totalReceived: sum.totalReceived || 0,
-          totalContracted: sum.totalContracted || 0,
-          totalDifference: sum.totalDifference || 0,
-          deliveriesCount: sum.deliveriesCount || 0
-        });
-      }
-
-      const withs = await getWaterWithdrawals(filterMonth);
-      const balance = await getWaterInventoryBalance();
-      setWithdrawals(Array.isArray(withs) ? withs : []);
-      if (balance) {
-        setInventoryBalance({
-          totalReceived: balance.totalReceived ?? 286,
-          totalDispatched: balance.totalDispatched ?? 0,
-          currentStock: balance.currentStock ?? 286,
-          sectorStats: Array.isArray(balance.sectorStats) ? balance.sectorStats : []
-        });
-      }
-
-      const annual = await getAnnualContractAudit();
-      if (annual && annual.success) {
-        setAnnualData({
-          rows: Array.isArray(annual.rows) ? annual.rows : [],
-          summary: annual.summary || {
-            totalContractYear: 440,
-            totalReceivedYear: 286,
-            totalRemainingContract: 154,
-            cumulativeAugustQuota: 255,
-            cumulativeAugustReceived: 286,
-            cumulativeExcessAugust: 31
-          }
-        });
+      const res = await getWaterDashboardData(filterMonth);
+      if (res && res.success) {
+        setDeliveries(Array.isArray(res.deliveries) ? res.deliveries : []);
+        if (res.summary) {
+          setSummary({
+            totalReceived: res.summary.totalReceived || 0,
+            totalContracted: res.summary.totalContracted || 0,
+            totalDifference: res.summary.totalDifference || 0,
+            deliveriesCount: res.summary.deliveriesCount || 0
+          });
+        }
+        setWithdrawals(Array.isArray(res.withdrawals) ? res.withdrawals : []);
+        if (res.inventoryBalance) {
+          setInventoryBalance({
+            totalReceived: res.inventoryBalance.totalReceived ?? 286,
+            totalDispatched: res.inventoryBalance.totalDispatched ?? 0,
+            currentStock: res.inventoryBalance.currentStock ?? 286,
+            sectorStats: Array.isArray(res.inventoryBalance.sectorStats) ? res.inventoryBalance.sectorStats : []
+          });
+        }
+        if (res.annualData) {
+          setAnnualData({
+            rows: Array.isArray(res.annualData.rows) ? res.annualData.rows : [],
+            summary: res.annualData.summary || {
+              totalContractYear: 440,
+              totalReceivedYear: 286,
+              totalRemainingContract: 154,
+              cumulativeAugustQuota: 255,
+              cumulativeAugustReceived: 286,
+              cumulativeExcessAugust: 31
+            }
+          });
+        }
+      } else {
+        // Asignación segura con datos disponibles
+        if (res?.deliveries) setDeliveries(res.deliveries);
+        if (res?.withdrawals) setWithdrawals(res.withdrawals);
       }
     } catch (err) {
       console.error('Error cargando datos de control de agua:', err);
@@ -347,18 +348,6 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
           <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
               <button
-                onClick={() => setSubTab('salidas')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black transition ${
-                  subTab === 'salidas'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                }`}
-              >
-                <Layers className="w-4 h-4" />
-                <span>Salidas y Retiros por Área (Firmas y Cámara IA)</span>
-              </button>
-
-              <button
                 onClick={() => setSubTab('recepciones')}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black transition ${
                   subTab === 'recepciones'
@@ -367,7 +356,19 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 }`}
               >
                 <Droplets className="w-4 h-4" />
-                <span>Recepciones Aquabel (Ingresos)</span>
+                <span>Recepciones Aquabel ({deliveries.length})</span>
+              </button>
+
+              <button
+                onClick={() => setSubTab('salidas')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black transition ${
+                  subTab === 'salidas'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                }`}
+              >
+                <Layers className="w-4 h-4" />
+                <span>Salidas por Área ({withdrawals.length})</span>
               </button>
 
               <button
@@ -379,7 +380,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 }`}
               >
                 <Table className="w-4 h-4 text-emerald-400" />
-                <span>Matriz Anual Oficial (440 Bidones)</span>
+                <span>Matriz Anual (440)</span>
               </button>
             </div>
 
