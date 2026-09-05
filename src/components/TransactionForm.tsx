@@ -6,7 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
   Plus, Trash2, Search, UserPlus, Check, Loader2, Edit, Trash,
-  Package, ShoppingBag, HardHat, Wrench, RefreshCw, Settings, HeartPulse, Tag, Layers
+  Package, ShoppingBag, HardHat, Wrench, RefreshCw, Settings, HeartPulse, Tag, Layers, Sparkles,
+  Eye, Filter, ChevronRight
 } from 'lucide-react';
 
 import { 
@@ -88,9 +89,10 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     supervisorName: '',
   });
 
-  // Estados para GESTIÓN directa del inventario/almacén y Categorías
-  const [isManagingInventory, setIsManagingInventory] = useState(false);
-  const [inventoryManageTab, setInventoryManageTab] = useState<'add' | 'edit' | 'categories'>('add');
+  // Estados para GESTIÓN y visualización directa del inventario/almacén y Categorías
+  const [inventoryManageTab, setInventoryManageTab] = useState<'view' | 'add' | 'edit' | 'categories'>('view');
+  const [inventorySearch, setInventorySearch] = useState('');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
   const [manageItemError, setManageItemError] = useState('');
   const [manageItemSuccess, setManageItemSuccess] = useState('');
   const [manageLoading, setManageLoading] = useState(false);
@@ -292,6 +294,71 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     } else {
       setNewWorkerError(res.error || 'Error al guardar el trabajador.');
     }
+  };
+
+  // Desglosar medicamentos de un kit en ítems individuales en el formulario
+  const handleInsertKitItems = (kit: MedicineKitData) => {
+    if (!kit.items || kit.items.length === 0) {
+      Swal.fire({ icon: 'warning', title: 'Kit Vacío', text: 'El kit seleccionado no contiene medicamentos.' });
+      return;
+    }
+
+    const currentValues = getValues('items');
+    // Si la lista tiene solo un ítem y está vacío, eliminarlo para reemplazarlo
+    if (currentValues.length === 1 && !currentValues[0].itemName) {
+      remove(0);
+    }
+
+    kit.items.forEach((it) => {
+      append({
+        itemName: it.name,
+        category: 'Botiquines / Primeros Auxilios',
+        quantity: it.quantity,
+        conditionReason: (getValues('transactionType') === 'dotacion' ? 'nuevo' : 'desgaste_natural') as any,
+        photoUrl: null
+      });
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Kit Desglosado con Éxito',
+      text: `Se agregaron los ${kit.items.length} medicamentos del "${kit.name}". Puedes ajustar cantidades o eliminar cualquier medicamento individual si hubo alguna equivocación.`,
+      timer: 3000,
+      showConfirmButton: false
+    });
+  };
+
+  // Desglosar un kit seleccionado en una fila específica
+  const handleUnpackKit = (kitName: string, rowIndex: number) => {
+    const cleanName = kitName.replace(/^Kit:\s*/i, '').trim().toLowerCase();
+    const kit = availableKits.find(
+      (k) => k.name.toLowerCase() === cleanName || k.name.toLowerCase() === kitName.toLowerCase()
+    );
+
+    if (!kit || !kit.items || kit.items.length === 0) {
+      Swal.fire({ icon: 'info', title: 'Kit no encontrado', text: 'No se encontraron los medicamentos asociados a este kit.' });
+      return;
+    }
+
+    remove(rowIndex);
+
+    kit.items.forEach((it) => {
+      append({
+        itemName: it.name,
+        category: 'Botiquines / Primeros Auxilios',
+        quantity: it.quantity,
+        conditionReason: (getValues('transactionType') === 'dotacion' ? 'nuevo' : 'desgaste_natural') as any,
+        photoUrl: null
+      });
+    });
+
+    Swal.fire({
+      icon: 'info',
+      title: 'Kit Desglosado',
+      text: `Se desglosaron los ${kit.items.length} medicamentos en filas independientes. Ahora puedes eliminar o corregir medicamentos específicos con su botón de papelera.`,
+      timer: 2500,
+      showConfirmButton: false
+    });
   };
 
   // Agregar nuevo insumo al catálogo de almacén
@@ -519,6 +586,23 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
       ...inventory.map((i) => i.category).filter(Boolean)
     ])
   );
+
+  // Filtrar insumos para el visor dinámico de stock
+  const filteredInventoryItems = inventory.filter((item) => {
+    const matchesSearch =
+      !inventorySearch.trim() ||
+      item.name.toLowerCase().includes(inventorySearch.toLowerCase().trim()) ||
+      (item.category || '').toLowerCase().includes(inventorySearch.toLowerCase().trim());
+
+    if (!matchesSearch) return false;
+
+    if (selectedCategoryFilter === 'all') return true;
+
+    return (item.category || '').toLowerCase().trim() === selectedCategoryFilter.toLowerCase().trim();
+  });
+
+  const lowStockCount = inventory.filter((i) => i.current_stock > 0 && i.current_stock <= 10).length;
+  const outOfStockCount = inventory.filter((i) => i.current_stock <= 0).length;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto px-4 py-6">
@@ -846,20 +930,44 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
           {/* SECCIÓN 2: DETALLE DE INSUMOS (CON CATEGORÍAS DINÁMICAS Y CANTIDADES DECIMALES) */}
           {selectedWorker && !isEditingWorker && (
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-              <div className="flex justify-between items-center border-b pb-3">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
                 <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">2</span>
                   Detalle de Insumos / Equipo Entregado o Descargado
                 </h3>
                 
-                <button
-                  type="button"
-                  onClick={() => append({ itemName: '', category: allCategoryNames[0] || 'EPP (Protección)', quantity: 1, conditionReason: transactionType === 'dotacion' ? 'nuevo' : 'desgaste_natural', photoUrl: null })}
-                  className="flex items-center gap-1 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg transition"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Agregar Ítem
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {availableKits.length > 0 && (
+                    <div className="relative">
+                      <select
+                        onChange={(e) => {
+                          const kit = availableKits.find((k) => k.id === e.target.value);
+                          if (kit) handleInsertKitItems(kit);
+                          e.target.value = '';
+                        }}
+                        defaultValue=""
+                        className="text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg transition cursor-pointer"
+                        title="Desglosa todos los medicamentos del kit en filas individuales para que puedas quitar o editar los que necesites"
+                      >
+                        <option value="" disabled>+ Cargar Kit Botiquín (Desglosado)</option>
+                        {availableKits.map((k) => (
+                          <option key={k.id} value={k.id}>
+                            📦 {k.name} ({k.items?.length || 0} medicamentos)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => append({ itemName: '', category: allCategoryNames[0] || 'EPP (Protección)', quantity: 1, conditionReason: transactionType === 'dotacion' ? 'nuevo' : 'desgaste_natural', photoUrl: null })}
+                    className="flex items-center gap-1 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Agregar Ítem
+                  </button>
+                </div>
               </div>
 
               {errors.items && (
@@ -918,6 +1026,17 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                         </select>
                         {errors.items?.[index]?.itemName && (
                           <span className="text-[10px] text-red-500 block mt-1">{errors.items[index]?.itemName?.message}</span>
+                        )}
+                        {availableKits.some((k) => k.name.toLowerCase() === (watch(`items.${index}.itemName`) || '').toLowerCase()) && (
+                          <button
+                            type="button"
+                            onClick={() => handleUnpackKit(watch(`items.${index}.itemName`), index)}
+                            className="mt-1.5 text-[10px] font-extrabold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-1 rounded-md transition flex items-center gap-1 w-full justify-center shadow-2xs"
+                            title="Desglosar en filas separadas para poder quitar o editar algún medicamento"
+                          >
+                            <Sparkles className="w-3 h-3 text-amber-500" />
+                            <span>Desglosar medicamentos en filas independientes</span>
+                          </button>
                         )}
                       </div>
 
@@ -1010,29 +1129,26 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
       {/* PANEL LATERAL: CATÁLOGO / GESTIÓN DE ALMACÉN Y CATEGORÍAS */}
       <div className="space-y-6">
         
-        {/* Card de Stock de Almacén y Ajustes Directos */}
+        {/* Card de Stock de Almacén y Gestión Integral */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          
+          {/* Cabecera del Panel de Almacén */}
           <div className="flex justify-between items-center border-b pb-3">
-            <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
-              <Package className="w-4 h-4 text-blue-500" />
-              Stock de Almacén
-            </h3>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                <Package className="w-4 h-4 text-blue-500" />
+                Stock de Almacén
+              </h3>
+              <span className="text-[10px] text-slate-400 font-medium">
+                {inventory.length} insumos registrados
+              </span>
+            </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button
-                onClick={() => {
-                  setIsManagingInventory(!isManagingInventory);
-                  setManageItemError('');
-                  setManageItemSuccess('');
-                }}
-                className={`p-1.5 rounded-lg border transition ${isManagingInventory ? 'bg-blue-50 text-blue-600 border-blue-200' : 'text-slate-400 hover:text-slate-600 border-slate-200'}`}
-                title="Gestionar Catálogo y Categorías"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-              <button
+                type="button"
                 onClick={loadInitialData}
-                className="text-slate-400 hover:text-slate-600 transition"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition border border-slate-200"
                 title="Recargar inventario"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -1040,251 +1156,432 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
             </div>
           </div>
 
-          {/* MODO GESTIÓN ACTIVO */}
-          {isManagingInventory ? (
-            <div className="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <div className="flex justify-between items-center border-b pb-2 mb-2">
-                <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">Gestión de Catálogo</span>
-                <button
-                  onClick={() => setIsManagingInventory(false)}
-                  className="text-slate-400 hover:text-slate-600 text-xs font-bold"
-                >
-                  Cerrar
-                </button>
-              </div>
+          {/* Selector de Pestañas del Almacén */}
+          <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => {
+                setInventoryManageTab('view');
+                setManageItemError('');
+                setManageItemSuccess('');
+              }}
+              className={`py-1.5 px-1 rounded-lg text-center transition flex items-center justify-center gap-1 ${
+                inventoryManageTab === 'view'
+                  ? 'bg-white text-blue-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Package className="w-3.5 h-3.5 text-blue-500" />
+              <span className="truncate text-[11px]">Ver Stock</span>
+            </button>
 
-              {/* Pestañas de Gestión */}
-              <div className="flex gap-1.5 border-b border-slate-200 pb-2 overflow-x-auto">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInventoryManageTab('add');
-                    setManageItemError('');
-                    setManageItemSuccess('');
-                  }}
-                  className={`px-2 py-1 text-[10px] rounded font-bold transition whitespace-nowrap ${inventoryManageTab === 'add' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}
-                >
-                  + Insumo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInventoryManageTab('edit');
-                    setManageItemError('');
-                    setManageItemSuccess('');
-                  }}
-                  className={`px-2 py-1 text-[10px] rounded font-bold transition whitespace-nowrap ${inventoryManageTab === 'edit' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}
-                >
-                  Ajustar / Borrar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInventoryManageTab('categories');
-                    setManageItemError('');
-                    setManageItemSuccess('');
-                  }}
-                  className={`px-2 py-1 text-[10px] rounded font-bold transition whitespace-nowrap flex items-center gap-1 ${inventoryManageTab === 'categories' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700'}`}
-                >
-                  <Tag className="w-3 h-3" /> Categorías
-                </button>
-              </div>
+            <button
+              type="button"
+              onClick={() => {
+                setInventoryManageTab('add');
+                setManageItemError('');
+                setManageItemSuccess('');
+              }}
+              className={`py-1.5 px-1 rounded-lg text-center transition flex items-center justify-center gap-1 ${
+                inventoryManageTab === 'add'
+                  ? 'bg-white text-emerald-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Plus className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="truncate text-[11px]">+ Insumo</span>
+            </button>
 
-              {/* Mensajes de Estado */}
-              {manageItemError && (
-                <p className="text-[10px] text-red-600 font-bold bg-red-50 p-1.5 rounded">{manageItemError}</p>
-              )}
-              {manageItemSuccess && (
-                <p className="text-[10px] text-emerald-600 font-bold bg-emerald-50 p-1.5 rounded">{manageItemSuccess}</p>
-              )}
+            <button
+              type="button"
+              onClick={() => {
+                setInventoryManageTab('edit');
+                setManageItemError('');
+                setManageItemSuccess('');
+              }}
+              className={`py-1.5 px-1 rounded-lg text-center transition flex items-center justify-center gap-1 ${
+                inventoryManageTab === 'edit'
+                  ? 'bg-white text-amber-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Edit className="w-3.5 h-3.5 text-amber-500" />
+              <span className="truncate text-[11px]">Ajustar</span>
+            </button>
 
-              {/* PESTAÑA AGREGAR INSUMO */}
-              {inventoryManageTab === 'add' ? (
-                <form onSubmit={handleCreateInventoryItem} className="space-y-2 text-[10px]">
-                  <div>
-                    <label className="font-bold text-slate-600 block mb-1">Nombre del Insumo</label>
-                    <input
-                      type="text"
-                      placeholder="Ej. Botiquín de Primeros Auxilios"
-                      value={newInventoryItem.name}
-                      onChange={(e) => setNewInventoryItem({ ...newInventoryItem, name: e.target.value })}
-                      className="w-full border rounded px-2 py-1 text-xs bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-600 block mb-1">Categoría</label>
-                    <select
-                      value={newInventoryItem.category}
-                      onChange={(e) => setNewInventoryItem({ ...newInventoryItem, category: e.target.value })}
-                      className="w-full border rounded px-2 py-1 text-xs bg-white font-medium"
-                    >
-                      {allCategoryNames.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-600 block mb-1">Stock Inicial</label>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={newInventoryItem.currentStock}
-                      onChange={(e) => setNewInventoryItem({ ...newInventoryItem, currentStock: parseFloat(e.target.value) || 0 })}
-                      className="w-full border rounded px-2 py-1 text-xs bg-white font-bold"
-                    />
-                  </div>
+            <button
+              type="button"
+              onClick={() => {
+                setInventoryManageTab('categories');
+                setManageItemError('');
+                setManageItemSuccess('');
+              }}
+              className={`py-1.5 px-1 rounded-lg text-center transition flex items-center justify-center gap-1 ${
+                inventoryManageTab === 'categories'
+                  ? 'bg-white text-purple-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Tag className="w-3.5 h-3.5 text-purple-500" />
+              <span className="truncate text-[11px]">Categorías</span>
+            </button>
+          </div>
+
+          {/* Mensajes de Estado */}
+          {manageItemError && (
+            <p className="text-[10px] text-red-600 font-bold bg-red-50 border border-red-200 p-2 rounded-lg">
+              {manageItemError}
+            </p>
+          )}
+          {manageItemSuccess && (
+            <p className="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 p-2 rounded-lg">
+              {manageItemSuccess}
+            </p>
+          )}
+
+          {/* PESTAÑA 1: VISOR DINÁMICO DE STOCK */}
+          {inventoryManageTab === 'view' && (
+            <div className="space-y-3">
+              {/* Buscador de Insumos */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Buscar en stock (ej: casco, guante, bota)..."
+                  value={inventorySearch}
+                  onChange={(e) => setInventorySearch(e.target.value)}
+                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition placeholder:text-slate-400 font-medium"
+                />
+                {inventorySearch && (
                   <button
-                    type="submit"
-                    disabled={manageLoading}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 rounded mt-2 transition flex items-center justify-center"
+                    type="button"
+                    onClick={() => setInventorySearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
                   >
-                    {manageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Agregar al Catálogo'}
+                    ✕
                   </button>
-                </form>
-              ) : inventoryManageTab === 'edit' ? (
-                /* PESTAÑA AJUSTAR / ELIMINAR INSUMO */
-                <form onSubmit={handleUpdateStock} className="space-y-2 text-[10px]">
-                  <div>
-                    <label className="font-bold text-slate-600 block mb-1">Seleccionar Insumo</label>
-                    <select
-                      value={selectedManageItemId}
-                      onChange={(e) => handleSelectManageItem(e.target.value)}
-                      className="w-full border rounded px-2 py-1 text-xs bg-white"
-                    >
-                      <option value="">-- Seleccionar --</option>
-                      {inventory.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.name} ({item.current_stock} u)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                )}
+              </div>
 
-                  {selectedManageItemId && (
-                    <>
-                      <div>
-                        <label className="font-bold text-slate-600 block mb-1">Nuevo Stock</label>
-                        <input
-                          type="number"
-                          step="any"
-                          min="0"
-                          value={newManageStock}
-                          onChange={(e) => setNewManageStock(parseFloat(e.target.value) || 0)}
-                          className="w-full border rounded px-2 py-1 text-xs bg-white font-bold"
-                        />
+              {/* Filtros por Categoría */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategoryFilter('all')}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition flex items-center gap-1 ${
+                    selectedCategoryFilter === 'all'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <Layers className="w-3 h-3" />
+                  Todos ({inventory.length})
+                </button>
+                {allCategoryNames.map((cat) => {
+                  const count = inventory.filter((i) => (i.category || '').toLowerCase() === cat.toLowerCase()).length;
+                  const isSelected = selectedCategoryFilter.toLowerCase() === cat.toLowerCase();
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedCategoryFilter(cat)}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition flex items-center gap-1 ${
+                        isSelected
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {cat.toLowerCase().includes('epp') ? <HardHat className="w-3 h-3 text-amber-500" /> :
+                       cat.toLowerCase().includes('botiqu') ? <HeartPulse className="w-3 h-3 text-rose-500" /> :
+                       cat.toLowerCase().includes('ropa') ? <ShoppingBag className="w-3 h-3 text-blue-500" /> :
+                       cat.toLowerCase().includes('herramienta') ? <Wrench className="w-3 h-3 text-indigo-500" /> :
+                       <Tag className="w-3 h-3 text-slate-400" />}
+                      {cat} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Lista de Insumos Filtrados */}
+              <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
+                {filteredInventoryItems.length === 0 ? (
+                  <div className="p-6 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <Package className="w-8 h-8 mx-auto mb-1.5 text-slate-300" />
+                    <p className="text-xs font-semibold text-slate-600">No se encontraron insumos</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {inventorySearch ? 'Prueba con otro término de búsqueda' : 'No hay ítems registrados en esta categoría'}
+                    </p>
+                  </div>
+                ) : (
+                  filteredInventoryItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-white border border-slate-100 hover:border-blue-200 hover:shadow-xs transition group"
+                    >
+                      <div className="min-w-0 flex-1 mr-2">
+                        <span className="font-semibold text-xs text-slate-800 truncate block">
+                          {item.name}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {item.category || 'General'}
+                        </span>
                       </div>
-                      <div className="flex gap-2 pt-2">
-                        <button
-                          type="submit"
-                          disabled={manageLoading}
-                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded transition flex items-center justify-center"
+
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span
+                          className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-bold ${
+                            item.current_stock > 10
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : item.current_stock > 0
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : 'bg-rose-50 text-rose-700 border border-rose-200'
+                          }`}
                         >
-                          {manageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Actualizar Stock'}
-                        </button>
+                          {item.current_stock > 0 ? `${item.current_stock} u.` : 'Agotado'}
+                        </span>
+
                         <button
                           type="button"
-                          onClick={handleDeleteItem}
-                          disabled={manageLoading}
-                          className="bg-red-600 hover:bg-red-700 text-white p-1.5 rounded transition flex items-center justify-center"
-                          title="Eliminar del catálogo"
+                          onClick={() => {
+                            setSelectedManageItemId(item.id);
+                            setNewManageStock(item.current_stock);
+                            setInventoryManageTab('edit');
+                          }}
+                          className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition"
+                          title="Ajustar stock de este insumo"
                         >
-                          {manageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash className="w-3.5 h-3.5" />}
+                          <Edit className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </>
-                  )}
-                </form>
-              ) : (
-                /* PESTAÑA GESTIÓN DE CATEGORÍAS (CREAR / ELIMINAR CATEGORÍA) */
-                <div className="space-y-3 text-[10px]">
-                  <form onSubmit={handleCreateCategory} className="space-y-2 border-b border-slate-200 pb-3">
-                    <div>
-                      <label className="font-bold text-slate-700 block mb-1 uppercase flex items-center gap-1">
-                        <Tag className="w-3 h-3 text-blue-500" /> Nueva Categoría
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Ej. Extintores y Señalización"
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        className="w-full border rounded px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
                     </div>
-                    <button
-                      type="submit"
-                      disabled={manageLoading}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 rounded transition flex items-center justify-center gap-1 text-xs"
-                    >
-                      {manageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Plus className="w-3 h-3" /> Crear Categoría</>}
-                    </button>
-                  </form>
+                  ))
+                )}
+              </div>
 
-                  {/* Lista de Categorías Existentes */}
-                  <div className="space-y-1.5">
-                    <span className="font-bold text-slate-500 uppercase block text-[9px] tracking-wider">Categorías Activas</span>
-                    <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
-                      {allCategoryNames.map((catName) => {
-                        const countInCat = inventory.filter(i => (i.category || '').toLowerCase() === catName.toLowerCase()).length;
-                        return (
-                          <div key={catName} className="flex justify-between items-center p-1.5 bg-white border border-slate-200 rounded text-xs">
-                            <div>
-                              <span className="font-semibold text-slate-800">{catName}</span>
-                              <span className="text-[9px] text-slate-400 block">{countInCat} insumo(s)</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteCategory(catName)}
-                              className="text-slate-400 hover:text-red-600 p-1 rounded transition"
-                              title={`Eliminar categoría ${catName}`}
-                            >
-                              <Trash className="w-3 h-3" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            /* LISTA DE STOCK DINÁMICO POR CATEGORÍAS */
-            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-              {allCategoryNames.map((cat) => {
-                const itemsInCat = inventory.filter((i) => (i.category || '').toLowerCase() === cat.toLowerCase());
-                return (
-                  <div key={cat} className="space-y-1.5">
-                    <h4 className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                      {cat.toLowerCase().includes('epp') ? <HardHat className="w-3.5 h-3.5 text-amber-500" /> :
-                       cat.toLowerCase().includes('botiquin') || cat.toLowerCase().includes('auxilio') ? <HeartPulse className="w-3.5 h-3.5 text-rose-500" /> :
-                       cat.toLowerCase().includes('ropa') ? <ShoppingBag className="w-3.5 h-3.5 text-blue-500" /> :
-                       cat.toLowerCase().includes('herramienta') ? <Wrench className="w-3.5 h-3.5 text-indigo-500" /> :
-                       <Layers className="w-3.5 h-3.5 text-slate-400" />}
-                      {cat}
-                    </h4>
-
-                    {itemsInCat.length === 0 ? (
-                      <p className="text-[10px] text-slate-400 italic pl-4">Sin insumos en esta categoría.</p>
-                    ) : (
-                      <div className="space-y-1 pl-2">
-                        {itemsInCat.map((item) => (
-                          <div key={item.id} className="flex justify-between items-center text-xs p-1.5 rounded bg-slate-50 border border-slate-100">
-                            <span className="font-semibold text-slate-700 truncate max-w-[150px]">{item.name}</span>
-                            <span className={`px-2 py-0.5 rounded font-bold font-mono text-[10px] ${item.current_stock > 10 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : item.current_stock > 0 ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
-                              {item.current_stock} u
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {/* Resumen de Stock al Pie */}
+              <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-500 font-medium">
+                <span>Total: <strong className="text-slate-700">{inventory.length}</strong></span>
+                <span>Bajo stock: <strong className="text-amber-600">{lowStockCount}</strong></span>
+                <span>Agotados: <strong className="text-rose-600">{outOfStockCount}</strong></span>
+              </div>
             </div>
           )}
+
+          {/* PESTAÑA 2: AGREGAR NUEVO INSUMO */}
+          {inventoryManageTab === 'add' && (
+            <div className="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px]">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
+                <span className="font-bold text-slate-700 uppercase text-[10px] tracking-wide">
+                  Nuevo Insumo al Catálogo
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setInventoryManageTab('view')}
+                  className="text-blue-600 hover:text-blue-800 font-bold text-[10px]"
+                >
+                  Volver a Stock
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateInventoryItem} className="space-y-2.5">
+                <div>
+                  <label className="font-bold text-slate-600 block mb-1">Nombre del Insumo</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Guantes de Nitrilo Talla L"
+                    value={newInventoryItem.name}
+                    onChange={(e) => setNewInventoryItem({ ...newInventoryItem, name: e.target.value })}
+                    className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-600 block mb-1">Categoría</label>
+                  <select
+                    value={newInventoryItem.category}
+                    onChange={(e) => setNewInventoryItem({ ...newInventoryItem, category: e.target.value })}
+                    className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    {allCategoryNames.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-600 block mb-1">Stock Inicial (unidades)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={newInventoryItem.currentStock}
+                    onChange={(e) => setNewInventoryItem({ ...newInventoryItem, currentStock: parseFloat(e.target.value) || 0 })}
+                    className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={manageLoading}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg mt-2 transition flex items-center justify-center gap-1 text-xs shadow-xs"
+                >
+                  {manageLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Plus className="w-3.5 h-3.5" /> Guardar en Catálogo</>}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* PESTAÑA 3: AJUSTAR STOCK O ELIMINAR INSUMO */}
+          {inventoryManageTab === 'edit' && (
+            <div className="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px]">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
+                <span className="font-bold text-slate-700 uppercase text-[10px] tracking-wide">
+                  Ajuste Directo de Stock
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setInventoryManageTab('view')}
+                  className="text-blue-600 hover:text-blue-800 font-bold text-[10px]"
+                >
+                  Volver a Stock
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateStock} className="space-y-2.5">
+                <div>
+                  <label className="font-bold text-slate-600 block mb-1">Seleccionar Insumo</label>
+                  <select
+                    value={selectedManageItemId}
+                    onChange={(e) => handleSelectManageItem(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">-- Seleccionar insumo --</option>
+                    {inventory.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} — Stock actual: {item.current_stock} u. ({item.category})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedManageItemId && (
+                  <>
+                    <div>
+                      <label className="font-bold text-slate-600 block mb-1">Nuevo Stock Real</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={newManageStock}
+                        onChange={(e) => setNewManageStock(parseFloat(e.target.value) || 0)}
+                        className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="submit"
+                        disabled={manageLoading}
+                        className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-lg transition flex items-center justify-center gap-1 text-xs shadow-xs"
+                      >
+                        {manageLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> Actualizar Stock</>}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeleteItem}
+                        disabled={manageLoading}
+                        className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg transition flex items-center justify-center text-xs"
+                        title="Eliminar insumo del catálogo"
+                      >
+                        {manageLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </form>
+            </div>
+          )}
+
+          {/* PESTAÑA 4: GESTIÓN DE CATEGORÍAS */}
+          {inventoryManageTab === 'categories' && (
+            <div className="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px]">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
+                <span className="font-bold text-slate-700 uppercase text-[10px] tracking-wide">
+                  Categorías de Almacén
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setInventoryManageTab('view')}
+                  className="text-blue-600 hover:text-blue-800 font-bold text-[10px]"
+                >
+                  Volver a Stock
+                </button>
+              </div>
+
+              {/* Crear Nueva Categoría */}
+              <form onSubmit={handleCreateCategory} className="space-y-2 border-b border-slate-200 pb-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1 uppercase flex items-center gap-1 text-[10px]">
+                    <Tag className="w-3 h-3 text-purple-500" /> Nueva Categoría
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Extintores y Señalización"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 font-medium"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={manageLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-1.5 rounded-lg transition flex items-center justify-center gap-1 text-xs shadow-xs"
+                >
+                  {manageLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Plus className="w-3 h-3" /> Crear Categoría</>}
+                </button>
+              </form>
+
+              {/* Categorías Activas con Botón para Ver Insumos */}
+              <div className="space-y-1.5">
+                <span className="font-bold text-slate-500 uppercase block text-[9px] tracking-wider">
+                  Categorías Activas ({allCategoryNames.length})
+                </span>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  {allCategoryNames.map((catName) => {
+                    const countInCat = inventory.filter(i => (i.category || '').toLowerCase() === catName.toLowerCase()).length;
+                    return (
+                      <div key={catName} className="flex justify-between items-center p-2 bg-white border border-slate-200 rounded-lg text-xs hover:border-slate-300 transition">
+                        <div>
+                          <span className="font-bold text-slate-800 block text-xs">{catName}</span>
+                          <span className="text-[10px] text-slate-400">{countInCat} insumo(s)</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCategoryFilter(catName);
+                              setInventoryManageTab('view');
+                            }}
+                            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded text-[10px] font-bold transition flex items-center gap-1"
+                            title={`Ver insumos de la categoría ${catName}`}
+                          >
+                            <Eye className="w-3 h-3" /> Ver
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCategory(catName)}
+                            className="text-slate-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition"
+                            title={`Eliminar categoría ${catName}`}
+                          >
+                            <Trash className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 

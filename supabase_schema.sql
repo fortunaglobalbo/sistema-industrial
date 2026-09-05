@@ -281,6 +281,26 @@ ALTER TABLE medicine_kits ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Permitir todo a todos en medicine_kits" ON medicine_kits;
 CREATE POLICY "Permitir todo a todos en medicine_kits" ON medicine_kits FOR ALL USING (true) WITH CHECK (true);
 
+-- 22. Tabla de Salidas / Consumo de Botellones de Agua por Sector y Personal (water_withdrawals)
+CREATE TABLE IF NOT EXISTS water_withdrawals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    withdrawal_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    recipient_name TEXT NOT NULL,
+    sector TEXT NOT NULL,                -- Ej: Planta, Mantenimiento, Maestranza, Oficinas, etc.
+    bottles_quantity INTEGER NOT NULL DEFAULT 1 CHECK (bottles_quantity > 0),
+    signature_present BOOLEAN DEFAULT true,
+    photo_url TEXT,                      -- Enlace o base64 de la foto de la planilla física
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_water_withdrawals_date ON water_withdrawals(withdrawal_date);
+CREATE INDEX IF NOT EXISTS idx_water_withdrawals_sector ON water_withdrawals(sector);
+
+ALTER TABLE water_withdrawals ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Permitir todo a todos en water_withdrawals" ON water_withdrawals;
+CREATE POLICY "Permitir todo a todos en water_withdrawals" ON water_withdrawals FOR ALL USING (true) WITH CHECK (true);
+
 
 
 

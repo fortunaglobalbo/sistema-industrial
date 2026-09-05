@@ -748,3 +748,207 @@ export async function deleteTransaction(id: string) {
     return { success: false, error: error.message || 'No se pudo eliminar la transacción.' };
   }
 }
+
+/**
+ * Obtener todos los ítems de una transacción para edición/gestión individual
+ */
+export async function getTransactionItems(transactionId: string) {
+  try {
+    const { data: trans, error: transError } = await supabase
+      .from('transactions')
+      .select(`
+        id,
+        transaction_type,
+        supervisor_name,
+        created_at,
+        workers (
+          full_name,
+          ci,
+          position,
+          department
+        )
+      `)
+      .eq('id', transactionId)
+      .single();
+
+    if (transError) throw transError;
+
+    const { data: items, error: itemsError } = await supabase
+      .from('transaction_items')
+      .select('*')
+      .eq('transaction_id', transactionId)
+      .order('created_at', { ascending: true });
+
+    if (itemsError) throw itemsError;
+
+    return {
+      success: true,
+      transaction: trans,
+      items: items || []
+    };
+  } catch (error: any) {
+    console.error('Error al obtener ítems de la transacción:', error);
+    return { success: false, error: error.message || 'Error al obtener ítems de la transacción', items: [] };
+  }
+}
+
+/**
+ * Eliminar un ítem individual de una transacción y revertir su inventario
+ */
+export async function deleteTransactionItem(itemId: string, transactionId: string) {
+  try {
+    // 1. Obtener la transacción y el ítem
+    const { data: trans } = await supabase
+      .from('transactions')
+      .select('transaction_type')
+      .eq('id', transactionId)
+      .single();
+
+    const { data: item, error: itemError } = await supabase
+      .from('transaction_items')
+      .select('id, item_name, quantity, condition_reason')
+      .eq('id', itemId)
+      .single();
+
+    if (itemError || !item) {
+      return { success: false, error: 'Ítem no encontrado.' };
+    }
+
+    const qty = Number(item.quantity);
+
+    // 2. Revertir impacto en inventario
+    if (trans) {
+      const { data: invData } = await supabase
+        .from('inventory_items')
+        .select('id, current_stock')
+        .eq('name', item.item_name)
+        .single();
+
+      if (invData) {
+        let newStock = Number(invData.current_stock);
+        if (
+          trans.transaction_type === 'entrega' ||
+          trans.transaction_type === 'dotacion' ||
+          trans.transaction_type === 'intercambio' ||
+          trans.transaction_type === 'desuso'
+        ) {
+          newStock = newStock + qty;
+        } else if (trans.transaction_type === 'devolucion') {
+          if (item.condition_reason === 'nuevo' || item.condition_reason === 'cambio_talla') {
+            newStock = Math.max(0, newStock - qty);
+          }
+        }
+
+        newStock = Math.round(newStock * 100) / 100;
+
+        await supabase
+          .from('inventory_items')
+          .update({ current_stock: newStock, updated_at: new Date().toISOString() })
+          .eq('id', invData.id);
+      }
+    }
+
+    // 3. Eliminar de transaction_items
+    const { error: delError } = await supabase
+      .from('transaction_items')
+      .delete()
+      .eq('id', itemId);
+
+    if (delError) throw delError;
+
+    // Verificar si quedan ítems en la transacción
+    const { data: remainingItems } = await supabase
+      .from('transaction_items')
+      .select('id')
+      .eq('transaction_id', transactionId);
+
+    const remainingCount = remainingItems?.length || 0;
+
+    return { success: true, remainingCount };
+  } catch (error: any) {
+    console.error('Error al eliminar ítem de transacción:', error);
+    return { success: false, error: error.message || 'Error al eliminar el ítem.' };
+  }
+}
+
+/**
+ * Actualizar un ítem de una transacción (nombre, cantidad, motivo)
+ */
+export async function updateTransactionItem(
+  itemId: string,
+  transactionId: string,
+  updates: { itemName?: string; quantity?: number; conditionReason?: string }
+) {
+  try {
+    const { data: trans } = await supabase
+      .from('transactions')
+      .select('transaction_type')
+      .eq('id', transactionId)
+      .single();
+
+    const { data: currentItem, error: itemError } = await supabase
+      .from('transaction_items')
+      .select('*')
+      .eq('id', itemId)
+      .single();
+
+    if (itemError || !currentItem) {
+      return { success: false, error: 'Ítem no encontrado.' };
+    }
+
+    const oldQty = Number(currentItem.quantity);
+    const newQty = updates.quantity !== undefined ? Number(updates.quantity) : oldQty;
+    const diff = newQty - oldQty;
+
+    // Si cambió la cantidad y existe en inventario, ajustar stock
+    if (diff !== 0 && trans) {
+      const { data: invData } = await supabase
+        .from('inventory_items')
+        .select('id, current_stock')
+        .eq('name', currentItem.item_name)
+        .single();
+
+      if (invData) {
+        let newStock = Number(invData.current_stock);
+        if (
+          trans.transaction_type === 'entrega' ||
+          trans.transaction_type === 'dotacion' ||
+          trans.transaction_type === 'intercambio' ||
+          trans.transaction_type === 'desuso'
+        ) {
+          // Si aumentó la entrega (diff > 0), resta más stock del almacén
+          newStock = Math.max(0, newStock - diff);
+        } else if (trans.transaction_type === 'devolucion') {
+          if (currentItem.condition_reason === 'nuevo' || currentItem.condition_reason === 'cambio_talla') {
+            newStock = newStock + diff;
+          }
+        }
+
+        newStock = Math.round(newStock * 100) / 100;
+
+        await supabase
+          .from('inventory_items')
+          .update({ current_stock: newStock, updated_at: new Date().toISOString() })
+          .eq('id', invData.id);
+      }
+    }
+
+    // Actualizar registro en transaction_items
+    const updatePayload: any = {};
+    if (updates.itemName) updatePayload.item_name = updates.itemName.trim();
+    if (updates.quantity !== undefined) updatePayload.quantity = newQty;
+    if (updates.conditionReason) updatePayload.condition_reason = updates.conditionReason;
+
+    const { error: updError } = await supabase
+      .from('transaction_items')
+      .update(updatePayload)
+      .eq('id', itemId);
+
+    if (updError) throw updError;
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error al actualizar ítem de transacción:', error);
+    return { success: false, error: error.message || 'Error al actualizar el ítem.' };
+  }
+}
