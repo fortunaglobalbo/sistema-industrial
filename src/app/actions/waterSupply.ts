@@ -6,38 +6,10 @@ import {
   WaterSupplyData, 
   WaterWithdrawalInput, 
   WaterWithdrawalData, 
-  WaterAnnualMonthRow 
+  WaterAnnualMonthRow,
+  OFFICIAL_CONTRACT_SCHEDULE,
+  HISTORICAL_RECEIVED_BASE
 } from '@/lib/waterSupplyTypes';
-
-// Cronograma Oficial del Contrato (Febrero a Diciembre - Total 440 Bidones de 20L)
-export const OFFICIAL_CONTRACT_SCHEDULE = [
-  { monthName: 'Febrero', monthNum: 2, quota: 70 },
-  { monthName: 'Marzo', monthNum: 3, quota: 30 },
-  { monthName: 'Abril', monthNum: 4, quota: 35 },
-  { monthName: 'Mayo', monthNum: 5, quota: 30 },
-  { monthName: 'Junio', monthNum: 6, quota: 30 },
-  { monthName: 'Julio', monthNum: 7, quota: 30 },
-  { monthName: 'Agosto', monthNum: 8, quota: 30 },
-  { monthName: 'Septiembre', monthNum: 9, quota: 40 },
-  { monthName: 'Octubre', monthNum: 10, quota: 45 },
-  { monthName: 'Noviembre', monthNum: 11, quota: 50 },
-  { monthName: 'Diciembre', monthNum: 12, quota: 50 },
-];
-
-// Valores base históricos auditados en la planilla oficial (Febrero a Agosto)
-const HISTORICAL_RECEIVED_BASE: { [key: number]: number } = {
-  2: 59, // Febrero
-  3: 35, // Marzo
-  4: 59, // Abril
-  5: 33, // Mayo
-  6: 41, // Junio
-  7: 28, // Julio
-  8: 31, // Agosto
-  9: 0,  // Septiembre
-  10: 0, // Octubre
-  11: 0, // Noviembre
-  12: 0  // Diciembre
-};
 
 // ==========================================
 // 1. RECEPCIONES DE PROVEEDOR (ENTRADAS)

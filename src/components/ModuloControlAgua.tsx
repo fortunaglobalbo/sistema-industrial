@@ -18,15 +18,15 @@ import {
   getWaterWithdrawals,
   deleteWaterWithdrawal, 
   getWaterInventoryBalance,
-  getWaterDashboardData,
-  OFFICIAL_CONTRACT_SCHEDULE
+  getWaterDashboardData
 } from '@/app/actions/waterSupply';
 import { 
   WaterSupplyInput, 
   WaterSupplyData, 
   WaterWithdrawalInput, 
   WaterWithdrawalData, 
-  WaterAnnualMonthRow 
+  WaterAnnualMonthRow,
+  OFFICIAL_CONTRACT_SCHEDULE
 } from '@/lib/waterSupplyTypes';
 import WaterAiScannerModal from './WaterAiScannerModal';
 
