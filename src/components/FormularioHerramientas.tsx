@@ -97,9 +97,15 @@ export default function FormularioHerramientas({
 
   const fetchHistory = async () => {
     setLoadingHistory(true);
-    const data = await getToolRequests(areaFilter);
-    setHistoryList(data);
-    setLoadingHistory(false);
+    try {
+      const data = await getToolRequests(areaFilter);
+      setHistoryList(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error al cargar historial de herramientas:', err);
+      setHistoryList([]);
+    } finally {
+      setLoadingHistory(false);
+    }
   };
 
   const getEffectiveArea = () => {

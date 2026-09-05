@@ -140,16 +140,22 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
   }, []);
 
   const loadInitialData = async () => {
-    const wData = await getWorkers();
-    setWorkers(wData);
-    const iData = await getInventory();
-    setInventory(iData);
-    const cData = await getCategories();
-    setCategories(cData);
-    const kData = await getMedicineKits();
-    setAvailableKits(kData);
-    if (cData.length > 0 && !newInventoryItem.category) {
-      setNewInventoryItem((prev) => ({ ...prev, category: cData[0].name }));
+    try {
+      const [wData, iData, cData, kData] = await Promise.all([
+        getWorkers(),
+        getInventory(),
+        getCategories(),
+        getMedicineKits()
+      ]);
+      setWorkers(Array.isArray(wData) ? wData : []);
+      setInventory(Array.isArray(iData) ? iData : []);
+      setCategories(Array.isArray(cData) ? cData : []);
+      setAvailableKits(Array.isArray(kData) ? kData : []);
+      if (cData && cData.length > 0 && !newInventoryItem.category) {
+        setNewInventoryItem((prev) => ({ ...prev, category: cData[0].name }));
+      }
+    } catch (err) {
+      console.error('Error al cargar datos iniciales de dotación:', err);
     }
   };
 

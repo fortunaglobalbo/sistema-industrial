@@ -49,9 +49,15 @@ export default function ModuloMedicamentosKits({ showTabs = true }: ModuloMedica
 
   const loadData = async () => {
     setLoading(true);
-    const list = await getMedicineKits();
-    setKits(list);
-    setLoading(false);
+    try {
+      const list = await getMedicineKits();
+      setKits(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error('Error al cargar kits:', err);
+      setKits([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOpenNew = () => {

@@ -60,18 +60,29 @@ export default function FormularioTallasBotines({
 
   const fetchHistory = async () => {
     setLoadingHistory(true);
-    const data = await getBootSizeRequests(areaFilter, genderFilter);
-    setHistoryList(data);
-    setLoadingHistory(false);
+    try {
+      const data = await getBootSizeRequests(areaFilter, genderFilter);
+      setHistoryList(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error al cargar historial de botines:', err);
+      setHistoryList([]);
+    } finally {
+      setLoadingHistory(false);
+    }
   };
 
   const fetchConsolidated = async () => {
     setLoadingConsolidated(true);
-    const res = await getConsolidatedBootReport(areaFilter);
-    if (res.success) {
-      setConsolidatedData(res);
+    try {
+      const res = await getConsolidatedBootReport(areaFilter);
+      if (res?.success) {
+        setConsolidatedData(res);
+      }
+    } catch (err) {
+      console.error('Error al cargar consolidado de botines:', err);
+    } finally {
+      setLoadingConsolidated(false);
     }
-    setLoadingConsolidated(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

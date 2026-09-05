@@ -67,9 +67,15 @@ export default function ModuloCites({ showTabs = true }: ModuloCitesProps) {
 
   const loadData = async () => {
     setLoading(true);
-    const list = await getOfficialCites(searchTerm, filterStatus);
-    setCites(list);
-    setLoading(false);
+    try {
+      const list = await getOfficialCites(searchTerm, filterStatus);
+      setCites(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error('Error al cargar CITES:', err);
+      setCites([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Abrir Registro Directo

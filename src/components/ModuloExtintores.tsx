@@ -65,11 +65,18 @@ export default function ModuloExtintores({ showTabs = true }: ModuloExtintoresPr
 
   const loadData = async () => {
     setLoading(true);
-    const list = await getExtinguishers(filterLocation, filterStatus);
-    const sum = await getExtinguisherSummary();
-    setExtinguishers(list);
-    setSummary(sum);
-    setLoading(false);
+    try {
+      const [list, sum] = await Promise.all([
+        getExtinguishers(filterLocation, filterStatus),
+        getExtinguisherSummary()
+      ]);
+      setExtinguishers(Array.isArray(list) ? list : []);
+      if (sum) setSummary(sum);
+    } catch (err) {
+      console.error('Error al cargar extintores:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOpenNew = () => {
