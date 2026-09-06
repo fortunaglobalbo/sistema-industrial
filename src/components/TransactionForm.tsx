@@ -1289,19 +1289,19 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                 )}
               </div>
 
-              {/* Filtros por Categoría */}
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+              {/* Filtros por Categoría (Acomodado en bloque sin scroll horizontal) */}
+              <div className="flex flex-wrap gap-2 pt-0.5">
                 <button
                   type="button"
                   onClick={() => setSelectedCategoryFilter('all')}
-                  className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black transition flex items-center gap-1.5 cursor-pointer ${
                     selectedCategoryFilter === 'all'
-                      ? 'bg-blue-700 text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      ? 'bg-blue-700 text-white shadow-sm ring-1 ring-blue-800'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
                   }`}
                 >
                   <Layers className="w-4 h-4" />
-                  Todos ({inventory.length})
+                  <span>Todos ({inventory.length})</span>
                 </button>
                 {allCategoryNames.map((cat) => {
                   const count = inventory.filter((i) => matchesCategory(i.category, cat)).length;
@@ -1311,10 +1311,10 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                       key={cat}
                       type="button"
                       onClick={() => setSelectedCategoryFilter(cat)}
-                      className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition flex items-center gap-1.5 cursor-pointer ${
+                      className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 cursor-pointer ${
                         isSelected
-                          ? 'bg-blue-700 text-white shadow-sm'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          ? 'bg-blue-700 text-white shadow-sm ring-1 ring-blue-800'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
                       }`}
                     >
                       {cat.toLowerCase().includes('epp') ? <HardHat className="w-4 h-4 text-amber-500" /> :
@@ -1322,7 +1322,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                        cat.toLowerCase().includes('ropa') ? <ShoppingBag className="w-4 h-4 text-blue-500" /> :
                        cat.toLowerCase().includes('herramienta') ? <Wrench className="w-4 h-4 text-indigo-500" /> :
                        <Tag className="w-4 h-4 text-slate-400" />}
-                      {cat} ({count})
+                      <span>{cat} ({count})</span>
                     </button>
                   );
                 })}

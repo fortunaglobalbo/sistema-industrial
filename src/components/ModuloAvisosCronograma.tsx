@@ -829,22 +829,27 @@ export default function ModuloAvisosCronograma() {
             </div>
           </div>
 
-          {/* CUADRÍCULA DEL CALENDARIO */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            {/* Cabecera de Días (Lun a Dom) */}
-            <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80 text-center font-black text-xs text-slate-600 py-3">
+          {/* CUADRÍCULA DEL CALENDARIO CON BORDES BIEN REMARCADOS */}
+          <div className="bg-white rounded-3xl border-2 border-slate-400 shadow-md overflow-hidden">
+            {/* Cabecera de Días (Lun a Dom) con bordes marcados */}
+            <div className="grid grid-cols-7 border-b-2 border-slate-400 bg-slate-100 text-center font-black text-xs sm:text-sm text-slate-800 divide-x-2 divide-slate-400">
               {DAY_NAMES.map((d, i) => (
-                <div key={d} className={i >= 5 ? 'text-amber-700' : ''}>
+                <div key={d} className={`py-3 ${i >= 5 ? 'text-amber-900 bg-amber-50/80' : 'text-slate-800'}`}>
                   {d}
                 </div>
               ))}
             </div>
 
-            {/* Días del Mes */}
-            <div className="grid grid-cols-7 divide-x divide-y divide-slate-100">
+            {/* Días del Mes: Cuadrícula con líneas oscuras y contrastadas */}
+            <div className="grid grid-cols-7 bg-slate-300 gap-[2px]">
               {calendarDays.map((cell, idx) => {
                 if (!cell.dayNumber || !cell.dateString) {
-                  return <div key={`empty-${idx}`} className="h-28 sm:h-32 bg-slate-50/30" />;
+                  return (
+                    <div 
+                      key={`empty-${idx}`} 
+                      className="h-28 sm:h-36 bg-slate-100/90 border border-slate-200/50" 
+                    />
+                  );
                 }
 
                 const isToday = cell.dateString === todayString;
@@ -865,22 +870,24 @@ export default function ModuloAvisosCronograma() {
                         setShowModal(true);
                       }
                     }}
-                    className={`h-28 sm:h-32 p-1.5 flex flex-col justify-between transition cursor-pointer hover:bg-blue-50/30 ${
-                      isToday ? 'bg-amber-50/40 ring-1 ring-amber-400 inset-0' : 'bg-white'
+                    className={`h-28 sm:h-36 p-2 flex flex-col justify-between transition cursor-pointer ${
+                      isToday 
+                        ? 'bg-amber-50/90 ring-2 ring-inset ring-amber-500 hover:bg-amber-100/70' 
+                        : 'bg-white hover:bg-blue-50/60'
                     }`}
                   >
-                    {/* Número de Día */}
-                    <div className="flex justify-between items-center px-1">
-                      <span className={`text-xs font-black rounded-lg w-6 h-6 flex items-center justify-center ${
+                    {/* Número de Día con contraste reforzado */}
+                    <div className="flex justify-between items-center px-0.5">
+                      <span className={`text-xs sm:text-sm font-black rounded-lg w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center ${
                         isToday 
-                          ? 'bg-amber-500 text-slate-950 shadow-sm' 
-                          : 'text-slate-700'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm border border-amber-600' 
+                          : 'text-slate-900 bg-slate-100 border border-slate-300'
                       }`}>
                         {cell.dayNumber}
                       </span>
                       {dayEvents.length > 0 && (
-                        <span className="text-[10px] font-bold text-slate-400">
-                          {dayEvents.length}
+                        <span className="text-[10px] sm:text-xs font-black px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-800 border border-slate-300">
+                          {dayEvents.length} {dayEvents.length === 1 ? 'act.' : 'acts.'}
                         </span>
                       )}
                     </div>
@@ -892,18 +899,18 @@ export default function ModuloAvisosCronograma() {
                         return (
                           <div
                             key={event.id}
-                            className={`px-1.5 py-0.5 rounded-md text-[10px] font-black truncate border shadow-2xs ${theme.calendarPill} ${
+                            className={`px-1.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-black truncate border-2 shadow-2xs ${theme.calendarPill} ${
                               event.completed ? 'line-through opacity-60' : ''
                             }`}
                             title={`${event.responsible}: ${event.title}`}
                           >
-                            <span className="inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle" style={{ backgroundColor: theme.accentColor }} />
-                            {event.title}
+                            <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle shrink-0" style={{ backgroundColor: theme.accentColor }} />
+                            <span>{event.title}</span>
                           </div>
                         );
                       })}
                       {dayEvents.length > 3 && (
-                        <p className="text-[9px] font-black text-slate-500 text-center">
+                        <p className="text-[10px] font-black text-slate-700 text-center bg-slate-100 rounded py-0.5 border border-slate-300">
                           +{dayEvents.length - 3} más
                         </p>
                       )}
@@ -911,7 +918,7 @@ export default function ModuloAvisosCronograma() {
 
                     {/* Botón rápido para agregar si no hay eventos */}
                     <div className="text-right">
-                      <span className="text-[9px] text-slate-300 font-bold opacity-0 hover:opacity-100 transition">
+                      <span className="text-[10px] text-blue-600 font-black opacity-0 hover:opacity-100 transition">
                         + Agregar
                       </span>
                     </div>
