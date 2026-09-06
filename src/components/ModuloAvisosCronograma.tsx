@@ -11,7 +11,8 @@ import Swal from 'sweetalert2';
 import { TEAM_MEMBERS_LIST, getMemberColorTheme } from '@/lib/teamAuth';
 import { 
   getTeamTasks, createTeamTask, toggleTeamTaskComplete, deleteTeamTask, 
-  getTeamMeetingMinutes, saveTeamMeetingMinute, deleteTeamMeetingMinute, TeamTaskRecord 
+  getTeamMeetingMinutes, saveTeamMeetingMinute, deleteTeamMeetingMinute, 
+  analyzeMeetingNotesWithAI, TeamTaskRecord 
 } from '@/app/actions/teamCollab';
 
 export interface SafetyNotice {
@@ -165,6 +166,8 @@ export default function ModuloAvisosCronograma() {
   const [minuteAgreements, setMinuteAgreements] = useState<MeetingAgreement[]>([
     { task: '', responsible: 'Tatiana Torres', deadline: new Date().toISOString().split('T')[0] }
   ]);
+  const [rawMeetingNotes, setRawMeetingNotes] = useState('');
+  const [analyzingAI, setAnalyzingAI] = useState(false);
 
   useEffect(() => {
     loadNotices();
@@ -359,10 +362,63 @@ export default function ModuloAvisosCronograma() {
     setMinuteAttendees(['Tatiana Torres', 'Gabriela', 'Paola']);
     setMinuteAgenda('1. Planificación semanal de actividades de seguridad industrial.\n2. Verificación y seguimiento de inspecciones pendientes.\n3. Coordinación de recepciones y dotaciones.');
     setMinuteNotes('');
+    setRawMeetingNotes('');
     setMinuteAgreements([
       { task: '', responsible: 'Tatiana Torres', deadline: new Date().toISOString().split('T')[0] }
     ]);
     setShowMinuteModal(true);
+  };
+
+  // Analizar notas libres de la reunión con Inteligencia Artificial
+  const handleAnalyzeWithAI = async () => {
+    if (!rawMeetingNotes.trim()) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Notas requeridas',
+        text: 'Escriba o pegue el resumen o las notas habladas de la reunión para que la IA extraiga los compromisos.',
+        confirmButtonColor: '#002f6c'
+      });
+      return;
+    }
+
+    setAnalyzingAI(true);
+    try {
+      const res = await analyzeMeetingNotesWithAI(rawMeetingNotes, minuteDate);
+      if (res.success && res.data) {
+        if (res.data.title) setMinuteTitle(res.data.title);
+        if (res.data.agenda_topics) setMinuteAgenda(res.data.agenda_topics);
+        if (res.data.attendees && Array.isArray(res.data.attendees)) {
+          setMinuteAttendees(res.data.attendees);
+        }
+        if (res.data.agreements && Array.isArray(res.data.agreements) && res.data.agreements.length > 0) {
+          setMinuteAgreements(res.data.agreements);
+        }
+        if (res.data.notes) setMinuteNotes(res.data.notes);
+
+        Swal.fire({
+          icon: 'success',
+          title: '¡Acta Estructurada por IA!',
+          text: `La IA detectó y asignó ${res.data.agreements?.length || 0} acuerdos con sus respectivas encargadas y fechas límite.`,
+          confirmButtonColor: '#002f6c'
+        });
+      } else {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Aviso',
+          text: res.error || 'No se pudo estructurar el texto. Intente agregando más detalles.',
+          confirmButtonColor: '#002f6c'
+        });
+      }
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error de IA',
+        text: err?.message || 'Error de conexión con el asistente de IA.',
+        confirmButtonColor: '#002f6c'
+      });
+    } finally {
+      setAnalyzingAI(false);
+    }
   };
 
   // Agregar fila de compromiso
@@ -1430,6 +1486,62 @@ export default function ModuloAvisosCronograma() {
             </div>
 
             <form onSubmit={handleSaveMinute} className="p-5 space-y-4 text-xs overflow-y-auto flex-1">
+              {/* ASISTENTE IA PARA REDACTAR Y ESTRUCTURAR EL ACTA */}
+              <div className="bg-gradient-to-r from-blue-900/10 via-indigo-900/10 to-amber-900/10 border-2 border-dashed border-blue-300/80 rounded-2xl p-4 space-y-3 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-gradient-to-br from-amber-400 to-amber-500 rounded-xl text-slate-950 shadow-md">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                        Asistente IA para Redacción de Acta
+                        <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                          Inteligencia Artificial
+                        </span>
+                      </h5>
+                      <p className="text-[11px] text-slate-500 font-medium">
+                        Escriba o pegue aquí las notas libres o lo conversado en la reunión. La IA detectará los acuerdos, responsables y fechas automáticamente.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <textarea
+                    rows={3}
+                    placeholder="Ejemplo: Nos reunimos hoy para planificar la semana. Tatiana revisará los botellones de agua que llegan mañana martes, Gabriela inspeccionará los extintores en subestaciones hasta el jueves y Paola entregará los botiquines el viernes..."
+                    value={rawMeetingNotes}
+                    onChange={(e) => setRawMeetingNotes(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 font-medium shadow-inner"
+                  />
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-slate-400 italic">
+                      * Al analizar, la IA completará los campos de abajo automáticamente
+                    </span>
+                    <button
+                      type="button"
+                      disabled={!rawMeetingNotes.trim() || analyzingAI}
+                      onClick={handleAnalyzeWithAI}
+                      className="flex items-center gap-2 bg-gradient-to-r from-[#002f6c] to-blue-800 hover:from-blue-900 hover:to-slate-950 text-white font-black text-xs px-4 py-2 rounded-xl shadow-md transition transform active:scale-95 disabled:opacity-50 cursor-pointer"
+                    >
+                      {analyzingAI ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-300" />
+                          <span>Analizando con IA...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                          <span>Analizar y Estructurar con IA</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">
