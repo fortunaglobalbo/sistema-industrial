@@ -208,3 +208,104 @@ export async function deleteTeamTask(id: string) {
     return { success: false, error: err?.message || 'Error desconocido' };
   }
 }
+
+/**
+ * Obtener las actas de reunión semanal del equipo
+ */
+export async function getTeamMeetingMinutes() {
+  try {
+    const { data, error } = await supabase
+      .from('team_meeting_minutes')
+      .select('*')
+      .order('meeting_date', { ascending: false });
+
+    if (error) {
+      console.warn('Advertencia al consultar team_meeting_minutes:', error.message);
+      return { success: false, data: [], error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (err: any) {
+    console.error('Error al obtener actas de reunión:', err);
+    return { success: false, data: [], error: err?.message || 'Error desconocido' };
+  }
+}
+
+/**
+ * Guardar o crear un acta de reunión semanal
+ */
+export async function saveTeamMeetingMinute(minute: {
+  id?: string;
+  correlative_number: string;
+  meeting_date: string;
+  start_time?: string;
+  title: string;
+  attendees: string[];
+  agenda_topics: string;
+  agreements: Array<{ task: string; responsible: string; deadline: string }>;
+  notes?: string;
+  created_by?: string;
+}) {
+  try {
+    const payload = {
+      correlative_number: minute.correlative_number.trim(),
+      meeting_date: minute.meeting_date,
+      start_time: minute.start_time || '08:30',
+      title: minute.title.trim(),
+      attendees: minute.attendees,
+      agenda_topics: minute.agenda_topics.trim(),
+      agreements: minute.agreements,
+      notes: minute.notes ? minute.notes.trim() : '',
+      created_by: minute.created_by || 'Tatiana Torres'
+    };
+
+    let result;
+    if (minute.id) {
+      result = await supabase
+        .from('team_meeting_minutes')
+        .update(payload)
+        .eq('id', minute.id)
+        .select()
+        .single();
+    } else {
+      result = await supabase
+        .from('team_meeting_minutes')
+        .insert([payload])
+        .select()
+        .single();
+    }
+
+    if (result.error) {
+      console.warn('Advertencia al guardar acta de reunión:', result.error.message);
+      return { success: false, error: result.error.message };
+    }
+
+    return { success: true, data: result.data };
+  } catch (err: any) {
+    console.error('Error al guardar acta:', err);
+    return { success: false, error: err?.message || 'Error desconocido' };
+  }
+}
+
+/**
+ * Eliminar un acta de reunión semanal
+ */
+export async function deleteTeamMeetingMinute(id: string) {
+  try {
+    const { error } = await supabase
+      .from('team_meeting_minutes')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.warn('Advertencia al eliminar acta:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error al eliminar acta:', err);
+    return { success: false, error: err?.message || 'Error desconocido' };
+  }
+}
+

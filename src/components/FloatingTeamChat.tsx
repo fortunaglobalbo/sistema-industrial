@@ -221,29 +221,29 @@ export default function FloatingTeamChat({ currentUser }: FloatingTeamChatProps)
   const getSenderColor = (name: string) => {
     if (name.includes('Tatiana')) {
       return {
-        bg: 'bg-indigo-600',
-        bubble: 'bg-indigo-600 text-white',
-        tag: 'bg-indigo-100 text-indigo-800'
-      };
-    }
-    if (name.includes('Gabriela')) {
-      return {
-        bg: 'bg-emerald-600',
-        bubble: 'bg-emerald-600 text-white',
-        tag: 'bg-emerald-100 text-emerald-800'
+        bg: 'bg-rose-600',
+        bubble: 'bg-gradient-to-r from-rose-500 to-rose-600 text-white',
+        tag: 'bg-rose-100 text-rose-800 border border-rose-200'
       };
     }
     if (name.includes('Paola')) {
       return {
-        bg: 'bg-amber-600',
-        bubble: 'bg-amber-600 text-white',
-        tag: 'bg-amber-100 text-amber-800'
+        bg: 'bg-sky-600',
+        bubble: 'bg-gradient-to-r from-sky-500 to-sky-600 text-white',
+        tag: 'bg-sky-100 text-sky-800 border border-sky-200'
+      };
+    }
+    if (name.includes('Gabriela')) {
+      return {
+        bg: 'bg-red-600',
+        bubble: 'bg-gradient-to-r from-red-500 to-red-600 text-white',
+        tag: 'bg-red-100 text-red-800 border border-red-200'
       };
     }
     return {
-      bg: 'bg-slate-700',
-      bubble: 'bg-slate-700 text-white',
-      tag: 'bg-slate-100 text-slate-800'
+      bg: 'bg-amber-600',
+      bubble: 'bg-amber-600 text-white',
+      tag: 'bg-amber-100 text-amber-800 border border-amber-200'
     };
   };
 
@@ -345,10 +345,11 @@ export default function FloatingTeamChat({ currentUser }: FloatingTeamChatProps)
             <div className="bg-slate-50 border-b border-slate-200 px-3.5 py-1.5 sm:py-2 flex items-center justify-between text-xs shrink-0">
               <span className="text-[10px] sm:text-[11px] font-bold text-slate-500">Conectada:</span>
               <div className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${
-                  currentUser?.color === 'indigo' ? 'bg-indigo-500' :
-                  currentUser?.color === 'emerald' ? 'bg-emerald-500' : 'bg-amber-500'
-                }`}></span>
+                <span className={`w-2.5 h-2.5 rounded-full ${
+                  currentUser?.color === 'rose' ? 'bg-rose-500' :
+                  currentUser?.color === 'sky' ? 'bg-sky-500' :
+                  currentUser?.color === 'red' ? 'bg-red-500' : 'bg-amber-500'
+                } animate-pulse`}></span>
                 <span className="font-extrabold text-slate-800 text-[11px]">
                   {currentUser?.name || 'Tatiana Torres'}
                 </span>

@@ -326,7 +326,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setPinInput('7526197')}
-                className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-700/50 transition cursor-pointer"
+                className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-700/50 transition cursor-pointer"
                 title="PIN: 7526197"
               >
                 Tatiana Torres
@@ -334,7 +334,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setPinInput('1010')}
-                className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-700/50 transition cursor-pointer"
+                className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-700/50 transition cursor-pointer"
                 title="PIN: 1010"
               >
                 Gabriela
@@ -342,7 +342,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setPinInput('1212')}
-                className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 border border-amber-700/50 transition cursor-pointer"
+                className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-sky-950/60 hover:bg-sky-900/80 text-sky-300 border border-sky-700/50 transition cursor-pointer"
                 title="PIN: 1212"
               >
                 Paola
@@ -458,15 +458,18 @@ export default function Home() {
 
             {currentUser && (
               <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-black shadow-sm ${
-                currentUser.color === 'indigo'
-                  ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-200'
-                  : currentUser.color === 'emerald'
-                  ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+                currentUser.color === 'rose'
+                  ? 'bg-rose-950/80 border-rose-500/50 text-rose-200'
+                  : currentUser.color === 'sky'
+                  ? 'bg-sky-950/80 border-sky-500/50 text-sky-200'
+                  : currentUser.color === 'red'
+                  ? 'bg-red-950/80 border-red-500/50 text-red-200'
                   : 'bg-amber-950/80 border-amber-500/50 text-amber-200'
               }`}>
                 <span className={`w-2.5 h-2.5 rounded-full ${
-                  currentUser.color === 'indigo' ? 'bg-indigo-400' :
-                  currentUser.color === 'emerald' ? 'bg-emerald-400' : 'bg-amber-400'
+                  currentUser.color === 'rose' ? 'bg-rose-400' :
+                  currentUser.color === 'sky' ? 'bg-sky-400' :
+                  currentUser.color === 'red' ? 'bg-red-400' : 'bg-amber-400'
                 } animate-pulse`}></span>
                 <span>{currentUser.name}</span>
                 <span className="text-[10px] font-normal opacity-80">({currentUser.shortName})</span>

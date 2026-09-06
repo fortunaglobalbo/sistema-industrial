@@ -337,6 +337,28 @@ ALTER TABLE team_tasks ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Permitir todo a todos en team_tasks" ON team_tasks;
 CREATE POLICY "Permitir todo a todos en team_tasks" ON team_tasks FOR ALL USING (true) WITH CHECK (true);
 
+-- 25. Tabla de Actas de Reunión Semanal de Coordinación (team_meeting_minutes)
+CREATE TABLE IF NOT EXISTS team_meeting_minutes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    correlative_number TEXT NOT NULL,         -- Ej: 'ACTA-SEM-01/2026'
+    meeting_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    start_time TEXT DEFAULT '08:30',
+    title TEXT NOT NULL,
+    attendees TEXT[] NOT NULL DEFAULT ARRAY['Tatiana Torres', 'Gabriela', 'Paola'],
+    agenda_topics TEXT NOT NULL,
+    agreements JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array de [{ task: string, responsible: string, deadline: string }]
+    notes TEXT,
+    created_by TEXT DEFAULT 'Tatiana Torres',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_meeting_minutes_date ON team_meeting_minutes(meeting_date DESC);
+
+ALTER TABLE team_meeting_minutes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Permitir todo a todos en team_meeting_minutes" ON team_meeting_minutes;
+CREATE POLICY "Permitir todo a todos en team_meeting_minutes" ON team_meeting_minutes FOR ALL USING (true) WITH CHECK (true);
+
+
 
 
 
