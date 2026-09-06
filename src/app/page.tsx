@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ShieldCheck, ClipboardList, Loader2, 
-  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench, Footprints, Flame, Droplets, FileText, HeartPulse, FileDown, ListOrdered, CalendarDays
+  Lock, KeyRound, LogOut, History, PlusCircle, Printer, Calendar, RefreshCw, Trash, Wrench, Footprints, Flame, Droplets, FileText, HeartPulse, FileDown, ListOrdered, CalendarDays, FileSpreadsheet
 } from 'lucide-react';
 import { getTransactionDetails, getRecentTransactions, deleteTransaction } from './actions/transaction';
 import { exportActaToDocx } from '@/lib/exportActaDocx';
@@ -18,6 +18,7 @@ import ModuloCites from '@/components/ModuloCites';
 import ModuloMedicamentosKits from '@/components/ModuloMedicamentosKits';
 import ModuloAvisosCronograma from '@/components/ModuloAvisosCronograma';
 import TransactionItemsModal from '@/components/TransactionItemsModal';
+import PlanillaConsolidadaModal from '@/components/PlanillaConsolidadaModal';
 import FloatingTeamChat from '@/components/FloatingTeamChat';
 import { TEAM_USERS, getUserByPin, TeamUser } from '@/lib/teamAuth';
 import Swal from 'sweetalert2';
@@ -41,6 +42,7 @@ export default function Home() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [downloadingDocxId, setDownloadingDocxId] = useState<string | null>(null);
   const [managingItemsTransactionId, setManagingItemsTransactionId] = useState<string | null>(null);
+  const [isPlanillaModalOpen, setIsPlanillaModalOpen] = useState(false);
 
   const tabTitles: Record<string, { title: string; subtitle: string }> = {
     new: {
@@ -708,20 +710,30 @@ export default function Home() {
             ) : activeTab === 'history' ? (
               /* CONTENIDO DE PESTAÑA: HISTORIAL Y REIMPRESIONES */
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                <div className="flex justify-between items-center border-b pb-3">
+                <div className="flex flex-wrap justify-between items-center gap-3 border-b pb-3">
                   <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                     <ClipboardList className="w-5 h-5 text-blue-500" />
                     Historial de Actas Registradas
                   </h3>
-                  <button
-                    onClick={loadHistory}
-                    disabled={loadingHistory}
-                    className="text-slate-400 hover:text-slate-600 transition flex items-center gap-1 text-xs font-semibold"
-                    title="Actualizar historial"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${loadingHistory ? 'animate-spin' : ''}`} />
-                    Actualizar
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsPlanillaModalOpen(true)}
+                      className="flex items-center gap-1.5 bg-[#002f6c] hover:bg-[#003b87] text-white font-black text-xs px-3.5 py-2 rounded-xl transition shadow-sm cursor-pointer border border-[#002f6c]"
+                      title="Generar e imprimir planilla consolidada mensual o por rango de fechas (Ropa de trabajo, desuso, EPP)"
+                    >
+                      <FileSpreadsheet className="w-4 h-4 text-amber-400" />
+                      Planilla Oficial / Mensual
+                    </button>
+                    <button
+                      onClick={loadHistory}
+                      disabled={loadingHistory}
+                      className="text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 transition flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border border-slate-200 cursor-pointer"
+                      title="Actualizar historial"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${loadingHistory ? 'animate-spin text-blue-600' : ''}`} />
+                      Actualizar
+                    </button>
+                  </div>
                 </div>
 
                 {loadingHistory ? (
@@ -829,6 +841,12 @@ export default function Home() {
                   isOpen={!!managingItemsTransactionId}
                   onClose={() => setManagingItemsTransactionId(null)}
                   onRefreshParent={loadHistory}
+                />
+
+                {/* MODAL DE PLANILLA CONSOLIDADA MENSUAL / RANGO DE FECHAS (ROPA, DESUSO, EPP) */}
+                <PlanillaConsolidadaModal
+                  isOpen={isPlanillaModalOpen}
+                  onClose={() => setIsPlanillaModalOpen(false)}
                 />
               </div>
             ) : activeTab === 'toolRequests' ? (

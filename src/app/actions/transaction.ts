@@ -953,3 +953,197 @@ export async function updateTransactionItem(
     return { success: false, error: error.message || 'Error al actualizar el ítem.' };
   }
 }
+
+export interface ConsolidatedReportFilter {
+  startDate?: string;
+  endDate?: string;
+  monthYear?: string;
+  category?: string;
+  transactionType?: string;
+}
+
+/**
+ * Obtener reporte consolidado para planilla mensual o por fechas.
+ * Une transacciones, trabajadores y los ítems detallados de cada entrega/devolución.
+ */
+export async function getConsolidatedTransactionsReport(filters?: ConsolidatedReportFilter) {
+  try {
+    let query = supabase
+      .from('transactions')
+      .select(`
+        id,
+        created_at,
+        transaction_type,
+        supervisor_name,
+        signature_url,
+        workers (
+          full_name,
+          ci,
+          position,
+          department
+        ),
+        transaction_items (
+          id,
+          item_name,
+          category,
+          quantity,
+          condition_reason
+        )
+      `)
+      .order('created_at', { ascending: true }); // Orden cronológico para planillas oficiales
+
+    // Filtro de Rango de Fechas o Mes
+    if (filters?.monthYear && filters.monthYear !== 'all') {
+      const [yearStr, monthStr] = filters.monthYear.split('-');
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10);
+      const startOfMonth = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0)).toISOString();
+      const endOfMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)).toISOString();
+      query = query.gte('created_at', startOfMonth).lte('created_at', endOfMonth);
+    } else {
+      if (filters?.startDate) {
+        query = query.gte('created_at', `${filters.startDate}T00:00:00.000Z`);
+      }
+      if (filters?.endDate) {
+        query = query.lte('created_at', `${filters.endDate}T23:59:59.999Z`);
+      }
+    }
+
+    // Filtro por tipo de transacción a nivel de BD si corresponde
+    if (filters?.transactionType && filters.transactionType !== 'all') {
+      if (filters.transactionType === 'entregas_todas') {
+        query = query.in('transaction_type', ['dotacion', 'entrega', 'intercambio']);
+      } else if (filters.transactionType === 'desuso_devolucion') {
+        query = query.in('transaction_type', ['desuso', 'devolucion']);
+      } else {
+        query = query.eq('transaction_type', filters.transactionType);
+      }
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return {
+        success: true,
+        records: [],
+        summary: {
+          totalTransactions: 0,
+          totalClothingQuantity: 0,
+          totalToolsScrapQuantity: 0,
+          totalEppQuantity: 0,
+          totalOtherQuantity: 0,
+          totalWorkersBenefited: 0,
+        }
+      };
+    }
+
+    // Mapear y procesar ítems con filtro de categoría si está activo
+    const targetCategory = (filters?.category && filters.category !== 'all') ? filters.category.toLowerCase().trim() : null;
+
+    const records: any[] = [];
+    let totalClothingQty = 0;
+    let totalToolsScrapQty = 0;
+    let totalEppQty = 0;
+    let totalOtherQty = 0;
+    const workerCiSet = new Set<string>();
+
+    data.forEach((t, index) => {
+      const workerObj = Array.isArray(t.workers) ? t.workers[0] : t.workers;
+      const rawItems = Array.isArray(t.transaction_items) ? t.transaction_items : [];
+
+      // Filtrar ítems si se seleccionó una categoría específica
+      const matchingItems = targetCategory 
+        ? rawItems.filter(item => {
+            const cat = (item.category || '').toLowerCase();
+            const name = (item.item_name || '').toLowerCase();
+            if (targetCategory === 'ropa de trabajo') {
+              return cat.includes('ropa') || name.includes('pantalon') || name.includes('camisa') || name.includes('overol') || name.includes('mameluco') || name.includes('chaqueta') || name.includes('chaleco');
+            }
+            if (targetCategory === 'herramientas') {
+              return cat.includes('herramienta') || item.condition_reason === 'en_desuso' || t.transaction_type === 'desuso';
+            }
+            if (targetCategory === 'epp (protección)' || targetCategory === 'epp') {
+              return cat.includes('epp') || cat.includes('proteccion');
+            }
+            return cat.includes(targetCategory);
+          })
+        : rawItems;
+
+      // Si se filtró por categoría y esta transacción no tiene ningún ítem de esa categoría, se excluye de la planilla
+      if (targetCategory && matchingItems.length === 0) {
+        return;
+      }
+
+      const itemsToCount = targetCategory ? matchingItems : rawItems;
+
+      // Sumar estadísticas
+      itemsToCount.forEach(item => {
+        const qty = Number(item.quantity) || 0;
+        const cat = (item.category || '').toLowerCase();
+        const name = (item.item_name || '').toLowerCase();
+
+        if (cat.includes('ropa') || name.includes('pantalon') || name.includes('camisa') || name.includes('overol') || name.includes('mameluco') || name.includes('chaqueta') || name.includes('chaleco')) {
+          totalClothingQty += qty;
+        } else if (cat.includes('herramienta') || item.condition_reason === 'en_desuso' || t.transaction_type === 'desuso') {
+          totalToolsScrapQty += qty;
+        } else if (cat.includes('epp') || cat.includes('proteccion')) {
+          totalEppQty += qty;
+        } else {
+          totalOtherQty += qty;
+        }
+      });
+
+      const workerCi = workerObj ? (workerObj as any).ci : '';
+      if (workerCi) workerCiSet.add(workerCi);
+
+      records.push({
+        id: t.id,
+        folio: String(index + 1).padStart(5, '0'),
+        date: t.created_at,
+        transactionType: t.transaction_type,
+        supervisorName: t.supervisor_name,
+        signatureUrl: t.signature_url,
+        workerName: workerObj ? (workerObj as any).full_name : 'No especificado',
+        workerCi: workerCi || 'S/N',
+        workerPosition: workerObj ? (workerObj as any).position : '-',
+        workerDepartment: workerObj ? (workerObj as any).department : '-',
+        items: itemsToCount.map(item => ({
+          id: item.id,
+          itemName: item.item_name,
+          category: item.category,
+          quantity: Number(item.quantity),
+          conditionReason: item.condition_reason,
+        }))
+      });
+    });
+
+    return {
+      success: true,
+      records,
+      summary: {
+        totalTransactions: records.length,
+        totalClothingQuantity: totalClothingQty,
+        totalToolsScrapQuantity: totalToolsScrapQty,
+        totalEppQuantity: totalEppQty,
+        totalOtherQuantity: totalOtherQty,
+        totalWorkersBenefited: workerCiSet.size,
+      }
+    };
+  } catch (error: any) {
+    console.error('Error al generar reporte de planilla consolidada:', error);
+    return {
+      success: false,
+      records: [],
+      summary: {
+        totalTransactions: 0,
+        totalClothingQuantity: 0,
+        totalToolsScrapQuantity: 0,
+        totalEppQuantity: 0,
+        totalOtherQuantity: 0,
+        totalWorkersBenefited: 0,
+      },
+      error: error.message || 'Error al obtener la planilla de transacciones.'
+    };
+  }
+}
