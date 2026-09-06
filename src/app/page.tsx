@@ -64,7 +64,7 @@ export default function Home() {
       subtitle: 'Control de carga, vencimiento, presión y ubicación de extintores en instalaciones.',
     },
     waterSupply: {
-      title: 'Control y Suministro de Agua (Aquabel 20L)',
+      title: 'Control y Suministro de Agua (Aquavel 20L)',
       subtitle: 'Auditoría contra contrato anual de 440 bidones y salidas por área con escaneo OCR de firmas.',
     },
     cites: {

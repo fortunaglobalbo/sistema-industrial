@@ -51,7 +51,7 @@ export interface MeetingMinute {
 const DEFAULT_NOTICES: SafetyNotice[] = [
   {
     id: 'not-1',
-    title: 'Recepción y Control de Botellones Aquabel',
+    title: 'Recepción y Control de Botellones Aquavel',
     date: new Date().toISOString().split('T')[0],
     responsible: 'Tatiana Torres',
     category: 'Recepción Agua',
@@ -95,7 +95,7 @@ const DEFAULT_MINUTES: MeetingMinute[] = [
     agenda_topics: '1. Planificación de dotación EPP mensual.\n2. Verificación de botellones y dispensadores de agua.\n3. Relevamiento de extintores en subestaciones de transmisión.',
     agreements: [
       {
-        task: 'Recepción y control de lote de agua Aquabel',
+        task: 'Recepción y control de lote de agua Aquavel',
         responsible: 'Tatiana Torres',
         deadline: new Date(Date.now() + 86400000).toISOString().split('T')[0]
       },

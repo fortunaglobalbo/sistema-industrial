@@ -50,11 +50,11 @@ interface ModuloControlAguaProps {
 }
 
 export default function ModuloControlAgua({ showTabs = true }: ModuloControlAguaProps) {
-  // Pestaña activa por defecto: 'recepciones' para ver de inmediato los ingresos de Aquabel
+  // Pestaña activa por defecto: 'recepciones' para ver de inmediato los ingresos de Aquavel
   const [subTab, setSubTab] = useState<'salidas' | 'recepciones' | 'matriz'>('recepciones');
   const [viewMode, setViewMode] = useState<'list' | 'form' | 'print'>('list');
 
-  // Estados de Recepciones (Entradas Proveedor Aquabel)
+  // Estados de Recepciones (Entradas Proveedor Aquavel)
   const [deliveries, setDeliveries] = useState<any[]>([]);
   const [summary, setSummary] = useState({
     totalReceived: 0,
@@ -100,9 +100,9 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
   // Filtro de Mes/Año (YYYY-MM o 'all' para ver todo el historial)
   const [filterMonth, setFilterMonth] = useState<string>('all');
 
-  // Form State: Entrega de Proveedor (Aquabel por defecto, sin número de remisión requerido)
+  // Form State: Entrega de Proveedor (Aquavel por defecto, sin número de remisión requerido)
   const [deliveryDate, setDeliveryDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [supplierName, setSupplierName] = useState('AQUABEL');
+  const [supplierName, setSupplierName] = useState('AQUAVEL');
   const [bottlesReceived, setBottlesReceived] = useState<number>(30);
   const [bottlesContracted, setBottlesContracted] = useState<number>(30);
   const [bottleCapacity, setBottleCapacity] = useState('20 Litros');
@@ -197,7 +197,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
     const todayStr = new Date().toISOString().split('T')[0];
     const defaultQuota = getContractQuotaForDate(todayStr);
     setDeliveryDate(todayStr);
-    setSupplierName('AQUABEL');
+    setSupplierName('AQUAVEL');
     setBottlesReceived(defaultQuota);
     setBottlesContracted(defaultQuota);
     setBottleCapacity('20 Litros');
@@ -227,7 +227,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
     setIsSubmittingDelivery(true);
     const payload: WaterSupplyInput = {
       deliveryDate,
-      supplierName: 'AQUABEL',
+      supplierName: 'AQUAVEL',
       bottlesReceived: Number(bottlesReceived),
       bottlesContracted: Number(bottlesContracted),
       bottleCapacity,
@@ -243,7 +243,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
       Swal.fire({
         icon: 'success',
         title: 'Recepción Registrada',
-        text: 'Los botellones recibidos de Aquabel fueron guardados en el sistema.',
+        text: 'Los botellones recibidos de Aquavel fueron guardados en el sistema.',
         timer: 1800,
         showConfirmButton: false
       });
@@ -356,7 +356,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 }`}
               >
                 <Droplets className="w-4 h-4" />
-                <span>Recepciones Aquabel ({deliveries.length})</span>
+                <span>Recepciones Aquavel ({deliveries.length})</span>
               </button>
 
               <button
@@ -401,7 +401,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                   className="flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-4 py-2.5 rounded-xl shadow transition"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>+ Registrar Recepción Aquabel</span>
+                  <span>+ Registrar Recepción Aquavel</span>
                 </button>
               )}
 
@@ -425,7 +425,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
               <div className="flex justify-between items-start">
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-blue-200">
-                    Contrato Anual Aquabel (11 Meses)
+                    Contrato Anual Aquavel (11 Meses)
                   </span>
                   <p className="text-3xl font-black font-mono mt-0.5">
                     {annualData?.summary?.totalRemainingContract ?? 154}
@@ -513,7 +513,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 </div>
               </div>
               <div className="pt-3 border-t border-white/10 mt-3 flex justify-between text-[11px] text-slate-300">
-                <span>Ingresados Aquabel: <strong>{inventoryBalance?.totalReceived ?? 286}</strong></span>
+                <span>Ingresados Aquavel: <strong>{inventoryBalance?.totalReceived ?? 286}</strong></span>
                 <span>Salidas a Áreas: <strong>{inventoryBalance?.totalDispatched ?? 0}</strong></span>
               </div>
             </div>
@@ -706,7 +706,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
           )}
 
           {/* ========================================================================= */}
-          {/* SUB-PESTAÑA 2: RECEPCIONES DE AQUABEL (INGRESOS DE PROVEEDOR)             */}
+          {/* SUB-PESTAÑA 2: RECEPCIONES DE AQUAVEL (INGRESOS DE PROVEEDOR)             */}
           {/* ========================================================================= */}
           {subTab === 'recepciones' && (
             <div className="space-y-4">
@@ -763,10 +763,10 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
               </div>
 
               {loading ? (
-                <div className="text-center py-12 text-xs font-bold text-slate-500">Cargando recepciones de Aquabel...</div>
+                <div className="text-center py-12 text-xs font-bold text-slate-500">Cargando recepciones de Aquavel...</div>
               ) : deliveries.length === 0 ? (
                 <div className="text-center py-14 text-slate-500 text-xs font-bold border-2 border-dashed border-slate-200 rounded-2xl bg-white space-y-3 p-6">
-                  <p>No hay recepciones de Aquabel registradas en el mes seleccionado ({filterMonth}).</p>
+                  <p>No hay recepciones de Aquavel registradas en el mes seleccionado ({filterMonth}).</p>
                   <button
                     type="button"
                     onClick={() => setFilterMonth('all')}
@@ -796,7 +796,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                         <tr key={del.id} className="hover:bg-slate-50 transition">
                           <td className="p-3 text-center font-mono font-bold text-slate-400">{idx + 1}</td>
                           <td className="p-3 font-mono font-bold text-slate-900">{del.delivery_date}</td>
-                          <td className="p-3 font-bold text-blue-700">{del.supplier_name || 'AQUABEL'}</td>
+                          <td className="p-3 font-bold text-blue-700">{del.supplier_name === 'AQUABEL' ? 'AQUAVEL' : (del.supplier_name || 'AQUAVEL')}</td>
                           <td className="p-3 text-center font-mono font-black text-blue-700 bg-blue-50/50">
                             {del.bottles_received}
                           </td>
@@ -957,13 +957,13 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
         </div>
       )}
 
-      {/* VISTA 2: FORMULARIO DE RECEPCIÓN DE AQUABEL (SIN N° DE GUÍA, DIFERENCIA EN VIVO) */}
+      {/* VISTA 2: FORMULARIO DE RECEPCIÓN DE AQUAVEL (SIN N° DE GUÍA, DIFERENCIA EN VIVO) */}
       {viewMode === 'form' && (
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6 max-w-3xl mx-auto">
           <div className="flex justify-between items-center border-b pb-4">
             <div>
               <h3 className="text-base font-extrabold text-slate-900 uppercase">
-                Recepción de Botellones de Agua - AQUABEL
+                Recepción de Botellones de Agua - AQUAVEL
               </h3>
               <p className="text-xs text-slate-500">
                 Control de ingreso de botellones físicos y auditoría contra contrato
@@ -996,7 +996,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">Empresa Proveedora</label>
                 <input
                   type="text"
-                  value="AQUABEL"
+                  value="AQUAVEL"
                   readOnly
                   className="w-full border border-slate-200 bg-slate-100 text-blue-900 font-black rounded-xl px-3 py-2 text-xs cursor-not-allowed"
                 />
@@ -1073,7 +1073,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase">Observaciones</label>
                 <textarea
                   rows={2}
-                  placeholder="Notas de conformidad o novedades en la entrega de Aquabel..."
+                  placeholder="Notas de conformidad o novedades en la entrega de Aquavel..."
                   value={observations}
                   onChange={(e) => setObservations(e.target.value)}
                   className="w-full border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:border-blue-600"
@@ -1095,7 +1095,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                 disabled={isSubmittingDelivery}
                 className="px-6 py-2.5 text-xs font-black text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow transition"
               >
-                {isSubmittingDelivery ? 'Guardando...' : 'Guardar Recepción Aquabel'}
+                {isSubmittingDelivery ? 'Guardando...' : 'Guardar Recepción Aquavel'}
               </button>
             </div>
           </form>
@@ -1185,7 +1185,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
                     <tr key={del.id} className="hover:bg-slate-50">
                       <td className="p-2 text-center font-mono font-black border-r border-slate-300">{idx + 1}</td>
                       <td className="p-2 text-center font-mono text-xs border-r border-slate-300">{del.delivery_date}</td>
-                      <td className="p-2 font-mono font-bold text-xs border-r border-slate-300">{del.supplier_name || 'AQUABEL'}</td>
+                      <td className="p-2 font-mono font-bold text-xs border-r border-slate-300">{del.supplier_name === 'AQUABEL' ? 'AQUAVEL' : (del.supplier_name || 'AQUAVEL')}</td>
                       <td className="p-2 text-center font-mono font-black text-xs border-r border-slate-300">{del.bottles_received}</td>
                       <td className="p-2 text-center font-mono text-xs border-r border-slate-300">{del.bottles_contracted}</td>
                       <td className="p-2 text-center font-mono font-black text-xs border-r border-slate-300">
@@ -1208,7 +1208,7 @@ export default function ModuloControlAgua({ showTabs = true }: ModuloControlAgua
               <div>
                 <div className="border-b-2 border-slate-400 w-3/4 mx-auto mb-2"></div>
                 <p className="font-black text-slate-900 uppercase">REPRESENTANTE EMPRESA PROVEEDORA</p>
-                <p className="text-xs text-slate-600 font-bold uppercase">AQUABEL</p>
+                <p className="text-xs text-slate-600 font-bold uppercase">AQUAVEL</p>
               </div>
             </div>
 
