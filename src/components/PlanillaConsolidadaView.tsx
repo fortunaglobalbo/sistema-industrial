@@ -443,14 +443,6 @@ export default function PlanillaConsolidadaView({
               alt="ENDE DEORURO"
               className="h-12 w-auto object-contain mix-blend-multiply"
             />
-            <div className="border-l-2 border-slate-300 pl-3">
-              <h1 className="font-extrabold text-xs sm:text-sm text-[#002f6c] tracking-wide leading-tight">
-                EMPRESA DE LUZ Y FUERZA ELÉCTRICA DE ORURO
-              </h1>
-              <p className="text-[10px] font-bold text-slate-600">
-                SECCIÓN SEGURIDAD INDUSTRIAL Y SALUD OCUPACIONAL - ALMACÉN
-              </p>
-            </div>
           </div>
           <div className="text-right">
             <span className="inline-block bg-[#002f6c] text-white font-black text-[10px] px-2.5 py-1 rounded tracking-widest">
