@@ -631,10 +631,10 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
   const outOfStockCount = inventory.filter((i) => i.current_stock <= 0).length;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto px-4 py-6">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 max-w-[1600px] mx-auto px-4 sm:px-6 py-6">
       
-      {/* Formulario Principal (Columnas 1 y 2) */}
-      <div className="lg:col-span-2 space-y-6">
+      {/* Formulario Principal (Columnas 1 a 7) */}
+      <div className="xl:col-span-7 space-y-6">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           
           {/* SECCIÓN 1: DATOS DEL TRABAJADOR */}
@@ -1021,12 +1021,12 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
 
                       {/* Categoría Dinámica */}
                       <div className="md:col-span-3">
-                        <label className="text-[9px] font-bold text-slate-500 block mb-1 uppercase flex items-center gap-1">
-                          <Tag className="w-3 h-3 text-blue-500" /> Categoría
+                        <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase flex items-center gap-1.5">
+                          <Tag className="w-3.5 h-3.5 text-blue-600" /> Categoría
                         </label>
                         <select
                           {...register(`items.${index}.category`)}
-                          className="w-full text-xs border bg-white rounded-lg px-2 py-1.5 focus:outline-none font-medium"
+                          className="w-full text-sm border border-slate-300 bg-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
                         >
                           {allCategoryNames.map((cat) => (
                             <option key={cat} value={cat}>
@@ -1038,12 +1038,12 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
 
                       {/* Nombre del Insumo */}
                       <div className="md:col-span-4">
-                        <label className="text-[9px] font-bold text-slate-500 block mb-1 uppercase">Insumo / Descripción</label>
+                        <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase">Insumo / Descripción</label>
                         <select
                           {...register(`items.${index}.itemName`)}
-                          className="w-full text-xs border bg-white rounded-lg px-2 py-1.5 focus:outline-none font-medium"
+                          className="w-full text-sm border border-slate-300 bg-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-900"
                         >
-                          <option value="">-- Seleccionar --</option>
+                          <option value="">-- Seleccionar insumo --</option>
                           {filteredCatalog.map((item) => (
                             <option key={item.id} value={item.name}>
                               {item.name} ({item.current_stock} disp.)
@@ -1051,16 +1051,16 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                           ))}
                         </select>
                         {errors.items?.[index]?.itemName && (
-                          <span className="text-[10px] text-red-500 block mt-1">{errors.items[index]?.itemName?.message}</span>
+                          <span className="text-xs text-red-600 font-bold block mt-1">{errors.items[index]?.itemName?.message}</span>
                         )}
                         {availableKits.some((k) => k.name.toLowerCase() === (watch(`items.${index}.itemName`) || '').toLowerCase()) && (
                           <button
                             type="button"
                             onClick={() => handleUnpackKit(watch(`items.${index}.itemName`), index)}
-                            className="mt-1.5 text-[10px] font-extrabold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-1 rounded-md transition flex items-center gap-1 w-full justify-center shadow-2xs"
+                            className="mt-2 text-xs font-extrabold text-rose-800 hover:text-rose-950 bg-rose-100/80 hover:bg-rose-100 border border-rose-300 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5 w-full justify-center shadow-xs cursor-pointer"
                             title="Desglosar en filas separadas para poder quitar o editar algún medicamento"
                           >
-                            <Sparkles className="w-3 h-3 text-amber-500" />
+                            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                             <span>Desglosar medicamentos en filas independientes</span>
                           </button>
                         )}
@@ -1068,26 +1068,26 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
 
                       {/* Cantidad (Soporta fracciones decimales como 22.5 o 3.5) */}
                       <div className="md:col-span-2">
-                        <label className="text-[9px] font-bold text-slate-500 block mb-1 uppercase">Cantidad (pza/par)</label>
+                        <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase">Cantidad (pza/par)</label>
                         <input
                           type="number"
                           step="any"
                           min="0.1"
-                          placeholder="Ej. 22.5"
+                          placeholder="Ej. 1"
                           {...register(`items.${index}.quantity`, { valueAsNumber: true })}
-                          className="w-full text-xs border bg-white rounded-lg px-2 py-1.5 focus:outline-none font-bold"
+                          className="w-full text-sm border border-slate-300 bg-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-black text-slate-900"
                         />
                         {errors.items?.[index]?.quantity && (
-                          <span className="text-[10px] text-red-500 block mt-1">{errors.items[index]?.quantity?.message}</span>
+                          <span className="text-xs text-red-600 font-bold block mt-1">{errors.items[index]?.quantity?.message}</span>
                         )}
                       </div>
 
                       {/* Estado / Motivo */}
                       <div className="md:col-span-3">
-                        <label className="text-[9px] font-bold text-slate-500 block mb-1 uppercase">Estado / Motivo</label>
+                        <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase">Estado / Motivo</label>
                         <select
                           {...register(`items.${index}.conditionReason`)}
-                          className="w-full text-xs border bg-white rounded-lg px-2 py-1.5 focus:outline-none font-medium"
+                          className="w-full text-sm border border-slate-300 bg-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-800"
                         >
                           <option value="nuevo">Nuevo (Dotación / Ingreso)</option>
                           <option value="desgaste_natural">Desgaste Natural</option>
@@ -1153,19 +1153,19 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
       </div>
 
       {/* PANEL LATERAL: CATÁLOGO / GESTIÓN DE ALMACÉN Y CATEGORÍAS */}
-      <div className="space-y-6">
+      <div className="xl:col-span-5 space-y-6">
         
         {/* Card de Stock de Almacén y Gestión Integral */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div className="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200 shadow-md space-y-5">
           
           {/* Cabecera del Panel de Almacén */}
-          <div className="flex justify-between items-center border-b pb-3">
+          <div className="flex justify-between items-center border-b border-slate-200 pb-4">
             <div>
-              <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
-                <Package className="w-4 h-4 text-blue-500" />
+              <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2.5">
+                <Package className="w-5 h-5 text-blue-600" />
                 Stock de Almacén
               </h3>
-              <span className="text-[10px] text-slate-400 font-medium">
+              <span className="text-xs sm:text-sm text-slate-500 font-bold block mt-0.5">
                 {inventory.length} insumos registrados
               </span>
             </div>
@@ -1174,16 +1174,16 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
               <button
                 type="button"
                 onClick={loadInitialData}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition border border-slate-200"
+                className="p-2.5 rounded-xl text-slate-500 hover:text-blue-700 hover:bg-blue-50 transition border border-slate-200 cursor-pointer shadow-xs"
                 title="Recargar inventario"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* Selector de Pestañas del Almacén */}
-          <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200 text-xs sm:text-sm font-black">
             <button
               type="button"
               onClick={() => {
@@ -1191,14 +1191,14 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                 setManageItemError('');
                 setManageItemSuccess('');
               }}
-              className={`py-1.5 px-1 rounded-lg text-center transition flex items-center justify-center gap-1 ${
+              className={`py-2.5 px-2 rounded-xl text-center transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 inventoryManageTab === 'view'
-                  ? 'bg-white text-blue-700 shadow-xs'
+                  ? 'bg-white text-blue-800 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Package className="w-3.5 h-3.5 text-blue-500" />
-              <span className="truncate text-[11px]">Ver Stock</span>
+              <Package className="w-4 h-4 text-blue-600" />
+              <span>Ver Stock</span>
             </button>
 
             <button
@@ -1208,14 +1208,14 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                 setManageItemError('');
                 setManageItemSuccess('');
               }}
-              className={`py-1.5 px-1 rounded-lg text-center transition flex items-center justify-center gap-1 ${
+              className={`py-2.5 px-2 rounded-xl text-center transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 inventoryManageTab === 'add'
-                  ? 'bg-white text-emerald-700 shadow-xs'
+                  ? 'bg-white text-emerald-800 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Plus className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="truncate text-[11px]">+ Insumo</span>
+              <Plus className="w-4 h-4 text-emerald-600" />
+              <span>+ Insumo</span>
             </button>
 
             <button
@@ -1225,14 +1225,14 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                 setManageItemError('');
                 setManageItemSuccess('');
               }}
-              className={`py-1.5 px-1 rounded-lg text-center transition flex items-center justify-center gap-1 ${
+              className={`py-2.5 px-2 rounded-xl text-center transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 inventoryManageTab === 'edit'
-                  ? 'bg-white text-amber-700 shadow-xs'
+                  ? 'bg-white text-amber-800 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Edit className="w-3.5 h-3.5 text-amber-500" />
-              <span className="truncate text-[11px]">Ajustar</span>
+              <Edit className="w-4 h-4 text-amber-600" />
+              <span>Ajustar</span>
             </button>
 
             <button
@@ -1242,47 +1242,47 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                 setManageItemError('');
                 setManageItemSuccess('');
               }}
-              className={`py-1.5 px-1 rounded-lg text-center transition flex items-center justify-center gap-1 ${
+              className={`py-2.5 px-2 rounded-xl text-center transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 inventoryManageTab === 'categories'
-                  ? 'bg-white text-purple-700 shadow-xs'
+                  ? 'bg-white text-purple-800 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Tag className="w-3.5 h-3.5 text-purple-500" />
-              <span className="truncate text-[11px]">Categorías</span>
+              <Tag className="w-4 h-4 text-purple-600" />
+              <span>Categorías</span>
             </button>
           </div>
 
           {/* Mensajes de Estado */}
           {manageItemError && (
-            <p className="text-[10px] text-red-600 font-bold bg-red-50 border border-red-200 p-2 rounded-lg">
+            <p className="text-xs sm:text-sm text-red-600 font-black bg-red-50 border border-red-200 p-3 rounded-xl">
               {manageItemError}
             </p>
           )}
           {manageItemSuccess && (
-            <p className="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 p-2 rounded-lg">
+            <p className="text-xs sm:text-sm text-emerald-700 font-black bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
               {manageItemSuccess}
             </p>
           )}
 
           {/* PESTAÑA 1: VISOR DINÁMICO DE STOCK */}
           {inventoryManageTab === 'view' && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* Buscador de Insumos */}
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Buscar en stock (ej: casco, guante, bota)..."
                   value={inventorySearch}
                   onChange={(e) => setInventorySearch(e.target.value)}
-                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition placeholder:text-slate-400 font-medium"
+                  className="w-full pl-10 pr-9 py-2.5 text-sm sm:text-base bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition placeholder:text-slate-400 font-medium"
                 />
                 {inventorySearch && (
                   <button
                     type="button"
                     onClick={() => setInventorySearch('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer"
                   >
                     ✕
                   </button>
@@ -1290,17 +1290,17 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
               </div>
 
               {/* Filtros por Categoría */}
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                 <button
                   type="button"
                   onClick={() => setSelectedCategoryFilter('all')}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition flex items-center gap-1 ${
+                  className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition flex items-center gap-1.5 cursor-pointer ${
                     selectedCategoryFilter === 'all'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-blue-700 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  <Layers className="w-3 h-3" />
+                  <Layers className="w-4 h-4" />
                   Todos ({inventory.length})
                 </button>
                 {allCategoryNames.map((cat) => {
@@ -1311,17 +1311,17 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                       key={cat}
                       type="button"
                       onClick={() => setSelectedCategoryFilter(cat)}
-                      className={`px-2 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition flex items-center gap-1 ${
+                      className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition flex items-center gap-1.5 cursor-pointer ${
                         isSelected
-                          ? 'bg-blue-600 text-white shadow-xs'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          ? 'bg-blue-700 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
-                      {cat.toLowerCase().includes('epp') ? <HardHat className="w-3 h-3 text-amber-500" /> :
-                       cat.toLowerCase().includes('botiqu') ? <HeartPulse className="w-3 h-3 text-rose-500" /> :
-                       cat.toLowerCase().includes('ropa') ? <ShoppingBag className="w-3 h-3 text-blue-500" /> :
-                       cat.toLowerCase().includes('herramienta') ? <Wrench className="w-3 h-3 text-indigo-500" /> :
-                       <Tag className="w-3 h-3 text-slate-400" />}
+                      {cat.toLowerCase().includes('epp') ? <HardHat className="w-4 h-4 text-amber-500" /> :
+                       cat.toLowerCase().includes('botiqu') ? <HeartPulse className="w-4 h-4 text-rose-500" /> :
+                       cat.toLowerCase().includes('ropa') ? <ShoppingBag className="w-4 h-4 text-blue-500" /> :
+                       cat.toLowerCase().includes('herramienta') ? <Wrench className="w-4 h-4 text-indigo-500" /> :
+                       <Tag className="w-4 h-4 text-slate-400" />}
                       {cat} ({count})
                     </button>
                   );
@@ -1329,12 +1329,12 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
               </div>
 
               {/* Lista de Insumos Filtrados */}
-              <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
+              <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
                 {filteredInventoryItems.length === 0 ? (
-                  <div className="p-6 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                    <Package className="w-8 h-8 mx-auto mb-1.5 text-slate-300" />
-                    <p className="text-xs font-semibold text-slate-600">No se encontraron insumos</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
+                  <div className="p-8 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <Package className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                    <p className="text-sm font-bold text-slate-700">No se encontraron insumos</p>
+                    <p className="text-xs text-slate-500 mt-1">
                       {inventorySearch ? 'Prueba con otro término de búsqueda' : 'No hay ítems registrados en esta categoría'}
                     </p>
                   </div>
@@ -1342,25 +1342,25 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                   filteredInventoryItems.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-white border border-slate-100 hover:border-blue-200 hover:shadow-xs transition group"
+                      className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-blue-300 hover:shadow-sm transition group"
                     >
-                      <div className="min-w-0 flex-1 mr-2">
-                        <span className="font-semibold text-xs text-slate-800 truncate block">
+                      <div className="min-w-0 flex-1 mr-3">
+                        <span className="font-extrabold text-sm sm:text-base text-slate-900 truncate block">
                           {item.name}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-medium">
+                        <span className="text-xs sm:text-sm text-slate-500 font-semibold block mt-0.5">
                           {item.category || 'General'}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <span
-                          className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-bold ${
+                          className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl font-mono text-xs sm:text-sm font-black ${
                             item.current_stock > 10
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                               : item.current_stock > 0
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200'
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                              : 'bg-rose-100 text-rose-800 border border-rose-300'
                           }`}
                         >
                           {item.current_stock > 0 ? `${item.current_stock} u.` : 'Agotado'}
@@ -1373,10 +1373,10 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                             setNewManageStock(item.current_stock);
                             setInventoryManageTab('edit');
                           }}
-                          className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition"
+                          className="p-2 rounded-xl text-slate-500 hover:text-blue-700 hover:bg-blue-100 transition cursor-pointer"
                           title="Ajustar stock de este insumo"
                         >
-                          <Edit className="w-3.5 h-3.5" />
+                          <Edit className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -1385,47 +1385,48 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
               </div>
 
               {/* Resumen de Stock al Pie */}
-              <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-500 font-medium">
-                <span>Total: <strong className="text-slate-700">{inventory.length}</strong></span>
-                <span>Bajo stock: <strong className="text-amber-600">{lowStockCount}</strong></span>
-                <span>Agotados: <strong className="text-rose-600">{outOfStockCount}</strong></span>
+              <div className="pt-3.5 border-t border-slate-200 flex flex-wrap justify-between items-center text-xs sm:text-sm text-slate-600 font-bold gap-2">
+                <span>Total: <strong className="text-slate-900 text-sm font-black">{inventory.length}</strong></span>
+                <span>Bajo stock: <strong className="text-amber-700 text-sm font-black">{lowStockCount}</strong></span>
+                <span>Agotados: <strong className="text-rose-700 text-sm font-black">{outOfStockCount}</strong></span>
               </div>
             </div>
           )}
 
           {/* PESTAÑA 2: AGREGAR NUEVO INSUMO */}
           {inventoryManageTab === 'add' && (
-            <div className="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px]">
-              <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
-                <span className="font-bold text-slate-700 uppercase text-[10px] tracking-wide">
+            <div className="space-y-4 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 text-xs sm:text-sm">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2.5">
+                <span className="font-black text-slate-800 uppercase text-xs sm:text-sm tracking-wide">
                   Nuevo Insumo al Catálogo
                 </span>
                 <button
                   type="button"
                   onClick={() => setInventoryManageTab('view')}
-                  className="text-blue-600 hover:text-blue-800 font-bold text-[10px]"
+                  className="text-blue-700 hover:text-blue-900 font-black text-xs sm:text-sm cursor-pointer"
                 >
                   Volver a Stock
                 </button>
               </div>
 
-              <form onSubmit={handleCreateInventoryItem} className="space-y-2.5">
+              <form onSubmit={handleCreateInventoryItem} className="space-y-3.5">
                 <div>
-                  <label className="font-bold text-slate-600 block mb-1">Nombre del Insumo</label>
+                  <label className="font-black text-slate-700 block mb-1.5 uppercase text-xs sm:text-sm">Nombre del Insumo *</label>
                   <input
                     type="text"
                     placeholder="Ej. Guantes de Nitrilo Talla L"
                     value={newInventoryItem.name}
                     onChange={(e) => setNewInventoryItem({ ...newInventoryItem, name: e.target.value })}
-                    className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm sm:text-base bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    required
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-600 block mb-1">Categoría</label>
+                  <label className="font-black text-slate-700 block mb-1.5 uppercase text-xs sm:text-sm">Categoría *</label>
                   <select
                     value={newInventoryItem.category}
                     onChange={(e) => setNewInventoryItem({ ...newInventoryItem, category: e.target.value })}
-                    className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm sm:text-base bg-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {allCategoryNames.map((cat) => (
                       <option key={cat} value={cat}>
@@ -1435,22 +1436,22 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-600 block mb-1">Stock Inicial (unidades)</label>
+                  <label className="font-black text-slate-700 block mb-1.5 uppercase text-xs sm:text-sm">Stock Inicial (unidades)</label>
                   <input
                     type="number"
                     step="any"
                     min="0"
                     value={newInventoryItem.currentStock}
                     onChange={(e) => setNewInventoryItem({ ...newInventoryItem, currentStock: parseFloat(e.target.value) || 0 })}
-                    className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm sm:text-base bg-white font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={manageLoading}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg mt-2 transition flex items-center justify-center gap-1 text-xs shadow-xs"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl mt-3 transition flex items-center justify-center gap-2 text-sm shadow-md cursor-pointer"
                 >
-                  {manageLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Plus className="w-3.5 h-3.5" /> Guardar en Catálogo</>}
+                  {manageLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Guardar en Catálogo</>}
                 </button>
               </form>
             </div>
@@ -1458,27 +1459,27 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
 
           {/* PESTAÑA 3: AJUSTAR STOCK O ELIMINAR INSUMO */}
           {inventoryManageTab === 'edit' && (
-            <div className="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px]">
-              <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
-                <span className="font-bold text-slate-700 uppercase text-[10px] tracking-wide">
+            <div className="space-y-4 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 text-xs sm:text-sm">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2.5">
+                <span className="font-black text-slate-800 uppercase text-xs sm:text-sm tracking-wide">
                   Ajuste Directo de Stock
                 </span>
                 <button
                   type="button"
                   onClick={() => setInventoryManageTab('view')}
-                  className="text-blue-600 hover:text-blue-800 font-bold text-[10px]"
+                  className="text-blue-700 hover:text-blue-900 font-black text-xs sm:text-sm cursor-pointer"
                 >
                   Volver a Stock
                 </button>
               </div>
 
-              <form onSubmit={handleUpdateStock} className="space-y-2.5">
+              <form onSubmit={handleUpdateStock} className="space-y-3.5">
                 <div>
-                  <label className="font-bold text-slate-600 block mb-1">Seleccionar Insumo</label>
+                  <label className="font-black text-slate-700 block mb-1.5 uppercase text-xs sm:text-sm">Seleccionar Insumo</label>
                   <select
                     value={selectedManageItemId}
                     onChange={(e) => handleSelectManageItem(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm sm:text-base bg-white font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">-- Seleccionar insumo --</option>
                     {inventory.map((item) => (
@@ -1492,32 +1493,32 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                 {selectedManageItemId && (
                   <>
                     <div>
-                      <label className="font-bold text-slate-600 block mb-1">Nuevo Stock Real</label>
+                      <label className="font-black text-slate-700 block mb-1.5 uppercase text-xs sm:text-sm">Nuevo Stock Real</label>
                       <input
                         type="number"
                         step="any"
                         min="0"
                         value={newManageStock}
                         onChange={(e) => setNewManageStock(parseFloat(e.target.value) || 0)}
-                        className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm sm:text-base bg-white font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
-                    <div className="flex gap-2 pt-1">
+                    <div className="flex gap-2 pt-2">
                       <button
                         type="submit"
                         disabled={manageLoading}
-                        className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-lg transition flex items-center justify-center gap-1 text-xs shadow-xs"
+                        className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-black py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-sm cursor-pointer"
                       >
-                        {manageLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> Actualizar Stock</>}
+                        {manageLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Actualizar Stock</>}
                       </button>
                       <button
                         type="button"
                         onClick={handleDeleteItem}
                         disabled={manageLoading}
-                        className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg transition flex items-center justify-center text-xs"
+                        className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-3 rounded-xl transition flex items-center justify-center text-sm shadow-sm cursor-pointer"
                         title="Eliminar insumo del catálogo"
                       >
-                        {manageLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash className="w-3.5 h-3.5" />}
+                        {manageLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash className="w-4 h-4" />}
                       </button>
                     </div>
                   </>
@@ -1528,76 +1529,77 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
 
           {/* PESTAÑA 4: GESTIÓN DE CATEGORÍAS */}
           {inventoryManageTab === 'categories' && (
-            <div className="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px]">
-              <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
-                <span className="font-bold text-slate-700 uppercase text-[10px] tracking-wide">
+            <div className="space-y-4 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 text-xs sm:text-sm">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2.5">
+                <span className="font-black text-slate-800 uppercase text-xs sm:text-sm tracking-wide">
                   Categorías de Almacén
                 </span>
                 <button
                   type="button"
                   onClick={() => setInventoryManageTab('view')}
-                  className="text-blue-600 hover:text-blue-800 font-bold text-[10px]"
+                  className="text-blue-700 hover:text-blue-900 font-black text-xs sm:text-sm cursor-pointer"
                 >
                   Volver a Stock
                 </button>
               </div>
 
               {/* Crear Nueva Categoría */}
-              <form onSubmit={handleCreateCategory} className="space-y-2 border-b border-slate-200 pb-3">
+              <form onSubmit={handleCreateCategory} className="space-y-3 border-b border-slate-200 pb-4">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1 uppercase flex items-center gap-1 text-[10px]">
-                    <Tag className="w-3 h-3 text-purple-500" /> Nueva Categoría
+                  <label className="font-black text-slate-700 block mb-1.5 uppercase flex items-center gap-1.5 text-xs sm:text-sm">
+                    <Tag className="w-3.5 h-3.5 text-purple-600" /> Nueva Categoría
                   </label>
                   <input
                     type="text"
                     placeholder="Ej. Extintores y Señalización"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 font-medium"
+                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm sm:text-base bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
+                    required
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={manageLoading}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-1.5 rounded-lg transition flex items-center justify-center gap-1 text-xs shadow-xs"
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-2.5 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-sm cursor-pointer"
                 >
-                  {manageLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Plus className="w-3 h-3" /> Crear Categoría</>}
+                  {manageLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Crear Categoría</>}
                 </button>
               </form>
 
               {/* Categorías Activas con Botón para Ver Insumos */}
-              <div className="space-y-1.5">
-                <span className="font-bold text-slate-500 uppercase block text-[9px] tracking-wider">
+              <div className="space-y-2">
+                <span className="font-black text-slate-600 uppercase block text-xs tracking-wider">
                   Categorías Activas ({allCategoryNames.length})
                 </span>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                   {allCategoryNames.map((catName) => {
                     const countInCat = inventory.filter(i => (i.category || '').toLowerCase() === catName.toLowerCase()).length;
                     return (
-                      <div key={catName} className="flex justify-between items-center p-2 bg-white border border-slate-200 rounded-lg text-xs hover:border-slate-300 transition">
+                      <div key={catName} className="flex justify-between items-center p-3 bg-white border border-slate-200 rounded-xl text-sm hover:border-slate-300 transition">
                         <div>
-                          <span className="font-bold text-slate-800 block text-xs">{catName}</span>
-                          <span className="text-[10px] text-slate-400">{countInCat} insumo(s)</span>
+                          <span className="font-black text-slate-900 block text-sm sm:text-base">{catName}</span>
+                          <span className="text-xs text-slate-500 font-semibold">{countInCat} insumo(s)</span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => {
                               setSelectedCategoryFilter(catName);
                               setInventoryManageTab('view');
                             }}
-                            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded text-[10px] font-bold transition flex items-center gap-1"
+                            className="text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1 cursor-pointer"
                             title={`Ver insumos de la categoría ${catName}`}
                           >
-                            <Eye className="w-3 h-3" /> Ver
+                            <Eye className="w-3.5 h-3.5" /> Ver
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteCategory(catName)}
-                            className="text-slate-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition"
+                            className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer"
                             title={`Eliminar categoría ${catName}`}
                           >
-                            <Trash className="w-3 h-3" />
+                            <Trash className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>

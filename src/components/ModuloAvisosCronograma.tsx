@@ -1649,13 +1649,10 @@ export default function ModuloAvisosCronograma() {
                   className="h-16 w-auto object-contain"
                 />
                 <div className="text-right font-sans">
-                  <h3 className="text-xs font-black uppercase text-[#002f6c] tracking-widest">
-                    EMPRESA DE LUZ Y FUERZA ELÉCTRICA DE ORURO
-                  </h3>
-                  <p className="text-[10px] font-bold text-slate-600 uppercase">
-                    SECCIÓN SEGURIDAD INDUSTRIAL Y SALUD OCUPACIONAL
-                  </p>
-                  <p className="text-xs font-black text-slate-900 font-mono mt-0.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    CÓDIGO DE ACTA
+                  </span>
+                  <p className="text-sm font-black text-[#002f6c] font-mono">
                     {printingMinute.correlative_number}
                   </p>
                 </div>
