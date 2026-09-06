@@ -326,9 +326,9 @@ export async function analyzeMeetingNotesWithAI(rawText: string, meetingDate: st
     const prompt = `
 Eres un asistente de Inteligencia Artificial para el área de Seguridad Industrial y Salud Ocupacional de ENDE DEORURO.
 Tu tarea es analizar las siguientes notas informales, dictadas o en borrador de la reunión de coordinación de los lunes entre las integrantes del equipo:
-- Tatiana Torres (Supervisión)
-- Gabriela (Seguridad Industrial)
-- Paola (Salud Ocupacional)
+- Tatiana Torres
+- Gabriela
+- Paola
 
 Fecha de la reunión: ${meetingDate}
 

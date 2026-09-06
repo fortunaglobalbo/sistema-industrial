@@ -176,7 +176,7 @@ export default function FloatingTeamChat({ currentUser }: FloatingTeamChatProps)
     const tempMsg: ChatMessageRecord = {
       id: `local-${Date.now()}`,
       sender_name: sender.name,
-      sender_role: sender.role,
+      sender_role: sender.role || 'ENDE DEORURO',
       message: text,
       created_at: new Date().toISOString()
     };
@@ -187,7 +187,7 @@ export default function FloatingTeamChat({ currentUser }: FloatingTeamChatProps)
     scrollToBottom();
 
     try {
-      const res = await sendTeamChatMessage(sender.name, sender.role, text);
+      const res = await sendTeamChatMessage(sender.name, sender.role || 'ENDE DEORURO', text);
       if (res.success && res.data) {
         knownMessageIdsRef.current.add(res.data.id);
         setMessages((prev) => prev.map((m) => (m.id === tempMsg.id ? res.data! : m)));
@@ -235,9 +235,9 @@ export default function FloatingTeamChat({ currentUser }: FloatingTeamChatProps)
     }
     if (name.includes('Gabriela')) {
       return {
-        bg: 'bg-red-600',
-        bubble: 'bg-gradient-to-r from-red-500 to-red-600 text-white',
-        tag: 'bg-red-100 text-red-800 border border-red-200'
+        bg: 'bg-orange-600',
+        bubble: 'bg-gradient-to-r from-orange-500 to-orange-600 text-white',
+        tag: 'bg-orange-100 text-orange-900 border border-orange-200'
       };
     }
     return {
@@ -348,7 +348,7 @@ export default function FloatingTeamChat({ currentUser }: FloatingTeamChatProps)
                 <span className={`w-2.5 h-2.5 rounded-full ${
                   currentUser?.color === 'rose' ? 'bg-rose-500' :
                   currentUser?.color === 'sky' ? 'bg-sky-500' :
-                  currentUser?.color === 'red' ? 'bg-red-500' : 'bg-amber-500'
+                  currentUser?.color === 'orange' ? 'bg-orange-500' : 'bg-amber-500'
                 } animate-pulse`}></span>
                 <span className="font-extrabold text-slate-800 text-[11px]">
                   {currentUser?.name || 'Tatiana Torres'}

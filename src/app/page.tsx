@@ -313,8 +313,8 @@ export default function Home() {
         className="relative flex items-center justify-center min-h-screen px-4 font-sans antialiased bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: 'url(/banner_subestacion.png)' }}
       >
-        {/* Overlay con degradado azul marino oficial ENDE */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#001e47]/95 via-[#002f6c]/90 to-slate-950/95 backdrop-blur-[2px]" />
+        {/* Overlay translúcido para apreciar el atardecer */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#001e47]/75 via-[#002f6c]/60 to-slate-950/75 backdrop-blur-[1px]" />
 
         <div className="relative bg-slate-900/90 p-6 sm:p-8 rounded-3xl border border-blue-400/30 shadow-2xl max-w-md w-full text-center space-y-6 backdrop-blur-xl">
           
@@ -353,10 +353,10 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setPinInput('1010')}
-                className="text-[10px] font-extrabold px-3 py-1.5 rounded-xl bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-500/60 transition cursor-pointer shadow-sm flex items-center gap-1.5"
+                className="text-[10px] font-extrabold px-3 py-1.5 rounded-xl bg-orange-950/80 hover:bg-orange-900 text-orange-200 border border-orange-500/60 transition cursor-pointer shadow-sm flex items-center gap-1.5"
                 title="PIN: 1010"
               >
-                <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
+                <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>
                 <span>Gabriela</span>
               </button>
               <button
@@ -436,15 +436,15 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 font-sans antialiased">
       
-      {/* Header Institucional ENDE DEORURO con Subestación y Logo Oficial (Oculto en Impresión) */}
+      {/* Header Institucional ENDE DEORURO con Subestación Visible (Oculto en Impresión) */}
       <header className="relative bg-slate-950 text-white border-b-2 border-amber-400/70 shadow-xl overflow-hidden print:hidden">
-        {/* Foto de fondo de subestación eléctrica */}
+        {/* Foto de fondo de subestación eléctrica nítida */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40 scale-105 pointer-events-none"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-85 scale-105 pointer-events-none"
           style={{ backgroundImage: 'url(/banner_subestacion.png)' }}
         />
-        {/* Overlay con degradado azul marino corporativo ENDE */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#001e47]/95 via-[#002f6c]/90 to-[#001530]/95 pointer-events-none" />
+        {/* Overlay sutil translúcido para apreciar la subestación y colores del atardecer */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#001e47]/65 via-[#002f6c]/50 to-[#001530]/65 pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 py-3 sm:py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3.5 w-full lg:w-auto justify-between lg:justify-start">
@@ -461,14 +461,14 @@ export default function Home() {
                   <span className="text-[9px] font-black tracking-widest uppercase bg-amber-400/25 text-amber-300 px-2 py-0.5 rounded-full border border-amber-400/40">
                     ENDE DEORURO
                   </span>
-                  <span className="text-[9px] text-blue-200/80 font-bold uppercase tracking-wider hidden sm:inline">
+                  <span className="text-[9px] text-blue-100 font-bold uppercase tracking-wider hidden sm:inline drop-shadow-sm">
                     Filial de ENDE Corporación
                   </span>
                 </div>
-                <h1 className="text-base sm:text-lg font-black tracking-wide text-white uppercase mt-0.5">
+                <h1 className="text-base sm:text-lg font-black tracking-wide text-white uppercase mt-0.5 drop-shadow-md">
                   Seguridad Industrial y Salud Ocupacional
                 </h1>
-                <p className="text-[11px] text-blue-200/90 font-medium hidden sm:block">
+                <p className="text-[11px] text-blue-100 font-medium hidden sm:block drop-shadow-sm">
                   Control de EPP, Actas de Reunión, Herramientas, Extintores, Agua y Cronograma
                 </p>
               </div>
@@ -481,14 +481,14 @@ export default function Home() {
                   ? 'bg-rose-950/80 border-rose-500/50 text-rose-200'
                   : currentUser.color === 'sky'
                   ? 'bg-sky-950/80 border-sky-500/50 text-sky-200'
-                  : currentUser.color === 'red'
-                  ? 'bg-red-950/80 border-red-500/50 text-red-200'
+                  : currentUser.color === 'orange'
+                  ? 'bg-orange-950/80 border-orange-500/50 text-orange-200'
                   : 'bg-amber-950/80 border-amber-500/50 text-amber-200'
               }`}>
                 <span className={`w-2 h-2 rounded-full ${
                   currentUser.color === 'rose' ? 'bg-rose-400' :
                   currentUser.color === 'sky' ? 'bg-sky-400' :
-                  currentUser.color === 'red' ? 'bg-red-400' : 'bg-amber-400'
+                  currentUser.color === 'orange' ? 'bg-orange-400' : 'bg-amber-400'
                 } animate-pulse`}></span>
                 <span>{currentUser.shortName}</span>
               </div>
@@ -529,14 +529,14 @@ export default function Home() {
                   ? 'bg-rose-950/80 border-rose-500/50 text-rose-200'
                   : currentUser.color === 'sky'
                   ? 'bg-sky-950/80 border-sky-500/50 text-sky-200'
-                  : currentUser.color === 'red'
-                  ? 'bg-red-950/80 border-red-500/50 text-red-200'
+                  : currentUser.color === 'orange'
+                  ? 'bg-orange-950/80 border-orange-500/50 text-orange-200'
                   : 'bg-amber-950/80 border-amber-500/50 text-amber-200'
               }`}>
                 <span className={`w-2.5 h-2.5 rounded-full ${
                   currentUser.color === 'rose' ? 'bg-rose-400' :
                   currentUser.color === 'sky' ? 'bg-sky-400' :
-                  currentUser.color === 'red' ? 'bg-red-400' : 'bg-amber-400'
+                  currentUser.color === 'orange' ? 'bg-orange-400' : 'bg-amber-400'
                 } animate-pulse`}></span>
                 <span>{currentUser.name}</span>
                 <span className="text-[10px] font-normal opacity-80">({currentUser.shortName})</span>
@@ -563,8 +563,8 @@ export default function Home() {
             <p className="text-sm font-semibold text-slate-600">Generando documento y cargando detalles del acta...</p>
           </div>
         ) : activeTransactionId && transactionData ? (
-          /* Vista de Impresión del Acta (Puede imprimirse infinitas veces) */
-          <div className="space-y-4">
+          /* Vista de Impresión del Acta (Centrada y adaptada a la pantalla) */
+          <div className="max-w-4xl mx-auto space-y-4">
             <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-4 text-xs flex gap-2 items-start print:hidden shadow-sm">
               <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>

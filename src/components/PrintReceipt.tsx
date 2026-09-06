@@ -112,14 +112,14 @@ export default function PrintReceipt({ transaction, items, onBack }: PrintReceip
 
   // Renderiza una sola copia del acta (se duplicará o imprimirá en formato Carta)
   const renderSingleCopy = (copyTitle: string) => (
-    <div className="w-full bg-white text-black p-6 font-sans text-xs border border-slate-300 rounded shadow-sm print:shadow-none print:border-none">
+    <div className="w-full max-w-3xl mx-auto bg-white text-black p-6 sm:p-8 font-sans text-xs border border-slate-300 rounded-2xl shadow-md print:shadow-none print:border-none print:p-0 print:rounded-none">
       {/* Encabezado */}
       <div className="flex justify-between items-start border-b border-black pb-3">
         <div>
           <img 
-            src="/logo-ende.png" 
-            alt="ENDE ORURO" 
-            className="h-10 w-auto object-contain mix-blend-multiply" 
+            src="/logo_ende_deoruro.png" 
+            alt="ENDE DEORURO" 
+            className="h-11 w-auto object-contain mix-blend-multiply" 
           />
         </div>
         <div className="text-right">

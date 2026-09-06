@@ -1,9 +1,9 @@
 export interface TeamUser {
   pin: string;
   name: string;
-  role: string;
+  role?: string;
   shortName: string;
-  color: 'rose' | 'red' | 'sky' | 'amber';
+  color: 'rose' | 'orange' | 'sky' | 'amber';
   badgeBg: string;
   badgeText: string;
   dotColor: string;
@@ -14,9 +14,8 @@ export const TEAM_USERS: Record<string, TeamUser> = {
   '7526197': {
     pin: '7526197',
     name: 'Tatiana Torres',
-    role: 'Supervisión Seguridad Industrial',
     shortName: 'Tatiana',
-    color: 'rose', // Rosita
+    color: 'rose', // Rosa
     badgeBg: 'bg-rose-100 border-rose-300',
     badgeText: 'text-rose-800',
     dotColor: '#f43f5e',
@@ -25,18 +24,16 @@ export const TEAM_USERS: Record<string, TeamUser> = {
   '1010': {
     pin: '1010',
     name: 'Gabriela',
-    role: 'Seguridad Industrial',
     shortName: 'Gabriela',
-    color: 'red', // Rojo
-    badgeBg: 'bg-red-100 border-red-300',
-    badgeText: 'text-red-800',
-    dotColor: '#ef4444',
+    color: 'orange', // Naranja
+    badgeBg: 'bg-orange-100 border-orange-300',
+    badgeText: 'text-orange-900',
+    dotColor: '#f97316',
     avatarLetter: 'G'
   },
   '1212': {
     pin: '1212',
     name: 'Paola',
-    role: 'Salud Ocupacional',
     shortName: 'Paola',
     color: 'sky', // Celeste
     badgeBg: 'bg-sky-100 border-sky-300',
@@ -46,6 +43,49 @@ export const TEAM_USERS: Record<string, TeamUser> = {
   }
 };
 
+export function getStoredTeamNames(): { tatiana: string; gabriela: string; paola: string } {
+  if (typeof window === 'undefined') {
+    return { tatiana: 'Tatiana Torres', gabriela: 'Gabriela', paola: 'Paola' };
+  }
+  try {
+    const saved = localStorage.getItem('team_full_names_v1');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return {
+        tatiana: parsed.tatiana?.trim() || 'Tatiana Torres',
+        gabriela: parsed.gabriela?.trim() || 'Gabriela',
+        paola: parsed.paola?.trim() || 'Paola'
+      };
+    }
+  } catch {}
+  return { tatiana: 'Tatiana Torres', gabriela: 'Gabriela', paola: 'Paola' };
+}
+
+export function saveStoredTeamNames(names: { tatiana?: string; gabriela?: string; paola?: string }) {
+  if (typeof window === 'undefined') return;
+  try {
+    const current = getStoredTeamNames();
+    const updated = {
+      tatiana: (names.tatiana || current.tatiana).trim(),
+      gabriela: (names.gabriela || current.gabriela).trim(),
+      paola: (names.paola || current.paola).trim()
+    };
+    localStorage.setItem('team_full_names_v1', JSON.stringify(updated));
+    window.dispatchEvent(new Event('team_names_updated'));
+    return updated;
+  } catch {}
+}
+
+export function getTeamMembersList(): string[] {
+  const names = getStoredTeamNames();
+  return [
+    names.tatiana,
+    names.gabriela,
+    names.paola,
+    'Todas / Equipo'
+  ];
+}
+
 export const TEAM_MEMBERS_LIST = [
   'Tatiana Torres',
   'Gabriela',
@@ -54,14 +94,23 @@ export const TEAM_MEMBERS_LIST = [
 ];
 
 export function getUserByPin(pin: string): TeamUser | null {
-  return TEAM_USERS[pin] || null;
+  const user = TEAM_USERS[pin];
+  if (!user) return null;
+  const names = getStoredTeamNames();
+  if (pin === '7526197') return { ...user, name: names.tatiana };
+  if (pin === '1010') return { ...user, name: names.gabriela };
+  if (pin === '1212') return { ...user, name: names.paola };
+  return user;
 }
 
 export function getMemberColorTheme(name: string) {
-  if (name.includes('Tatiana')) {
+  const names = getStoredTeamNames();
+
+  if (name.includes('Tatiana') || name === names.tatiana) {
     return {
-      label: 'Tatiana (Rosita)',
-      name: 'Tatiana Torres',
+      label: names.tatiana,
+      colorTitle: 'Rosa',
+      name: names.tatiana,
       shortName: 'Tatiana',
       colorName: 'rose',
       dot: 'bg-rose-500',
@@ -72,10 +121,26 @@ export function getMemberColorTheme(name: string) {
       accentColor: '#f43f5e'
     };
   }
-  if (name.includes('Paola')) {
+  if (name.includes('Gabriela') || name === names.gabriela) {
     return {
-      label: 'Paola (Celeste)',
-      name: 'Paola',
+      label: names.gabriela,
+      colorTitle: 'Naranja',
+      name: names.gabriela,
+      shortName: 'Gabriela',
+      colorName: 'orange',
+      dot: 'bg-orange-500',
+      badge: 'bg-orange-100 text-orange-900 border-orange-300',
+      calendarPill: 'bg-orange-100 text-orange-950 border-orange-300 hover:bg-orange-200',
+      cardBorder: 'border-orange-300 bg-orange-50/40',
+      chatBubble: 'bg-orange-500 text-white',
+      accentColor: '#f97316'
+    };
+  }
+  if (name.includes('Paola') || name === names.paola) {
+    return {
+      label: names.paola,
+      colorTitle: 'Celeste',
+      name: names.paola,
       shortName: 'Paola',
       colorName: 'sky',
       dot: 'bg-sky-500',
@@ -86,22 +151,9 @@ export function getMemberColorTheme(name: string) {
       accentColor: '#0ea5e9'
     };
   }
-  if (name.includes('Gabriela')) {
-    return {
-      label: 'Gabriela (Rojo)',
-      name: 'Gabriela',
-      shortName: 'Gabriela',
-      colorName: 'red',
-      dot: 'bg-red-500',
-      badge: 'bg-red-100 text-red-800 border-red-300',
-      calendarPill: 'bg-red-100 text-red-900 border-red-300 hover:bg-red-200',
-      cardBorder: 'border-red-300 bg-red-50/40',
-      chatBubble: 'bg-red-600 text-white',
-      accentColor: '#ef4444'
-    };
-  }
   return {
-    label: 'Todas / Equipo (Dorado ENDE)',
+    label: 'Todas / Equipo',
+    colorTitle: 'Dorado',
     name: 'Todas / Equipo',
     shortName: 'Equipo',
     colorName: 'amber',

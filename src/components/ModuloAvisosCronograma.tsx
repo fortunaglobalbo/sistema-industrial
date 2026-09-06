@@ -5,10 +5,10 @@ import {
   CalendarDays, Plus, CheckCircle2, Clock, 
   Trash2, Calendar, User, Filter, Check, RefreshCw, 
   ChevronLeft, ChevronRight, FileText, Printer, 
-  Sparkles, ListChecks, CheckSquare, Layers, Share2, Download, AlertCircle, X
+  Sparkles, ListChecks, CheckSquare, Layers, Share2, Download, AlertCircle, X, Edit3
 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { TEAM_MEMBERS_LIST, getMemberColorTheme } from '@/lib/teamAuth';
+import { TEAM_MEMBERS_LIST, getMemberColorTheme, getStoredTeamNames, saveStoredTeamNames } from '@/lib/teamAuth';
 import { 
   getTeamTasks, createTeamTask, toggleTeamTaskComplete, deleteTeamTask, 
   getTeamMeetingMinutes, saveTeamMeetingMinute, deleteTeamMeetingMinute, 
@@ -124,8 +124,56 @@ const MONTH_NAMES = [
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 export default function ModuloAvisosCronograma() {
-  // Pestaña activa dentro del módulo
-  const [activeView, setActiveView] = useState<'calendar' | 'cards' | 'minutes'>('calendar');
+  // Pestaña activa dentro del módulo (Solo Calendario y Actas de Reunión)
+  const [activeView, setActiveView] = useState<'calendar' | 'minutes'>('calendar');
+
+  // Nombres editables del equipo
+  const [teamNames, setTeamNames] = useState<{ tatiana: string; gabriela: string; paola: string }>({
+    tatiana: 'Tatiana Torres',
+    gabriela: 'Gabriela',
+    paola: 'Paola'
+  });
+  const [showEditNamesModal, setShowEditNamesModal] = useState(false);
+  const [editTatiana, setEditTatiana] = useState('');
+  const [editGabriela, setEditGabriela] = useState('');
+  const [editPaola, setEditPaola] = useState('');
+
+  useEffect(() => {
+    setTeamNames(getStoredTeamNames());
+    const handleUpdate = () => {
+      setTeamNames(getStoredTeamNames());
+    };
+    window.addEventListener('team_names_updated', handleUpdate);
+    return () => window.removeEventListener('team_names_updated', handleUpdate);
+  }, []);
+
+  const handleOpenEditNames = () => {
+    const current = getStoredTeamNames();
+    setEditTatiana(current.tatiana);
+    setEditGabriela(current.gabriela);
+    setEditPaola(current.paola);
+    setShowEditNamesModal(true);
+  };
+
+  const handleSaveTeamNames = (e: React.FormEvent) => {
+    e.preventDefault();
+    const updated = saveStoredTeamNames({
+      tatiana: editTatiana,
+      gabriela: editGabriela,
+      paola: editPaola
+    });
+    if (updated) {
+      setTeamNames(updated);
+    }
+    setShowEditNamesModal(false);
+    Swal.fire({
+      icon: 'success',
+      title: 'Nombres Actualizados',
+      text: 'Los nombres del equipo han sido guardados correctamente.',
+      timer: 1500,
+      showConfirmButton: false
+    });
+  };
 
   // Estado de actividades
   const [notices, setNotices] = useState<SafetyNotice[]>([]);
@@ -629,27 +677,36 @@ export default function ModuloAvisosCronograma() {
             </span>
           </div>
           <h2 className="text-lg sm:text-xl font-black tracking-tight text-slate-900 mt-1">
-            Cronograma de Actividades, Avisos y Actas de Reunión
+            Cronograma de Actividades y Actas de Reunión
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Planificación de inspecciones, reuniones de los lunes y seguimiento de tareas en ENDE DEORURO.
+            Planificación de inspecciones, reuniones semanales y seguimiento de tareas en ENDE DEORURO.
           </p>
 
           {/* Leyenda de Colores Oficial de las Integrantes */}
           <div className="flex flex-wrap items-center gap-2 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-bold">
             <span className="text-slate-400 text-[10px] uppercase font-semibold">Integrantes:</span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-rose-500"></span> Tatiana (Rosita)
+              <span className="w-2 h-2 rounded-full bg-rose-500"></span> {teamNames.tatiana} &bull; Rosa
             </span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-sky-500"></span> Paola (Celeste)
+              <span className="w-2 h-2 rounded-full bg-sky-500"></span> {teamNames.paola} &bull; Celeste
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 border border-red-200 text-red-700 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-red-500"></span> Gabriela (Rojo)
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-800 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-orange-500"></span> {teamNames.gabriela} &bull; Naranja
             </span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-amber-500"></span> Equipo (Dorado ENDE)
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span> Equipo &bull; Dorado
             </span>
+            <button
+              type="button"
+              onClick={handleOpenEditNames}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-[#002f6c] text-[10px] font-extrabold border border-slate-300 transition cursor-pointer ml-1"
+              title="Completar apellidos o modificar nombres del equipo"
+            >
+              <Edit3 className="w-3 h-3 text-[#002f6c]" />
+              <span>Editar Nombres</span>
+            </button>
           </div>
         </div>
 
@@ -675,7 +732,7 @@ export default function ModuloAvisosCronograma() {
         </div>
       </div>
 
-      {/* SELECTOR SUPERIOR DE VISTAS (OPCIÓN A) */}
+      {/* SELECTOR SUPERIOR DE VISTAS (SOLO CALENDARIO Y ACTAS) */}
       <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <button
@@ -687,19 +744,7 @@ export default function ModuloAvisosCronograma() {
             }`}
           >
             <Calendar className="w-4 h-4 text-amber-400" />
-            <span>Calendario Mensual (Colores)</span>
-          </button>
-
-          <button
-            onClick={() => setActiveView('cards')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs transition cursor-pointer ${
-              activeView === 'cards'
-                ? 'bg-[#002f6c] text-white shadow-md'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            <Layers className="w-4 h-4 text-amber-400" />
-            <span>Tablero de Avisos ({notices.length})</span>
+            <span>Calendario de Actividades</span>
           </button>
 
           <button
@@ -776,10 +821,10 @@ export default function ModuloAvisosCronograma() {
                 className="text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-600 w-full md:w-auto"
               >
                 <option value="Todas">Mostrar a todas (Equipo completo)</option>
-                <option value="Tatiana Torres">Solo Tatiana (Rosita)</option>
-                <option value="Paola">Solo Paola (Celeste)</option>
-                <option value="Gabriela">Solo Gabriela (Rojo)</option>
-                <option value="Todas / Equipo">Solo Equipo (Dorado ENDE)</option>
+                <option value={teamNames.tatiana}>Solo {teamNames.tatiana} - Rosa</option>
+                <option value={teamNames.paola}>Solo {teamNames.paola} - Celeste</option>
+                <option value={teamNames.gabriela}>Solo {teamNames.gabriela} - Naranja</option>
+                <option value="Todas / Equipo">Solo Equipo - Dorado</option>
               </select>
             </div>
           </div>
@@ -878,159 +923,7 @@ export default function ModuloAvisosCronograma() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* VISTA 2: TABLERO DE AVISOS (TARJETAS TRADICIONALES)       */}
-      {/* ========================================================= */}
-      {activeView === 'cards' && (
-        <div className="space-y-4">
-          {/* Métricas y Filtros */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-              <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase">Actividades Pendientes</p>
-                <p className="text-2xl font-black font-mono text-slate-900">{pendingCount}</p>
-              </div>
-            </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase">Completadas</p>
-                <p className="text-2xl font-black font-mono text-slate-900">{completedCount}</p>
-              </div>
-            </div>
-
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center gap-1.5">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase">
-                <Filter className="w-3.5 h-3.5 text-slate-400" />
-                <span>Filtrar por Área / Responsable:</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <select
-                  value={filterCategory}
-                  onChange={(e) => setFilterCategory(e.target.value)}
-                  className="text-xs font-bold bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 focus:outline-none"
-                >
-                  <option value="Todas">Todas las categorías</option>
-                  <option value="Recepción Agua">Recepción Agua</option>
-                  <option value="Entrega EPP">Entrega EPP</option>
-                  <option value="Inspección">Inspección</option>
-                  <option value="Reunión">Reunión</option>
-                  <option value="Auditoría">Auditoría</option>
-                  <option value="General">General</option>
-                </select>
-
-                <select
-                  value={filterResponsible}
-                  onChange={(e) => setFilterResponsible(e.target.value)}
-                  className="text-xs font-bold bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 focus:outline-none"
-                >
-                  <option value="Todas">Todo el equipo</option>
-                  <option value="Tatiana Torres">Tatiana (Rosita)</option>
-                  <option value="Paola">Paola (Celeste)</option>
-                  <option value="Gabriela">Gabriela (Rojo)</option>
-                  <option value="Todas / Equipo">Equipo (Dorado)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Tarjetas */}
-          {filteredNotices.length === 0 ? (
-            <div className="text-center py-14 text-slate-400 text-xs font-bold border-2 border-dashed border-slate-200 rounded-2xl bg-white">
-              No hay actividades registradas con los filtros seleccionados.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredNotices.map((notice) => {
-                const theme = getMemberColorTheme(notice.responsible);
-                const isPast = new Date(notice.date + 'T23:59:59') < new Date() && !notice.completed;
-
-                return (
-                  <div
-                    key={notice.id}
-                    className={`bg-white rounded-2xl border p-4 shadow-sm flex flex-col justify-between space-y-3 transition ${
-                      notice.completed 
-                        ? 'border-emerald-200 bg-emerald-50/20' 
-                        : isPast 
-                        ? 'border-amber-300 bg-amber-50/20' 
-                        : `${theme.cardBorder}`
-                    }`}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border bg-slate-100 text-slate-800 border-slate-200 truncate max-w-[130px]">
-                          {notice.category}
-                        </span>
-
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                          notice.priority === 'Alta' 
-                            ? 'bg-red-100 text-red-700' 
-                            : notice.priority === 'Media' 
-                            ? 'bg-amber-100 text-amber-800' 
-                            : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {notice.priority}
-                        </span>
-                      </div>
-
-                      <h4 className={`text-sm font-extrabold ${notice.completed ? 'line-through text-slate-400' : 'text-slate-900'}`}>
-                        {notice.title}
-                      </h4>
-
-                      {notice.notes && (
-                        <p className="text-xs text-slate-600 leading-snug">
-                          {notice.notes}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-100 space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-slate-500 font-medium text-[11px]">
-                        <span className="flex items-center gap-1 font-mono font-bold text-slate-800">
-                          <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                          {notice.date}
-                        </span>
-                        <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black border ${theme.badge}`}>
-                          <User className="w-3 h-3" />
-                          {notice.responsible}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-center pt-1">
-                        <button
-                          onClick={() => handleToggleComplete(notice.id)}
-                          className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg transition cursor-pointer ${
-                            notice.completed 
-                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' 
-                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                          }`}
-                        >
-                          <Check className="w-3 h-3" />
-                          <span>{notice.completed ? 'Realizado' : 'Marcar Hecho'}</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleDelete(notice.id, notice.title)}
-                          className="p-1 text-slate-400 hover:text-red-600 transition cursor-pointer"
-                          title="Eliminar actividad"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ========================================================= */}
       {/* VISTA 3: ACTAS DE REUNIÓN SEMANAL (LOS LUNES)             */}
@@ -1228,10 +1121,10 @@ export default function ModuloAvisosCronograma() {
                     onChange={(e) => setResponsible(e.target.value)}
                     className="w-full border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-900 bg-white focus:outline-none focus:border-blue-600"
                   >
-                    <option value="Tatiana Torres">Tatiana Torres (Rosita)</option>
-                    <option value="Paola">Paola (Celeste)</option>
-                    <option value="Gabriela">Gabriela (Rojo)</option>
-                    <option value="Todas / Equipo">Todas / Equipo (Dorado ENDE)</option>
+                    <option value={teamNames.tatiana}>{teamNames.tatiana} - Rosa</option>
+                    <option value={teamNames.paola}>{teamNames.paola} - Celeste</option>
+                    <option value={teamNames.gabriela}>{teamNames.gabriela} - Naranja</option>
+                    <option value="Todas / Equipo">Todas / Equipo - Dorado</option>
                   </select>
                 </div>
 
@@ -1580,7 +1473,7 @@ export default function ModuloAvisosCronograma() {
                   Asistentes Convocadas
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {['Tatiana Torres', 'Gabriela', 'Paola'].map((name) => {
+                  {[teamNames.tatiana, teamNames.gabriela, teamNames.paola].map((name) => {
                     const isChecked = minuteAttendees.includes(name);
                     const theme = getMemberColorTheme(name);
                     return (
@@ -1654,10 +1547,10 @@ export default function ModuloAvisosCronograma() {
                         onChange={(e) => handleUpdateAgreementRow(idx, 'responsible', e.target.value)}
                         className="bg-white border border-slate-300 rounded-lg px-2 py-1.5 font-bold text-slate-800 text-xs focus:outline-none focus:border-blue-600"
                       >
-                        <option value="Tatiana Torres">Tatiana (Rosita)</option>
-                        <option value="Paola">Paola (Celeste)</option>
-                        <option value="Gabriela">Gabriela (Rojo)</option>
-                        <option value="Todas / Equipo">Equipo (Dorado)</option>
+                        <option value={teamNames.tatiana}>{teamNames.tatiana} - Rosa</option>
+                        <option value={teamNames.paola}>{teamNames.paola} - Celeste</option>
+                        <option value={teamNames.gabriela}>{teamNames.gabriela} - Naranja</option>
+                        <option value="Todas / Equipo">Todas / Equipo - Dorado</option>
                       </select>
 
                       <input
@@ -1720,25 +1613,26 @@ export default function ModuloAvisosCronograma() {
       {/* MODAL: VER / IMPRIMIR ACTA DE REUNIÓN FORMAL              */}
       {/* ========================================================= */}
       {printingMinute && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in overflow-y-auto">
-          <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-slate-300 overflow-hidden my-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-2 sm:p-4 md:p-6 animate-in fade-in overflow-y-auto">
+          <div className="bg-white w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-300 overflow-hidden my-auto">
             
             {/* Barra de herramientas para imprimir (No sale en papel) */}
-            <div className="bg-slate-900 text-white p-4 flex justify-between items-center print:hidden">
+            <div className="bg-slate-900 text-white p-3 sm:p-4 flex flex-wrap justify-between items-center gap-2 print:hidden shrink-0 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <Printer className="w-5 h-5 text-amber-400" />
+                <Printer className="w-5 h-5 text-amber-400 shrink-0" />
                 <span className="text-xs font-black">Vista Previa de Impresión Oficial - ENDE DEORURO</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => window.print()}
-                  className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs px-4 py-2 rounded-xl shadow transition cursor-pointer"
+                  className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs px-4 py-2 rounded-xl shadow transition cursor-pointer flex items-center gap-1.5"
                 >
-                  Imprimir Documento
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Imprimir Documento</span>
                 </button>
                 <button
                   onClick={() => setPrintingMinute(null)}
-                  className="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition cursor-pointer"
+                  className="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition cursor-pointer"
                 >
                   Cerrar
                 </button>
@@ -1746,7 +1640,7 @@ export default function ModuloAvisosCronograma() {
             </div>
 
             {/* DOCUMENTO OFICIAL FORMAL (LISTO PARA IMPRIMIR) */}
-            <div className="p-8 sm:p-12 space-y-6 text-slate-900 font-serif">
+            <div className="p-4 sm:p-8 md:p-10 space-y-6 text-slate-900 font-serif overflow-y-auto flex-1 print:p-0 print:overflow-visible">
               {/* Membrete con Logo oficial de ENDE DEORURO */}
               <div className="flex justify-between items-center border-b-2 border-[#002f6c] pb-4">
                 <img 
@@ -1800,26 +1694,28 @@ export default function ModuloAvisosCronograma() {
                 <h4 className="font-sans text-[11px] font-black uppercase text-[#002f6c] tracking-wider">
                   2. ACUERDOS Y COMPROMISOS ASIGNADOS PARA LA SEMANA
                 </h4>
-                <table className="w-full text-left border-collapse border border-slate-300 font-sans text-xs">
-                  <thead>
-                    <tr className="bg-slate-100 text-slate-800 font-black">
-                      <th className="border border-slate-300 p-2.5 w-10 text-center">N°</th>
-                      <th className="border border-slate-300 p-2.5">Descripción de la Tarea / Compromiso</th>
-                      <th className="border border-slate-300 p-2.5 w-44">Responsable</th>
-                      <th className="border border-slate-300 p-2.5 w-32 text-center">Fecha Límite</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {printingMinute.agreements.map((agr, idx) => (
-                      <tr key={idx} className="border-b border-slate-200">
-                        <td className="border border-slate-300 p-2.5 text-center font-bold">{idx + 1}</td>
-                        <td className="border border-slate-300 p-2.5 font-bold text-slate-900">{agr.task}</td>
-                        <td className="border border-slate-300 p-2.5 font-semibold text-slate-800">{agr.responsible}</td>
-                        <td className="border border-slate-300 p-2.5 font-mono text-center font-bold text-slate-700">{agr.deadline}</td>
+                <div className="overflow-x-auto rounded-xl border border-slate-300">
+                  <table className="w-full text-left border-collapse font-sans text-xs">
+                    <thead>
+                      <tr className="bg-slate-100 text-slate-800 font-black">
+                        <th className="border border-slate-300 p-2.5 w-10 text-center">N°</th>
+                        <th className="border border-slate-300 p-2.5">Descripción de la Tarea / Compromiso</th>
+                        <th className="border border-slate-300 p-2.5 w-44">Responsable</th>
+                        <th className="border border-slate-300 p-2.5 w-32 text-center">Fecha Límite</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {printingMinute.agreements.map((agr, idx) => (
+                        <tr key={idx} className="border-b border-slate-200">
+                          <td className="border border-slate-300 p-2.5 text-center font-bold">{idx + 1}</td>
+                          <td className="border border-slate-300 p-2.5 font-bold text-slate-900">{agr.task}</td>
+                          <td className="border border-slate-300 p-2.5 font-semibold text-slate-800">{agr.responsible}</td>
+                          <td className="border border-slate-300 p-2.5 font-mono text-center font-bold text-slate-700">{agr.deadline}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Conclusiones */}
@@ -1835,33 +1731,123 @@ export default function ModuloAvisosCronograma() {
               )}
 
               {/* Firmas de Conformidad */}
-              <div className="pt-10 font-sans">
+              <div className="pt-8 font-sans">
                 <p className="text-center text-[10px] uppercase font-bold text-slate-500 mb-8">
                   En señal de conformidad y coordinación mutua, suscriben las participantes:
                 </p>
 
-                <div className="grid grid-cols-3 gap-6 text-center text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center text-xs">
                   <div className="border-t border-slate-400 pt-2">
-                    <p className="font-black text-slate-900">Tatiana Torres</p>
-                    <p className="text-[10px] text-slate-600">Supervisión Seguridad Industrial</p>
-                    <p className="text-[9px] text-slate-400 font-mono">ENDE DEORURO</p>
+                    <p className="font-black text-slate-900">{teamNames.tatiana}</p>
+                    <p className="text-[10px] text-slate-600 font-mono">ENDE DEORURO</p>
                   </div>
 
                   <div className="border-t border-slate-400 pt-2">
-                    <p className="font-black text-slate-900">Gabriela</p>
-                    <p className="text-[10px] text-slate-600">Seguridad Industrial</p>
-                    <p className="text-[9px] text-slate-400 font-mono">ENDE DEORURO</p>
+                    <p className="font-black text-slate-900">{teamNames.gabriela}</p>
+                    <p className="text-[10px] text-slate-600 font-mono">ENDE DEORURO</p>
                   </div>
 
                   <div className="border-t border-slate-400 pt-2">
-                    <p className="font-black text-slate-900">Paola</p>
-                    <p className="text-[10px] text-slate-600">Salud Ocupacional</p>
-                    <p className="text-[9px] text-slate-400 font-mono">ENDE DEORURO</p>
+                    <p className="font-black text-slate-900">{teamNames.paola}</p>
+                    <p className="text-[10px] text-slate-600 font-mono">ENDE DEORURO</p>
                   </div>
                 </div>
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: EDITAR / COMPLETAR NOMBRES DEL EQUIPO              */}
+      {/* ========================================================= */}
+      {showEditNamesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden">
+            <div className="bg-gradient-to-r from-[#001e47] via-[#002f6c] to-[#001530] text-white p-5 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Edit3 className="w-5 h-5 text-amber-400" />
+                <h3 className="font-black text-sm tracking-wide">Editar Nombres del Equipo</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEditNamesModal(false)}
+                className="text-white/70 hover:text-white p-1 rounded-lg text-lg leading-none cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTeamNames} className="p-6 space-y-4 text-xs font-sans">
+              <p className="text-slate-600 font-medium">
+                Aquí puedes completar los apellidos o editar los nombres de cada integrante para que se muestren en el cronograma, actas y firmas oficiales.
+              </p>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black uppercase text-rose-700 flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+                  Nombre de Tatiana • Rosa:
+                </label>
+                <input
+                  type="text"
+                  value={editTatiana}
+                  onChange={(e) => setEditTatiana(e.target.value)}
+                  placeholder="Ej: Tatiana Torres"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800 text-xs focus:outline-none focus:border-rose-500 focus:bg-white"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black uppercase text-orange-700 flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block"></span>
+                  Nombre de Gabriela • Naranja:
+                </label>
+                <input
+                  type="text"
+                  value={editGabriela}
+                  onChange={(e) => setEditGabriela(e.target.value)}
+                  placeholder="Ej: Gabriela Apellido..."
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800 text-xs focus:outline-none focus:border-orange-500 focus:bg-white"
+                  required
+                />
+                <span className="text-[10px] text-slate-400 font-medium block">
+                  Puedes completar su apellido aquí.
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black uppercase text-sky-700 flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block"></span>
+                  Nombre de Paola • Celeste:
+                </label>
+                <input
+                  type="text"
+                  value={editPaola}
+                  onChange={(e) => setEditPaola(e.target.value)}
+                  placeholder="Ej: Paola Apellido..."
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800 text-xs focus:outline-none focus:border-sky-500 focus:bg-white"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setShowEditNamesModal(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 font-bold rounded-xl transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-[#002f6c] hover:bg-blue-900 text-white font-black rounded-xl shadow transition cursor-pointer"
+                >
+                  Guardar Nombres
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
