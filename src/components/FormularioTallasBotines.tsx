@@ -209,15 +209,15 @@ export default function FormularioTallasBotines({
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans antialiased">
       
-      {/* HEADER PRINCIPAL */}
-      <header className="bg-slate-900 text-white border-b-4 border-blue-600 shadow-md sticky top-0 z-50 print:hidden">
+      {/* HEADER PRINCIPAL ENDE DEORURO */}
+      <header className="bg-slate-950 text-white border-b-2 border-amber-400/80 shadow-md sticky top-0 z-50 print:hidden">
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
           
           <div className="flex items-center gap-3 w-full sm:w-auto">
             {onBackToMainApp && (
               <button 
                 onClick={onBackToMainApp}
-                className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition border border-slate-700 flex items-center justify-center shrink-0"
+                className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition border border-slate-700 flex items-center justify-center shrink-0 cursor-pointer"
                 title="Volver al Panel Principal"
               >
                 <ArrowLeft className="w-5 h-5 text-white" />
@@ -225,17 +225,19 @@ export default function FormularioTallasBotines({
             )}
 
             <div className="flex items-center gap-3">
-              <img 
-                src="/logo-ende.png" 
-                alt="ENDE DEORURO" 
-                className="h-11 sm:h-12 w-auto object-contain"
-              />
+              <div className="bg-white/95 p-2 rounded-xl shadow-md border border-white/60">
+                <img 
+                  src="/logo_ende_deoruro.png" 
+                  alt="ENDE DEORURO" 
+                  className="h-10 w-auto object-contain"
+                />
+              </div>
               <div>
                 <h1 className="text-base sm:text-xl font-black tracking-tight text-white uppercase">
                   ENDE DEORURO
                 </h1>
-                <p className="text-xs sm:text-sm text-blue-400 font-black uppercase tracking-wide flex items-center gap-1.5">
-                  <Footprints className="w-4 h-4 text-blue-400" />
+                <p className="text-xs sm:text-sm text-amber-400 font-black uppercase tracking-wide flex items-center gap-1.5">
+                  <Footprints className="w-4 h-4 text-amber-400" />
                   Registro de Tallas de Botines de Seguridad
                 </p>
               </div>

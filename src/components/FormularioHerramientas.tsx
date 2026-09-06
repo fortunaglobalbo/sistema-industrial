@@ -356,15 +356,15 @@ export default function FormularioHerramientas({
 
             <div className="flex items-center gap-3">
               <img 
-                src="/logo-ende.png" 
+                src="/logo_ende_deoruro.png" 
                 alt="ENDE DEORURO" 
                 className="h-11 sm:h-12 w-auto object-contain"
               />
               <div>
-                <h1 className="text-base sm:text-xl font-black tracking-tight text-slate-900 uppercase">
+                <h1 className="text-base sm:text-xl font-black tracking-tight text-[#002f6c] uppercase">
                   ENDE DEORURO
                 </h1>
-                <p className="text-xs sm:text-sm text-blue-700 font-black uppercase tracking-wide">
+                <p className="text-xs sm:text-sm text-[#003876] font-black uppercase tracking-wide">
                   Requerimiento Masivo de Herramientas
                 </p>
               </div>

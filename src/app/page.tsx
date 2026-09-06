@@ -309,102 +309,123 @@ export default function Home() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-950 px-4 font-sans antialiased">
-        <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-2xl max-w-md w-full text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="p-4 bg-blue-600/10 text-blue-500 rounded-full border border-blue-500/20 shadow-inner">
-              <Lock className="w-8 h-8" />
-            </div>
-          </div>
+      <div 
+        className="relative flex items-center justify-center min-h-screen px-4 font-sans antialiased bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/banner_subestacion.png)' }}
+      >
+        {/* Overlay con degradado azul marino oficial ENDE */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#001e47]/95 via-[#002f6c]/90 to-slate-950/95 backdrop-blur-[2px]" />
+
+        <div className="relative bg-slate-900/90 p-6 sm:p-8 rounded-3xl border border-blue-400/30 shadow-2xl max-w-md w-full text-center space-y-6 backdrop-blur-xl">
           
-          <div>
-            <h2 className="text-xl font-black text-white tracking-tight uppercase">Acceso Autorizado</h2>
-            <p className="text-xs text-slate-400 mt-1 font-medium">Seguridad Industrial y Salud Ocupacional</p>
-            
-            {/* Etiquetas de las tres compañeras */}
-            <div className="flex flex-wrap justify-center gap-2 mt-3">
+          {/* Logo oficial ENDE DEORURO */}
+          <div className="flex flex-col items-center justify-center gap-2">
+            <div className="bg-white/95 p-3 rounded-2xl shadow-xl border border-white/60 inline-block">
+              <img 
+                src="/logo_ende_deoruro.png" 
+                alt="ENDE DEORURO" 
+                className="h-12 sm:h-14 w-auto object-contain"
+              />
+            </div>
+            <div className="mt-2">
+              <span className="text-[10px] font-black tracking-widest uppercase bg-amber-400/20 text-amber-300 px-3 py-1 rounded-full border border-amber-400/40 inline-block">
+                Seguridad Industrial y Salud Ocupacional
+              </span>
+              <h2 className="text-xl font-black text-white tracking-tight uppercase mt-2">
+                Acceso al Sistema
+              </h2>
+              <p className="text-xs text-slate-300 font-medium">
+                Seleccione su usuario o ingrese su PIN de acceso
+              </p>
+            </div>
+
+            {/* Acceso Rápido por Colega con sus colores */}
+            <div className="flex flex-wrap justify-center gap-2 mt-2">
               <button
                 type="button"
                 onClick={() => setPinInput('7526197')}
-                className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-700/50 transition cursor-pointer"
+                className="text-[10px] font-extrabold px-3 py-1.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-500/60 transition cursor-pointer shadow-sm flex items-center gap-1.5"
                 title="PIN: 7526197"
               >
-                Tatiana Torres
+                <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span>
+                <span>Tatiana Torres</span>
               </button>
               <button
                 type="button"
                 onClick={() => setPinInput('1010')}
-                className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-700/50 transition cursor-pointer"
+                className="text-[10px] font-extrabold px-3 py-1.5 rounded-xl bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-500/60 transition cursor-pointer shadow-sm flex items-center gap-1.5"
                 title="PIN: 1010"
               >
-                Gabriela
+                <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
+                <span>Gabriela</span>
               </button>
               <button
                 type="button"
                 onClick={() => setPinInput('1212')}
-                className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-sky-950/60 hover:bg-sky-900/80 text-sky-300 border border-sky-700/50 transition cursor-pointer"
+                className="text-[10px] font-extrabold px-3 py-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 text-sky-200 border border-sky-500/60 transition cursor-pointer shadow-sm flex items-center gap-1.5"
                 title="PIN: 1212"
               >
-                Paola
+                <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+                <span>Paola</span>
               </button>
             </div>
           </div>
 
           {loginError && (
-            <div className="bg-red-950/40 text-red-400 border border-red-900/50 rounded-xl p-3 text-xs font-semibold">
+            <div className="bg-red-950/60 text-red-300 border border-red-800/80 rounded-xl p-3 text-xs font-semibold">
               {loginError}
             </div>
           )}
 
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div className="relative">
-              <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-400" />
               <input
                 type="password"
-                placeholder="Ingrese su PIN de 4 a 7 dígitos..."
+                placeholder="Ingrese su PIN de acceso..."
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
-                className="w-full text-center tracking-widest text-lg font-bold border border-slate-700 bg-slate-800/50 hover:bg-slate-800 rounded-xl pl-10 pr-3 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition text-white"
+                className="w-full text-center tracking-widest text-lg font-bold border border-slate-700 bg-slate-800/70 hover:bg-slate-800 rounded-xl pl-10 pr-3 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition text-white placeholder:text-slate-500"
                 autoFocus
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm py-3 px-4 rounded-xl shadow-lg transition"
+              className="w-full bg-gradient-to-r from-[#003876] to-[#002f6c] hover:from-[#004b93] hover:to-[#003876] text-white font-black text-sm py-3 px-4 rounded-xl shadow-lg shadow-blue-950/50 transition border border-amber-400/40 cursor-pointer"
             >
-              Ingresar al Sistema
+              Ingresar al Sistema ENDE
             </button>
           </form>
 
           <div className="pt-3 border-t border-slate-800 space-y-2">
             <Link
               href="/registros"
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-lg transition border border-indigo-400/30"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#002f6c] to-[#003876] hover:from-[#003876] hover:to-[#004b93] text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md transition border border-white/10"
             >
               <FileText className="w-4 h-4 text-amber-300" />
               <span>Registro de CITES (Clave: 1346)</span>
             </Link>
             <Link
               href="/formulario"
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-lg transition border border-blue-400/30"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#002f6c] to-[#003876] hover:from-[#003876] hover:to-[#004b93] text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md transition border border-white/10"
             >
               <Wrench className="w-4 h-4 text-amber-300" />
               <span>Formulario Requerimiento Herramientas</span>
             </Link>
             <Link
               href="/tallas"
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-500 hover:to-blue-600 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-lg transition border border-indigo-400/30"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#002f6c] to-[#003876] hover:from-[#003876] hover:to-[#004b93] text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md transition border border-white/10"
             >
               <Footprints className="w-4 h-4 text-emerald-400" />
               <span>Formulario Tallas de Botines</span>
             </Link>
-            <p className="text-[10px] text-slate-500 font-medium">
-              Acceso directo para personal autorizado y técnicos
+            <p className="text-[10px] text-slate-400 font-medium">
+              Acceso institucional para personal técnico y jefatura
             </p>
           </div>
 
-          <p className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">
-            Seguridad e Higiene Industrial v1.0
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+            ENDE DEORURO S.A. &copy; 2026
           </p>
         </div>
       </div>
@@ -415,49 +436,95 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 font-sans antialiased">
       
-      {/* Header Institucional (Oculto en Impresión) */}
-      <header className="bg-slate-900 text-white border-b border-slate-800 shadow-sm print:hidden">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-600 rounded-xl shadow-inner">
-              <ShieldCheck className="w-6 h-6 text-white" />
+      {/* Header Institucional ENDE DEORURO con Subestación y Logo Oficial (Oculto en Impresión) */}
+      <header className="relative bg-slate-950 text-white border-b-2 border-amber-400/70 shadow-xl overflow-hidden print:hidden">
+        {/* Foto de fondo de subestación eléctrica */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40 scale-105 pointer-events-none"
+          style={{ backgroundImage: 'url(/banner_subestacion.png)' }}
+        />
+        {/* Overlay con degradado azul marino corporativo ENDE */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#001e47]/95 via-[#002f6c]/90 to-[#001530]/95 pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto px-4 py-3 sm:py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3.5 w-full lg:w-auto justify-between lg:justify-start">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/95 p-2 sm:p-2.5 rounded-2xl shadow-lg border border-white/60 shrink-0">
+                <img 
+                  src="/logo_ende_deoruro.png" 
+                  alt="ENDE DEORURO" 
+                  className="h-9 sm:h-11 w-auto object-contain"
+                />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-black tracking-widest uppercase bg-amber-400/25 text-amber-300 px-2 py-0.5 rounded-full border border-amber-400/40">
+                    ENDE DEORURO
+                  </span>
+                  <span className="text-[9px] text-blue-200/80 font-bold uppercase tracking-wider hidden sm:inline">
+                    Filial de ENDE Corporación
+                  </span>
+                </div>
+                <h1 className="text-base sm:text-lg font-black tracking-wide text-white uppercase mt-0.5">
+                  Seguridad Industrial y Salud Ocupacional
+                </h1>
+                <p className="text-[11px] text-blue-200/90 font-medium hidden sm:block">
+                  Control de EPP, Actas de Reunión, Herramientas, Extintores, Agua y Cronograma
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-extrabold tracking-wide uppercase">ENDE ORURO</h1>
-              <p className="text-xs text-slate-400 font-semibold">Sistema de Seguridad Industrial y Control de EPP</p>
-            </div>
+
+            {/* Badge de usuaria activa en vista móvil */}
+            {currentUser && (
+              <div className={`lg:hidden flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs font-black shadow-sm ${
+                currentUser.color === 'rose'
+                  ? 'bg-rose-950/80 border-rose-500/50 text-rose-200'
+                  : currentUser.color === 'sky'
+                  ? 'bg-sky-950/80 border-sky-500/50 text-sky-200'
+                  : currentUser.color === 'red'
+                  ? 'bg-red-950/80 border-red-500/50 text-red-200'
+                  : 'bg-amber-950/80 border-amber-500/50 text-amber-200'
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${
+                  currentUser.color === 'rose' ? 'bg-rose-400' :
+                  currentUser.color === 'sky' ? 'bg-sky-400' :
+                  currentUser.color === 'red' ? 'bg-red-400' : 'bg-amber-400'
+                } animate-pulse`}></span>
+                <span>{currentUser.shortName}</span>
+              </div>
+            )}
           </div>
           
-          <div className="flex flex-wrap items-center gap-2.5 text-xs font-semibold">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs font-semibold w-full lg:w-auto justify-end">
             <Link
               href="/registros"
-              className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-lg transition border border-indigo-400/30"
+              className="flex items-center gap-1.5 bg-[#003876]/80 hover:bg-[#004b93] text-white font-extrabold px-3 py-2 rounded-xl shadow-md transition border border-white/20 hover:border-amber-400/60"
               title="Abrir Registro de CITES con PIN 1346"
             >
-              <FileText className="w-4 h-4 text-amber-300" />
-              <span>Registro de CITES (1346)</span>
+              <FileText className="w-3.5 h-3.5 text-amber-300" />
+              <span>CITES (1346)</span>
             </Link>
 
             <Link
               href="/formulario"
-              className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-lg transition border border-blue-400/30"
+              className="flex items-center gap-1.5 bg-[#003876]/80 hover:bg-[#004b93] text-white font-extrabold px-3 py-2 rounded-xl shadow-md transition border border-white/20 hover:border-amber-400/60"
               title="Abrir Formulario de Requerimiento de Herramientas para Técnicos"
             >
-              <Wrench className="w-4 h-4 text-amber-300" />
+              <Wrench className="w-3.5 h-3.5 text-amber-300" />
               <span>Herramientas</span>
             </Link>
 
             <Link
               href="/tallas"
-              className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-500 hover:to-blue-600 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-lg transition border border-indigo-400/30"
+              className="flex items-center gap-1.5 bg-[#003876]/80 hover:bg-[#004b93] text-white font-extrabold px-3 py-2 rounded-xl shadow-md transition border border-white/20 hover:border-amber-400/60"
               title="Abrir Formulario de Registro de Tallas de Botines"
             >
-              <Footprints className="w-4 h-4 text-emerald-400" />
+              <Footprints className="w-3.5 h-3.5 text-emerald-300" />
               <span>Tallas Botines</span>
             </Link>
 
             {currentUser && (
-              <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-black shadow-sm ${
+              <div className={`hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-black shadow-md ${
                 currentUser.color === 'rose'
                   ? 'bg-rose-950/80 border-rose-500/50 text-rose-200'
                   : currentUser.color === 'sky'
@@ -478,7 +545,7 @@ export default function Home() {
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1 bg-red-950/20 hover:bg-red-900/40 text-red-400 border border-red-950 hover:border-red-900/50 px-3 py-2 rounded-xl transition cursor-pointer"
+              className="flex items-center gap-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 hover:border-red-400/60 px-3 py-2 rounded-xl transition cursor-pointer font-bold"
               title="Cerrar sesión / Cambiar de usuario"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -515,81 +582,122 @@ export default function Home() {
           /* Dashboard Principal con Tabulación */
           <div className="space-y-6">
             
-            {/* Título y Barra de Navegación del Dashboard */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            {/* Título y Barra de Navegación del Dashboard ENDE DEORURO */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
               <div>
-                <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                    Módulo Activo
+                  </span>
+                </div>
+                <h2 className="text-xl font-black text-[#002f6c] tracking-tight">
                   {tabTitles[activeTab]?.title || 'Panel de Salud y Seguridad Industrial'}
                 </h2>
-                <p className="text-xs text-slate-500 mt-1 font-medium">
+                <p className="text-xs text-slate-500 font-medium">
                   {tabTitles[activeTab]?.subtitle || 'Gestión de dotaciones a personal nuevo, entregas, devoluciones, desuso y herramientas.'}
                 </p>
               </div>
 
-              {/* Botones de Pestañas */}
-              <div className="flex flex-wrap p-1 bg-slate-100 rounded-xl border border-slate-200 w-full md:w-auto gap-1">
+              {/* Botones de Pestañas Corporativas */}
+              <div className="flex flex-wrap p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/90 w-full xl:w-auto gap-1 shadow-inner">
                 <button
                   onClick={() => setActiveTab('new')}
-                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'new' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-xl transition cursor-pointer ${
+                    activeTab === 'new' 
+                      ? 'bg-[#002f6c] text-white font-black shadow-md border-b-2 border-amber-400' 
+                      : 'text-slate-700 hover:text-[#002f6c] hover:bg-white/80 font-bold'
+                  }`}
                 >
-                  <PlusCircle className="w-4 h-4 text-blue-600" />
-                  Registrar Acta
+                  <PlusCircle className={`w-4 h-4 ${activeTab === 'new' ? 'text-amber-400' : 'text-blue-700'}`} />
+                  <span>Registrar Acta</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('history')}
-                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'history' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-xl transition cursor-pointer ${
+                    activeTab === 'history' 
+                      ? 'bg-[#002f6c] text-white font-black shadow-md border-b-2 border-amber-400' 
+                      : 'text-slate-700 hover:text-[#002f6c] hover:bg-white/80 font-bold'
+                  }`}
                 >
-                  <History className="w-4 h-4 text-blue-600" />
-                  Historial Actas EPP
+                  <History className={`w-4 h-4 ${activeTab === 'history' ? 'text-amber-400' : 'text-blue-700'}`} />
+                  <span>Historial Actas</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('toolRequests')}
-                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'toolRequests' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-xl transition cursor-pointer ${
+                    activeTab === 'toolRequests' 
+                      ? 'bg-[#002f6c] text-white font-black shadow-md border-b-2 border-amber-400' 
+                      : 'text-slate-700 hover:text-[#002f6c] hover:bg-white/80 font-bold'
+                  }`}
                 >
-                  <Wrench className="w-4 h-4 text-blue-600" />
-                  Requerimientos Herramientas
+                  <Wrench className={`w-4 h-4 ${activeTab === 'toolRequests' ? 'text-amber-400' : 'text-blue-700'}`} />
+                  <span>Herramientas</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('bootSizeRequests')}
-                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'bootSizeRequests' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-xl transition cursor-pointer ${
+                    activeTab === 'bootSizeRequests' 
+                      ? 'bg-[#002f6c] text-white font-black shadow-md border-b-2 border-amber-400' 
+                      : 'text-slate-700 hover:text-[#002f6c] hover:bg-white/80 font-bold'
+                  }`}
                 >
-                  <Footprints className="w-4 h-4 text-blue-600" />
-                  Tallas de Botines
+                  <Footprints className={`w-4 h-4 ${activeTab === 'bootSizeRequests' ? 'text-amber-400' : 'text-blue-700'}`} />
+                  <span>Tallas Botines</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('extinguishers')}
-                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'extinguishers' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-xl transition cursor-pointer ${
+                    activeTab === 'extinguishers' 
+                      ? 'bg-[#002f6c] text-white font-black shadow-md border-b-2 border-amber-400' 
+                      : 'text-slate-700 hover:text-[#002f6c] hover:bg-white/80 font-bold'
+                  }`}
                 >
-                  <Flame className="w-4 h-4 text-rose-600" />
-                  Control de Extintores
+                  <Flame className={`w-4 h-4 ${activeTab === 'extinguishers' ? 'text-amber-400' : 'text-rose-600'}`} />
+                  <span>Extintores</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('waterSupply')}
-                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'waterSupply' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-xl transition cursor-pointer ${
+                    activeTab === 'waterSupply' 
+                      ? 'bg-[#002f6c] text-white font-black shadow-md border-b-2 border-amber-400' 
+                      : 'text-slate-700 hover:text-[#002f6c] hover:bg-white/80 font-bold'
+                  }`}
                 >
-                  <Droplets className="w-4 h-4 text-blue-600" />
-                  Control de Agua
+                  <Droplets className={`w-4 h-4 ${activeTab === 'waterSupply' ? 'text-amber-400' : 'text-sky-600'}`} />
+                  <span>Control de Agua</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('cites')}
-                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'cites' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-xl transition cursor-pointer ${
+                    activeTab === 'cites' 
+                      ? 'bg-[#002f6c] text-white font-black shadow-md border-b-2 border-amber-400' 
+                      : 'text-slate-700 hover:text-[#002f6c] hover:bg-white/80 font-bold'
+                  }`}
                 >
-                  <FileText className="w-4 h-4 text-blue-600" />
-                  CITES a Gerencia
+                  <FileText className={`w-4 h-4 ${activeTab === 'cites' ? 'text-amber-400' : 'text-blue-700'}`} />
+                  <span>CITES</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('medicineKits')}
-                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'medicineKits' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-xl transition cursor-pointer ${
+                    activeTab === 'medicineKits' 
+                      ? 'bg-[#002f6c] text-white font-black shadow-md border-b-2 border-amber-400' 
+                      : 'text-slate-700 hover:text-[#002f6c] hover:bg-white/80 font-bold'
+                  }`}
                 >
-                  <HeartPulse className="w-4 h-4 text-rose-600" />
-                  Kits Medicamentos
+                  <HeartPulse className={`w-4 h-4 ${activeTab === 'medicineKits' ? 'text-amber-400' : 'text-rose-600'}`} />
+                  <span>Medicamentos</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('notices')}
-                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'notices' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-xl transition cursor-pointer ${
+                    activeTab === 'notices' 
+                      ? 'bg-[#002f6c] text-white font-black shadow-md border-b-2 border-amber-400' 
+                      : 'text-slate-700 hover:text-[#002f6c] hover:bg-white/80 font-bold'
+                  }`}
                 >
-                  <CalendarDays className="w-4 h-4 text-purple-600" />
-                  Cronograma y Avisos
+                  <CalendarDays className={`w-4 h-4 ${activeTab === 'notices' ? 'text-amber-400' : 'text-amber-600'}`} />
+                  <span>Cronograma y Avisos</span>
                 </button>
               </div>
             </div>
@@ -673,10 +781,10 @@ export default function Home() {
                             <td className="p-3 text-center flex items-center justify-center gap-1.5">
                               <button
                                 onClick={() => setManagingItemsTransactionId(t.id)}
-                                className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-1.5 rounded-lg transition shadow-sm cursor-pointer text-xs"
+                                className="flex items-center justify-center gap-1 bg-[#002f6c] hover:bg-[#003876] text-white font-bold px-2.5 py-1.5 rounded-lg transition shadow-sm cursor-pointer text-xs"
                                 title="Corregir o eliminar ítems individuales de este kit/acta sin borrar toda la transacción"
                               >
-                                <ListOrdered className="w-3.5 h-3.5" />
+                                <ListOrdered className="w-3.5 h-3.5 text-amber-300" />
                                 Ítems
                               </button>
                               <button

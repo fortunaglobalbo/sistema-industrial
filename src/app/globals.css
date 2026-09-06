@@ -3,6 +3,11 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+  --ende-blue-dark: #001e47;
+  --ende-blue: #002f6c;
+  --ende-blue-light: #004b93;
+  --ende-gold: #ffb800;
+  --ende-gold-hover: #f59e0b;
 }
 
 @theme inline {

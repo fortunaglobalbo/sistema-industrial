@@ -620,79 +620,58 @@ export default function ModuloAvisosCronograma() {
   return (
     <div className="space-y-6">
       
-      {/* ENCABEZADO PREMIUM CON SUBESTACIÓN AL ATARDECER Y LOGO ENDE DEORURO */}
-      <div className="relative overflow-hidden rounded-3xl shadow-xl border border-blue-900/30 text-white">
-        {/* Imagen de fondo con silueta de subestación */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-700 hover:scale-105"
-          style={{ backgroundImage: 'url(/banner_subestacion.png)' }}
-        />
-        {/* Overlay con degradado azul marino oficial ENDE */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#002f6c]/95 via-[#003876]/90 to-slate-950/95 backdrop-blur-[1px]" />
-
-        <div className="relative p-5 sm:p-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            {/* Logo oficial de ENDE DEORURO */}
-            <div className="bg-white/95 p-2.5 rounded-2xl shadow-lg border border-white/40 shrink-0 backdrop-blur-sm">
-              <img 
-                src="/logo_ende_deoruro.png" 
-                alt="ENDE DEORURO" 
-                className="h-10 sm:h-12 w-auto object-contain"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black tracking-widest uppercase bg-amber-400/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-400/40">
-                  Seguridad Industrial y Salud Ocupacional
-                </span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight mt-1 text-white">
-                Coordinación Semanal y Cronograma de Actividades
-              </h2>
-              <p className="text-xs text-blue-100/90 mt-0.5 max-w-2xl">
-                Planificación de inspecciones, reuniones semanales de los lunes y seguimiento de tareas de ENDE DEORURO.
-              </p>
-
-              {/* Leyenda de Colores Oficial de las Integrantes */}
-              <div className="flex flex-wrap items-center gap-2 mt-3 pt-2 border-t border-white/15 text-[11px] font-bold">
-                <span className="text-slate-300 text-[10px] uppercase font-semibold">Colores Asignados:</span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/40 text-rose-200">
-                  <span className="w-2 h-2 rounded-full bg-rose-400"></span> Tatiana (Rosita)
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-200">
-                  <span className="w-2 h-2 rounded-full bg-sky-400"></span> Paola (Celeste)
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/20 border border-red-400/40 text-red-200">
-                  <span className="w-2 h-2 rounded-full bg-red-400"></span> Gabriela (Rojo)
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200">
-                  <span className="w-2 h-2 rounded-full bg-amber-400"></span> Equipo (Dorado ENDE)
-                </span>
-              </div>
-            </div>
+      {/* BARRA DE CONTROL Y ACCIONES DEL CRONOGRAMA ENDE DEORURO */}
+      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black tracking-widest uppercase bg-blue-50 text-[#002f6c] px-2.5 py-0.5 rounded-full border border-blue-200">
+              Coordinación de Seguridad Industrial
+            </span>
           </div>
+          <h2 className="text-lg sm:text-xl font-black tracking-tight text-slate-900 mt-1">
+            Cronograma de Actividades, Avisos y Actas de Reunión
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Planificación de inspecciones, reuniones de los lunes y seguimiento de tareas en ENDE DEORURO.
+          </p>
 
-          {/* Botón de acción rápida */}
-          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-            <button
-              onClick={() => {
-                setDate(new Date().toISOString().split('T')[0]);
-                setShowModal(true);
-              }}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs px-4 py-3 rounded-2xl shadow-lg transition transform hover:scale-[1.02] cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>+ Programar Actividad</span>
-            </button>
-            <button
-              onClick={handleOpenNewMinute}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 text-white font-black text-xs px-4 py-3 rounded-2xl border border-white/30 backdrop-blur-sm transition cursor-pointer"
-            >
-              <FileText className="w-4 h-4 text-amber-300" />
-              <span>+ Acta Reunión Lunes</span>
-            </button>
+          {/* Leyenda de Colores Oficial de las Integrantes */}
+          <div className="flex flex-wrap items-center gap-2 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-bold">
+            <span className="text-slate-400 text-[10px] uppercase font-semibold">Integrantes:</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-rose-500"></span> Tatiana (Rosita)
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-sky-500"></span> Paola (Celeste)
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 border border-red-200 text-red-700 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-red-500"></span> Gabriela (Rojo)
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span> Equipo (Dorado ENDE)
+            </span>
           </div>
+        </div>
+
+        {/* Botones de acción rápida */}
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+          <button
+            onClick={() => {
+              setDate(new Date().toISOString().split('T')[0]);
+              setShowModal(true);
+            }}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-[#002f6c] hover:bg-[#003876] text-white font-black text-xs px-4 py-3 rounded-2xl shadow-md transition transform hover:scale-[1.01] cursor-pointer border border-amber-400/40"
+          >
+            <Plus className="w-4 h-4 text-amber-400" />
+            <span>+ Programar Actividad</span>
+          </button>
+          <button
+            onClick={handleOpenNewMinute}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs px-4 py-3 rounded-2xl border border-slate-700 shadow-md transition cursor-pointer"
+          >
+            <FileText className="w-4 h-4 text-amber-400" />
+            <span>+ Acta Reunión Lunes</span>
+          </button>
         </div>
       </div>
 
