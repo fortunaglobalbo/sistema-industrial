@@ -302,71 +302,6 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
     }
   };
 
-  // Desglosar medicamentos de un kit en ítems individuales en el formulario
-  const handleInsertKitItems = (kit: MedicineKitData) => {
-    if (!kit.items || kit.items.length === 0) {
-      Swal.fire({ icon: 'warning', title: 'Kit Vacío', text: 'El kit seleccionado no contiene medicamentos.' });
-      return;
-    }
-
-    const currentValues = getValues('items');
-    // Si la lista tiene solo un ítem y está vacío, eliminarlo para reemplazarlo
-    if (currentValues.length === 1 && !currentValues[0].itemName) {
-      remove(0);
-    }
-
-    kit.items.forEach((it) => {
-      append({
-        itemName: it.name,
-        category: 'Botiquines / Primeros Auxilios',
-        quantity: it.quantity,
-        conditionReason: (getValues('transactionType') === 'dotacion' ? 'nuevo' : 'desgaste_natural') as any,
-        photoUrl: null
-      });
-    });
-
-    Swal.fire({
-      icon: 'success',
-      title: 'Kit Desglosado con Éxito',
-      text: `Se agregaron los ${kit.items.length} medicamentos del "${kit.name}". Puedes ajustar cantidades o eliminar cualquier medicamento individual si hubo alguna equivocación.`,
-      timer: 3000,
-      showConfirmButton: false
-    });
-  };
-
-  // Desglosar un kit seleccionado en una fila específica
-  const handleUnpackKit = (kitName: string, rowIndex: number) => {
-    const cleanName = kitName.replace(/^Kit:\s*/i, '').trim().toLowerCase();
-    const kit = availableKits.find(
-      (k) => k.name.toLowerCase() === cleanName || k.name.toLowerCase() === kitName.toLowerCase()
-    );
-
-    if (!kit || !kit.items || kit.items.length === 0) {
-      Swal.fire({ icon: 'info', title: 'Kit no encontrado', text: 'No se encontraron los medicamentos asociados a este kit.' });
-      return;
-    }
-
-    remove(rowIndex);
-
-    kit.items.forEach((it) => {
-      append({
-        itemName: it.name,
-        category: 'Botiquines / Primeros Auxilios',
-        quantity: it.quantity,
-        conditionReason: (getValues('transactionType') === 'dotacion' ? 'nuevo' : 'desgaste_natural') as any,
-        photoUrl: null
-      });
-    });
-
-    Swal.fire({
-      icon: 'info',
-      title: 'Kit Desglosado',
-      text: `Se desglosaron los ${kit.items.length} medicamentos en filas independientes. Ahora puedes eliminar o corregir medicamentos específicos con su botón de papelera.`,
-      timer: 2500,
-      showConfirmButton: false
-    });
-  };
-
   // Agregar nuevo insumo al catálogo de almacén
   const handleCreateInventoryItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -963,28 +898,6 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                 </h3>
                 
                 <div className="flex flex-wrap items-center gap-2">
-                  {availableKits.length > 0 && (
-                    <div className="relative">
-                      <select
-                        onChange={(e) => {
-                          const kit = availableKits.find((k) => k.id === e.target.value);
-                          if (kit) handleInsertKitItems(kit);
-                          e.target.value = '';
-                        }}
-                        defaultValue=""
-                        className="text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg transition cursor-pointer"
-                        title="Desglosa todos los medicamentos del kit en filas individuales para que puedas quitar o editar los que necesites"
-                      >
-                        <option value="" disabled>+ Cargar Kit Botiquín (Desglosado)</option>
-                        {availableKits.map((k) => (
-                          <option key={k.id} value={k.id}>
-                            📦 {k.name} ({k.items?.length || 0} medicamentos)
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
                   <button
                     type="button"
                     onClick={() => append({ itemName: '', category: allCategoryNames[0] || 'EPP (Protección)', quantity: 1, conditionReason: transactionType === 'dotacion' ? 'nuevo' : 'desgaste_natural', photoUrl: null })}
@@ -1052,17 +965,6 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                         </select>
                         {errors.items?.[index]?.itemName && (
                           <span className="text-xs text-red-600 font-bold block mt-1">{errors.items[index]?.itemName?.message}</span>
-                        )}
-                        {availableKits.some((k) => k.name.toLowerCase() === (watch(`items.${index}.itemName`) || '').toLowerCase()) && (
-                          <button
-                            type="button"
-                            onClick={() => handleUnpackKit(watch(`items.${index}.itemName`), index)}
-                            className="mt-2 text-xs font-extrabold text-rose-800 hover:text-rose-950 bg-rose-100/80 hover:bg-rose-100 border border-rose-300 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5 w-full justify-center shadow-xs cursor-pointer"
-                            title="Desglosar en filas separadas para poder quitar o editar algún medicamento"
-                          >
-                            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                            <span>Desglosar medicamentos en filas independientes</span>
-                          </button>
                         )}
                       </div>
 

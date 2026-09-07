@@ -281,6 +281,28 @@ ALTER TABLE medicine_kits ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Permitir todo a todos en medicine_kits" ON medicine_kits;
 CREATE POLICY "Permitir todo a todos en medicine_kits" ON medicine_kits FOR ALL USING (true) WITH CHECK (true);
 
+-- 21.1 Tabla de Asignación y Custodia de Botiquines por Área (assigned_medicine_kits)
+CREATE TABLE IF NOT EXISTS assigned_medicine_kits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    kit_id UUID REFERENCES medicine_kits(id) ON DELETE SET NULL,
+    kit_name TEXT NOT NULL,
+    area TEXT NOT NULL,
+    location_details TEXT,
+    responsible_name TEXT NOT NULL,
+    responsible_ci TEXT,
+    responsible_position TEXT,
+    assigned_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    next_revision_date DATE,
+    status TEXT NOT NULL DEFAULT 'activo',
+    observations TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE assigned_medicine_kits ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Permitir todo a todos en assigned_medicine_kits" ON assigned_medicine_kits;
+CREATE POLICY "Permitir todo a todos en assigned_medicine_kits" ON assigned_medicine_kits FOR ALL USING (true) WITH CHECK (true);
+
+
 -- 22. Tabla de Salidas / Consumo de Botellones de Agua por Sector y Personal (water_withdrawals)
 CREATE TABLE IF NOT EXISTS water_withdrawals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

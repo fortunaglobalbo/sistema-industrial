@@ -19,6 +19,26 @@ export interface MedicineKitData {
   created_at: string;
 }
 
+export interface KitAssignmentInput {
+  kitId?: string | null;
+  kitName: string;
+  area: string;
+  locationDetails?: string | null;
+  responsibleName: string;
+  responsibleCi?: string | null;
+  responsiblePosition?: string | null;
+  assignedDate: string; // YYYY-MM-DD
+  nextRevisionDate?: string | null; // YYYY-MM-DD
+  status: 'activo' | 'revision' | 'baja';
+  observations?: string | null;
+}
+
+export interface KitAssignmentData extends KitAssignmentInput {
+  id: string;
+  createdAt: string;
+  items?: MedicineItem[];
+}
+
 export const PREDEFINED_KITS: MedicineKitInput[] = [
   {
     name: 'Kit Básico de Primeros Auxilios',
