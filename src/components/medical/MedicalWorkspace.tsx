@@ -35,11 +35,16 @@ import EncounterForm, { clinicalFields } from "./EncounterForm";
 import ActasModule from "@/components/ActasModule";
 import ModuloMedicamentosKits from "@/components/ModuloMedicamentosKits";
 import "./medical.css";
+import MedicalDocuments from './MedicalDocuments';
+import WorkerDocuments from './WorkerDocuments';
+import type { MedicalDocument } from '@/lib/medical/templates';
+import { documentsApi, previewDocumentsApi } from '@/lib/medical/document-api';
 
-type Tab = "inicio" | "trabajadores" | "registrar" | "actas" | "botiquin";
+type Tab = "inicio" | "trabajadores" | "formatos" | "registrar" | "actas" | "botiquin";
 const navigation = [
   { id: "inicio", label: "Inicio", icon: LayoutDashboard },
   { id: "trabajadores", label: "Historias clínicas", icon: FileHeart },
+  { id: "formatos", label: "Formatos médicos", icon: ClipboardList },
   { id: "registrar", label: "Registrar Acta", icon: PlusCircle },
   { id: "actas", label: "Historial Actas", icon: History },
   { id: "botiquin", label: "Medicamentos", icon: HeartPulse },
@@ -68,6 +73,8 @@ export default function MedicalWorkspace({
   api?: MedicalApi;
 }) {
   const [tab, setTab] = useState<Tab>("inicio");
+  const [formsApi] = useState(()=>api===liveApi?documentsApi:previewDocumentsApi());
+  const [formsEntry,setFormsEntry] = useState<{template?:string;worker?:MedicalWorker;document?:MedicalDocument;key:number}>({key:0});
   const [workers, setWorkers] = useState<MedicalWorker[]>([]);
   const [query, setQuery] = useState("");
   const [patient, setPatient] = useState<MedicalCase>();
@@ -151,6 +158,12 @@ export default function MedicalWorkspace({
     setDirty(false);
     setError("");
     setNotice("");
+    if(next==='formatos') setFormsEntry(prev=>({key:prev.key+1}));
+  }
+  function openFormats(template?:string,worker?:MedicalWorker,document?:MedicalDocument){
+    if(busy||!leave())return;
+    setFormsEntry(prev=>({template,worker,document,key:prev.key+1}));
+    setTab('formatos');setPatient(undefined);setDirty(false);setError('');setNotice('');setForm(false);
   }
 
   async function search(event: React.FormEvent) {
@@ -260,7 +273,7 @@ export default function MedicalWorkspace({
                     registrar una nueva atención.
                   </p>
                   <button
-                    onClick={() => navigate("trabajadores")}
+                    onClick={() => openFormats('historia')}
                     className="medical-primary"
                   >
                     <Plus size={18} /> Registrar atención
@@ -404,19 +417,17 @@ export default function MedicalWorkspace({
                     {patient.worker.department}
                   </p>
                 </div>
-                {!form && (
-                  <button
+                {!form && (<div className="flex flex-wrap gap-2"><button className="border rounded-xl px-4 py-2 text-sm font-bold text-blue-800" onClick={()=>openFormats(undefined,patient.worker)}>Formatos e historial</button><button
                     className="medical-primary"
                     onClick={() => {
-                      setCorrection(undefined);
-                      setForm(true);
-                      setNotice("");
+                      openFormats('historia',patient.worker);
                     }}
                   >
                     <Plus size={18} /> Nueva atención
-                  </button>
+                  </button></div>
                 )}
               </section>
+              {!form&&<WorkerDocuments key={patient.worker.id} workerId={patient.worker.id} api={formsApi} onOpen={doc=>openFormats(doc.template_id,patient.worker,doc)}/>}
               {form ? (
                 <EncounterForm
                   onSavingChange={setSaving}
@@ -450,7 +461,7 @@ export default function MedicalWorkspace({
               ) : (
                 <section>
                   <div className="flex justify-between mb-4">
-                    <h2 className="font-bold">Historial de atenciones</h2>
+                    <h2 className="font-bold">Atenciones del formato anterior</h2>
                     <span className="text-sm text-slate-500">
                       {patient.encounters.length} registros
                     </span>
@@ -462,11 +473,10 @@ export default function MedicalWorkspace({
                         size={32}
                       />
                       <h3 className="font-bold">
-                        El expediente está listo para su primera atención
+                        No hay atenciones del formato anterior
                       </h3>
                       <p className="text-sm text-slate-500 mt-2">
-                        Registra los antecedentes y el motivo de consulta para
-                        comenzar.
+                        Las nuevas fichas se consultan en el historial de formatos de este trabajador.
                       </p>
                     </div>
                   ) : (
@@ -555,6 +565,7 @@ export default function MedicalWorkspace({
               )}
             </>
           )}
+          {tab==='formatos'&&<MedicalDocuments key={formsEntry.key} doctor={doctor} search={api.searchMedicalWorkers} api={formsApi} initialWorker={formsEntry.worker} initialTemplate={formsEntry.template} initialDocument={formsEntry.document} onDirty={setDirty} onBusy={setSaving}/>}
           {(tab === "registrar" || tab === "actas" || tab === "botiquin") && (
             api !== liveApi ? (
               <div className="bg-white border border-slate-200 rounded-2xl p-6">
@@ -562,7 +573,7 @@ export default function MedicalWorkspace({
                 <p className="mt-2 text-sm text-slate-600">Registrar Acta, Historial Actas y Medicamentos están disponibles al ingresar con el código de la doctora. Esta vista previa no modifica registros reales.</p>
               </div>
             ) : tab === "botiquin" ? (
-              <ModuloMedicamentosKits showTabs={false} />
+              <><div className="bg-white border rounded-xl p-4 flex flex-wrap justify-between gap-3 items-center"><div><h2 className="font-bold text-[#002f6c]">Control mensual de farmacia</h2><p className="text-sm text-slate-500">Ingresos, consumos diarios, saldo y vencimiento.</p></div><button className="medical-primary" onClick={()=>openFormats('farmacia')}>Abrir planilla de farmacia</button></div><ModuloMedicamentosKits showTabs={false} /></>
             ) : (
               <ActasModule key={tab} activeTab={tab === "registrar" ? "new" : "history"} onTabChange={next => { void navigate(next === "new" ? "registrar" : "actas"); }} />
             )

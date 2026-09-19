@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:medical": "node scripts/test-medical.mjs && node scripts/test-medical-code.mjs"
+    "test:medical": "node scripts/test-medical.mjs && node scripts/test-medical-code.mjs && node scripts/test-medical-documents.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",

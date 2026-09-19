@@ -39,6 +39,9 @@
 .medical-print {
   display: none;
 }
+.medical-documents .border:not([class*="border-blue"]):not([class*="border-red"]):not([class*="border-amber"]):not([class*="border-green"]) {
+  border-color: #e2e8f0;
+}
 @media print {
   .medical-print {
     display: block;
