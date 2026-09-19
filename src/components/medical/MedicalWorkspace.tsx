@@ -6,6 +6,8 @@ import {
   ArrowLeft,
   ArrowUpRight,
   ClipboardList,
+  History,
+  PlusCircle,
   FileHeart,
   HeartPulse,
   LayoutDashboard,
@@ -28,18 +30,19 @@ import type {
   Encounter,
   MedicalCase,
   MedicalWorker,
-  SharedData,
 } from "@/lib/medical/types";
 import EncounterForm, { clinicalFields } from "./EncounterForm";
-import PrintReceipt from "@/components/PrintReceipt";
+import ActasModule from "@/components/ActasModule";
+import ModuloMedicamentosKits from "@/components/ModuloMedicamentosKits";
 import "./medical.css";
 
-type Tab = "inicio" | "trabajadores" | "actas" | "botiquin";
+type Tab = "inicio" | "trabajadores" | "registrar" | "actas" | "botiquin";
 const navigation = [
   { id: "inicio", label: "Inicio", icon: LayoutDashboard },
   { id: "trabajadores", label: "Historias clínicas", icon: FileHeart },
-  { id: "actas", label: "Actas de dotación", icon: ClipboardList },
-  { id: "botiquin", label: "Botiquín", icon: HeartPulse },
+  { id: "registrar", label: "Registrar Acta", icon: PlusCircle },
+  { id: "actas", label: "Historial Actas", icon: History },
+  { id: "botiquin", label: "Medicamentos", icon: HeartPulse },
 ] as const;
 const date = (value: string) =>
   new Date(value).toLocaleString("es-BO", {
@@ -68,7 +71,6 @@ export default function MedicalWorkspace({
   const [workers, setWorkers] = useState<MedicalWorker[]>([]);
   const [query, setQuery] = useState("");
   const [patient, setPatient] = useState<MedicalCase>();
-  const [shared, setShared] = useState<SharedData>();
   const [form, setForm] = useState(false);
   const [correction, setCorrection] = useState<Encounter>();
   const [dirty, setDirty] = useState(false);
@@ -77,7 +79,6 @@ export default function MedicalWorkspace({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [printed, setPrinted] = useState<Encounter>();
-  const [act, setAct] = useState<Awaited<ReturnType<typeof readSharedAct>>>();
   const sequence = useRef(0);
   useEffect(() => {
     let alive = true;
@@ -148,23 +149,10 @@ export default function MedicalWorkspace({
     setPatient(undefined);
     setForm(false);
     setDirty(false);
-    setAct(undefined);
     setError("");
     setNotice("");
-    if (next === "actas" || next === "botiquin") {
-      setBusy(true);
-      setShared(undefined);
-      try {
-        setShared(await api.getMedicalShared());
-      } catch (e) {
-        setError(
-          e instanceof Error ? e.message : "No se pudieron cargar los datos.",
-        );
-      } finally {
-        setBusy(false);
-      }
-    }
   }
+
   async function search(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -209,7 +197,7 @@ export default function MedicalWorkspace({
       <div className="min-w-0">
         <section className="max-w-7xl mx-auto px-4 pt-6 print:hidden" aria-label="Navegación médica">
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
-            <div><span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">Módulo activo</span><h2 className="text-xl font-black text-[#002f6c] tracking-tight mt-2">{title}</h2><p className="text-xs text-slate-500 font-medium mt-1">Gestión médica ocupacional del personal</p></div>
+            <div><span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">Módulo activo</span><h2 className="text-xl font-black text-[#002f6c] tracking-tight mt-2">{tab === "registrar" ? "Registrar Acta de Dotación / Entrega" : tab === "actas" ? "Historial de Actas y Dotaciones EPP" : tab === "botiquin" ? "Gestión y Armado de Kits de Medicamentos / Botiquines" : title}</h2><p className="text-xs text-slate-500 font-medium mt-1">Gestión médica ocupacional del personal</p></div>
             <nav className="flex flex-wrap p-1.5 bg-slate-100 rounded-2xl border border-slate-200 w-full xl:w-auto gap-1 shadow-inner">
               {navigation.map(({id,label,icon:Icon})=><button key={id} disabled={busy} onClick={()=>navigate(id)} aria-current={tab===id ? 'page' : undefined} className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-xl transition disabled:opacity-50 ${tab===id ? 'bg-[#002f6c] text-white font-black shadow-md border-b-2 border-amber-400' : 'text-slate-600 hover:bg-white font-bold'}`}><Icon size={16} className={tab===id ? 'text-amber-400' : 'text-blue-700'}/>{label}</button>)}
             </nav>
@@ -295,13 +283,13 @@ export default function MedicalWorkspace({
                   {
                     id: "actas" as const,
                     title: "Actas de dotación",
-                    text: "Consulta las entregas del sistema industrial.",
+                    text: "Registro, reimpresión, corrección y planilla mensual de actas.",
                     icon: ClipboardList,
                   },
                   {
                     id: "botiquin" as const,
                     title: "Botiquines compartidos",
-                    text: "Revisa la composición de los kits registrados.",
+                    text: "Gestión de medicamentos y armado de botiquines.",
                     icon: HeartPulse,
                   },
                 ].map(({ id, title, text, icon: Icon }) => (
@@ -567,103 +555,17 @@ export default function MedicalWorkspace({
               )}
             </>
           )}
-          {tab === "actas" && (
-            <>
-              <div>
-                <h1 className="text-3xl font-bold">Actas de dotación</h1>
-                <p className="text-slate-500 mt-2">
-                  Últimas 50 actas del sistema principal · consulta e impresión.
-                </p>
+          {(tab === "registrar" || tab === "actas" || tab === "botiquin") && (
+            api !== liveApi ? (
+              <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                <h2 className="font-bold text-[#002f6c]">Módulos compartidos del sistema ENDE</h2>
+                <p className="mt-2 text-sm text-slate-600">Registrar Acta, Historial Actas y Medicamentos están disponibles al ingresar con el código de la doctora. Esta vista previa no modifica registros reales.</p>
               </div>
-              {act?.success && act.transaction && act.items ? (
-                <PrintReceipt
-                  transaction={act.transaction}
-                  items={act.items}
-                  onBack={() => setAct(undefined)}
-                />
-              ) : (
-                <section className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
-                  {shared?.acts.length === 0 && (
-                    <p className="p-6 text-slate-500">
-                      No hay actas registradas.
-                    </p>
-                  )}
-                  {shared?.acts.map((row) => (
-                    <button
-                      key={row.id}
-                      disabled={busy}
-                      onClick={async () => {
-                        setBusy(true);
-                        setError("");
-                        try {
-                          const result = await api.readSharedAct(row.id);
-                          if (!result.success) throw new Error();
-                          setAct(result);
-                        } catch {
-                          setError("No se pudo abrir el acta.");
-                        } finally {
-                          setBusy(false);
-                        }
-                      }}
-                      className="w-full text-left p-5 hover:bg-slate-50 flex justify-between"
-                    >
-                      <div>
-                        <p className="font-medium capitalize">
-                          {row.transaction_type} · {row.id.slice(0, 8)}
-                        </p>
-                        <p className="text-sm text-slate-500 mt-1">
-                          {date(row.created_at)}
-                        </p>
-                      </div>
-                      <span className="text-blue-800 text-sm">Ver acta →</span>
-                    </button>
-                  ))}
-                </section>
-              )}
-            </>
-          )}
-          {tab === "botiquin" && (
-            <>
-              <div>
-                <h1 className="text-3xl font-bold">Botiquín</h1>
-                <p className="text-slate-500 mt-2">
-                  Composición de los kits compartidos. Las cantidades
-                  corresponden a cada kit, no al stock disponible.
-                </p>
-              </div>
-              {shared?.kits.length === 0 && (
-                <p className="p-6 bg-white rounded-xl">
-                  No hay kits registrados.
-                </p>
-              )}
-              <div className="grid xl:grid-cols-2 gap-5">
-                {shared?.kits.map((kit) => (
-                  <article
-                    key={kit.id}
-                    className="bg-white border border-slate-200 rounded-2xl p-6"
-                  >
-                    <HeartPulse className="text-blue-800 mb-4" />
-                    <h2 className="font-bold text-lg">{kit.name}</h2>
-                    <p className="text-sm text-slate-500 mt-2 mb-5">
-                      {kit.description}
-                    </p>
-                    <ul className="divide-y divide-slate-100">
-                      {kit.items.map((item, i) => (
-                        <li
-                          key={i}
-                          className="py-3 text-sm flex justify-between gap-4"
-                        >
-                          <span>{item.name}</span>
-                          <span className="shrink-0 font-medium">
-                            {item.quantity} {item.unit}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </article>
-                ))}
-              </div>
-            </>
+            ) : tab === "botiquin" ? (
+              <ModuloMedicamentosKits showTabs={false} />
+            ) : (
+              <ActasModule key={tab} activeTab={tab === "registrar" ? "new" : "history"} onTabChange={next => { void navigate(next === "new" ? "registrar" : "actas"); }} />
+            )
           )}
         </main>
       </div>

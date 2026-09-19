@@ -31,7 +31,7 @@ Ejecutar en orden las migraciones 001, 002 y 003. No hace falta crear usuarios d
 
 Expediente por trabajador, consultas/reconsultas, antecedentes, signos vitales, diagnóstico, tratamiento, recomendaciones, correcciones anexas e impresión. Las atenciones guardadas son inmutables desde la aplicación. Cada una conserva los datos laborales del momento de la atención.
 
-Actas: consulta de las últimas cincuenta, apertura e impresión/exportación existente. Botiquines: lectura de su composición, no stock de farmacia. La gestión compartida permanece en el sistema principal. Se eliminó el respaldo ficticio en memoria del botiquín: un error de persistencia no se anuncia como guardado.
+El espacio médico incluye Registrar Acta, Historial Actas y Medicamentos con los mismos componentes y datos del sistema principal. Permite registrar entregas, gestionar trabajadores y stock, consultar actas, corregir ítems, imprimir, exportar Word y consultar la planilla mensual. Medicamentos conserva el catálogo y armado de kits. El historial clínico permanece separado y protegido por la sesión médica. Se eliminó el respaldo ficticio en memoria del botiquín: un error de persistencia no se anuncia como guardado.
 
 Evaluaciones periódicas, crónicos, alcotest, trabajos críticos, bajas, adjuntos e importación histórica corresponden a etapas posteriores.
 
@@ -44,6 +44,6 @@ Evaluaciones periódicas, crónicos, alcotest, trabajos críticos, bajas, adjunt
 
 ## Vista previa
 
-Con `npm run dev`, /historiales/vista-previa permite revisar las pantallas con datos ficticios, sin contactar la base. Los cambios se pierden al recargar. Devuelve 404 en producción.
+Con `npm run dev`, /historiales/vista-previa permite revisar las pantallas con datos ficticios, sin contactar la base. Los cambios se pierden al recargar. Los módulos compartidos muestran un aviso y requieren ingresar al espacio médico real para operar. Devuelve 404 en producción.
 
 Next.js y ESLint se actualizaron a 16.3.5; la auditoría de paquetes terminó con cero vulnerabilidades reportadas durante esta implementación.
