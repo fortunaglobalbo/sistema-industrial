@@ -14,7 +14,6 @@ import {
   Printer,
   Search,
   ShieldCheck,
-  Stethoscope,
   Users,
 } from "lucide-react";
 import {
@@ -182,78 +181,41 @@ export default function MedicalWorkspace({
     ? "Expediente del trabajador"
     : navigation.find((n) => n.id === tab)?.label;
   return (
-    <div className="medical-shell min-h-screen bg-[#f4f7f8] text-slate-800 lg:grid lg:grid-cols-[250px_1fr]">
-      <aside className="bg-[#082b36] text-white p-6 lg:min-h-screen flex flex-col print:hidden">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="rounded-xl bg-teal-300/15 p-2.5">
-            <Stethoscope className="text-teal-200" />
+    <div className="medical-shell min-h-screen bg-slate-50 text-slate-800 font-sans">
+      <header className="relative bg-slate-950 text-white border-b-2 border-amber-400/70 shadow-xl overflow-hidden print:hidden">
+        <div className="absolute inset-0 bg-cover bg-center opacity-85 pointer-events-none" style={{backgroundImage:'url(/banner_subestacion.png)'}} />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#001e47]/80 via-[#002f6c]/65 to-[#001530]/80 pointer-events-none" />
+        <div className="relative max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/95 p-2.5 rounded-2xl shadow-lg shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo_ende_deoruro.png" alt="ENDE DEORURO" className="h-11 w-auto object-contain"/>
+            </div>
+            <div>
+              <span className="text-[9px] font-black tracking-widest uppercase bg-amber-400/25 text-amber-300 px-2 py-0.5 rounded-full border border-amber-400/40">ENDE DEORURO</span>
+              <p className="text-base sm:text-lg font-black tracking-wide uppercase mt-1">Seguridad Industrial y Salud Ocupacional</p>
+              <p className="text-[11px] text-blue-100 font-medium">Historias clínicas, consultas médicas, actas de dotación y botiquines</p>
+            </div>
           </div>
-          <div>
-            <p className="font-semibold">Salud ocupacional</p>
-            <p className="text-xs text-slate-400 mt-1">Sistema industrial</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-black rounded-xl border border-rose-500/50 bg-rose-950/80 text-rose-200 px-3 py-2">{doctor}</span>
+            <Link href="/" onClick={e=>{if(!leave())e.preventDefault();}} className="flex items-center gap-2 text-xs font-extrabold bg-[#003876]/80 border border-white/20 rounded-xl px-3 py-2 hover:bg-[#004b93]"><ArrowLeft size={14}/> Sistema principal</Link>
+            <form action={api.logoutMedical} onSubmit={e=>{if(busy || !leave())e.preventDefault();}}>
+              <button disabled={busy} className="flex items-center gap-2 text-xs font-extrabold bg-slate-950/60 border border-white/20 rounded-xl px-3 py-2 hover:bg-slate-800"><LogOut size={14}/> Cerrar sesión</button>
+            </form>
           </div>
         </div>
-        <p className="text-[10px] tracking-[.2em] text-slate-400 uppercase mb-3">
-          Espacio médico
-        </p>
-        <nav className="grid grid-cols-2 lg:grid-cols-1 gap-2">
-          {navigation.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              disabled={busy}
-              onClick={() => navigate(id)}
-              aria-current={tab === id ? "page" : undefined}
-              className={`text-left rounded-xl p-3 flex items-center gap-3 text-sm transition ${tab === id ? "bg-teal-300/15 text-teal-100" : "text-slate-300 hover:bg-white/5"} disabled:opacity-50`}
-            >
-              <Icon size={18} />
-              {label}
-            </button>
-          ))}
-        </nav>
-        <div className="mt-auto pt-10">
-          <div className="border border-white/10 rounded-xl p-4 text-xs text-slate-300 leading-relaxed">
-            <ShieldCheck size={20} className="mb-2 text-teal-300" />
-            Las historias clínicas están disponibles solo para personal médico
-            autorizado.
-          </div>
-          <Link
-            href="/"
-            onClick={(e) => {
-              if (!leave()) e.preventDefault();
-            }}
-            className="flex gap-2 items-center text-xs text-slate-400 mt-6"
-          >
-            <ArrowLeft size={14} /> Volver al sistema principal
-          </Link>
-        </div>
-      </aside>
+      </header>
       <div className="min-w-0">
-        <header className="bg-white border-b border-slate-200 px-6 lg:px-10 py-5 flex justify-between gap-4 items-center print:hidden">
-          <p className="text-sm text-slate-500">
-            Salud ocupacional <span className="mx-2 text-slate-300">/</span>
-            <span className="text-slate-800">{title}</span>
-          </p>
-          <form
-            action={api.logoutMedical}
-            onSubmit={(e) => {
-              if (busy || !leave()) e.preventDefault();
-            }}
-            className="flex items-center gap-3"
-          >
-            <span className="text-sm font-medium hidden sm:block">
-              {doctor}
-            </span>
-            <button
-              disabled={busy}
-              title="Cerrar sesión"
-              aria-label="Cerrar sesión"
-              className="p-2 rounded-lg hover:bg-slate-100"
-            >
-              <LogOut size={18} />
-            </button>
-          </form>
-        </header>
-        <main className="p-5 md:p-8 lg:p-10 max-w-7xl mx-auto space-y-6">
+        <section className="max-w-7xl mx-auto px-4 pt-6 print:hidden" aria-label="Navegación médica">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+            <div><span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">Módulo activo</span><h2 className="text-xl font-black text-[#002f6c] tracking-tight mt-2">{title}</h2><p className="text-xs text-slate-500 font-medium mt-1">Gestión médica ocupacional del personal</p></div>
+            <nav className="flex flex-wrap p-1.5 bg-slate-100 rounded-2xl border border-slate-200 w-full xl:w-auto gap-1 shadow-inner">
+              {navigation.map(({id,label,icon:Icon})=><button key={id} disabled={busy} onClick={()=>navigate(id)} aria-current={tab===id ? 'page' : undefined} className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-xl transition disabled:opacity-50 ${tab===id ? 'bg-[#002f6c] text-white font-black shadow-md border-b-2 border-amber-400' : 'text-slate-600 hover:bg-white font-bold'}`}><Icon size={16} className={tab===id ? 'text-amber-400' : 'text-blue-700'}/>{label}</button>)}
+            </nav>
+          </div>
+        </section>
+        <main className="p-4 md:py-6 max-w-7xl mx-auto space-y-6">
           {error && (
             <div
               role="alert"
@@ -265,13 +227,13 @@ export default function MedicalWorkspace({
           {notice && (
             <div
               role="status"
-              className="bg-teal-50 rounded-xl p-4 text-teal-800"
+              className="bg-blue-50 rounded-xl p-4 text-blue-900"
             >
               {notice}
             </div>
           )}
           {busy && (
-            <p role="status" className="text-sm text-teal-800">
+            <p role="status" className="text-sm text-blue-900">
               Cargando registros…
             </p>
           )}
@@ -279,14 +241,14 @@ export default function MedicalWorkspace({
             <>
               <div className="flex flex-wrap justify-between items-end gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-teal-700 mb-2">
+                  <p className="text-xs uppercase tracking-widest text-blue-800 mb-2">
                     Atención y seguimiento
                   </p>
-                  <h1 className="text-3xl font-semibold">
+                  <h1 className="text-3xl font-bold">
                     Bienvenida, {doctor}
                   </h1>
                   <p className="text-slate-500 mt-3">
-                    El cuidado del trabajador empieza con su historia.
+                    Panel de consultas e historias clínicas del personal.
                   </p>
                 </div>
                 <span className="text-sm text-slate-500">
@@ -297,13 +259,13 @@ export default function MedicalWorkspace({
                   })}
                 </span>
               </div>
-              <section className="rounded-2xl bg-[#e1efec] p-7 md:p-9 flex flex-wrap justify-between items-center gap-6">
+              <section className="rounded-2xl bg-blue-50 border border-blue-100 p-7 md:p-9 flex flex-wrap justify-between items-center gap-6">
                 <div className="max-w-xl">
-                  <div className="flex items-center gap-2 text-teal-800 text-xs font-semibold uppercase tracking-wider mb-4">
+                  <div className="flex items-center gap-2 text-blue-900 text-xs font-bold uppercase tracking-wider mb-4">
                     <Activity size={16} /> Consulta médica
                   </div>
-                  <h2 className="text-2xl font-semibold text-[#163f42]">
-                    Cada atención, parte de una misma historia.
+                  <h2 className="text-2xl font-bold text-[#002f6c]">
+                    Registro de consultas médicas
                   </h2>
                   <p className="text-slate-600 mt-3 mb-6">
                     Busca al trabajador para consultar sus antecedentes o
@@ -319,7 +281,7 @@ export default function MedicalWorkspace({
                 <FileHeart
                   size={100}
                   strokeWidth={1}
-                  className="text-teal-700/50 hidden md:block"
+                  className="text-blue-800/50 hidden md:block"
                 />
               </section>
               <div className="grid md:grid-cols-3 gap-4">
@@ -347,13 +309,13 @@ export default function MedicalWorkspace({
                     key={id}
                     disabled={busy}
                     onClick={() => navigate(id)}
-                    className="bg-white border border-slate-200 rounded-2xl p-6 text-left hover:border-teal-400 transition"
+                    className="bg-white border border-slate-200 rounded-2xl p-6 text-left hover:border-blue-400 transition"
                   >
                     <div className="flex justify-between mb-6">
-                      <Icon className="text-teal-700" size={24} />
+                      <Icon className="text-blue-800" size={24} />
                       <ArrowUpRight size={17} className="text-slate-400" />
                     </div>
-                    <h3 className="font-semibold mb-2">{title}</h3>
+                    <h3 className="font-bold mb-2">{title}</h3>
                     <p className="text-sm text-slate-500 leading-relaxed">
                       {text}
                     </p>
@@ -369,7 +331,7 @@ export default function MedicalWorkspace({
           {tab === "trabajadores" && !patient && (
             <>
               <div>
-                <h1 className="text-3xl font-semibold">Historias clínicas</h1>
+                <h1 className="text-3xl font-bold">Historias clínicas</h1>
                 <p className="mt-2 text-slate-500">
                   Selecciona un trabajador del padrón compartido.
                 </p>
@@ -386,7 +348,7 @@ export default function MedicalWorkspace({
                     maxLength={100}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Buscar por nombre o cédula de identidad…"
-                    className="w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 py-3 outline-teal-700"
+                    className="w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 py-3 outline-blue-700"
                   />
                 </div>
                 <button disabled={busy} className="medical-primary">
@@ -395,7 +357,7 @@ export default function MedicalWorkspace({
               </form>
               <section className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                 <div className="p-5 border-b border-slate-100 flex justify-between">
-                  <h2 className="font-semibold">Trabajadores</h2>
+                  <h2 className="font-bold">Trabajadores</h2>
                   <span className="text-xs text-slate-500">
                     Hasta 50 resultados · afina la búsqueda
                   </span>
@@ -413,7 +375,7 @@ export default function MedicalWorkspace({
                         key={worker.id}
                         disabled={busy}
                         onClick={() => openPatient(worker.id)}
-                        className="w-full text-left p-5 hover:bg-teal-50/50 flex justify-between items-center gap-4"
+                        className="w-full text-left p-5 hover:bg-blue-50/50 flex justify-between items-center gap-4"
                       >
                         <div>
                           <p className="font-medium">{worker.full_name}</p>
@@ -422,7 +384,7 @@ export default function MedicalWorkspace({
                             {worker.department}
                           </p>
                         </div>
-                        <span className="text-teal-700 text-sm flex items-center gap-2 shrink-0">
+                        <span className="text-blue-800 text-sm flex items-center gap-2 shrink-0">
                           Abrir <ArrowUpRight size={16} />
                         </span>
                       </button>
@@ -443,10 +405,10 @@ export default function MedicalWorkspace({
               </button>
               <section className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-wrap gap-5 justify-between items-center">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-teal-700 mb-2">
+                  <p className="text-xs uppercase tracking-widest text-blue-800 mb-2">
                     Expediente clínico
                   </p>
-                  <h1 className="text-2xl font-semibold">
+                  <h1 className="text-2xl font-bold">
                     {patient.worker.full_name}
                   </h1>
                   <p className="text-sm text-slate-500 mt-2">
@@ -500,7 +462,7 @@ export default function MedicalWorkspace({
               ) : (
                 <section>
                   <div className="flex justify-between mb-4">
-                    <h2 className="font-semibold">Historial de atenciones</h2>
+                    <h2 className="font-bold">Historial de atenciones</h2>
                     <span className="text-sm text-slate-500">
                       {patient.encounters.length} registros
                     </span>
@@ -508,10 +470,10 @@ export default function MedicalWorkspace({
                   {patient.encounters.length === 0 ? (
                     <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
                       <FileHeart
-                        className="mx-auto text-teal-600 mb-4"
+                        className="mx-auto text-blue-700 mb-4"
                         size={32}
                       />
-                      <h3 className="font-semibold">
+                      <h3 className="font-bold">
                         El expediente está listo para su primera atención
                       </h3>
                       <p className="text-sm text-slate-500 mt-2">
@@ -528,14 +490,14 @@ export default function MedicalWorkspace({
                         >
                           <div className="flex flex-wrap justify-between gap-3">
                             <div>
-                              <span className="text-xs rounded-full bg-teal-50 text-teal-800 px-3 py-1">
+                              <span className="text-xs rounded-full bg-blue-50 text-blue-900 px-3 py-1">
                                 {entry.data.correctionOf
                                   ? "Corrección"
                                   : entry.data.kind === "consulta"
                                     ? "Consulta"
                                     : "Reconsulta"}
                               </span>
-                              <h3 className="font-semibold text-lg mt-3">
+                              <h3 className="font-bold text-lg mt-3">
                                 {entry.data.reason}
                               </h3>
                               <p className="text-xs text-slate-500 mt-2">
@@ -546,7 +508,7 @@ export default function MedicalWorkspace({
                             <div className="flex gap-3 items-start">
                               <button
                                 onClick={() => setPrinted(entry)}
-                                className="p-2 text-slate-500 hover:text-teal-800"
+                                className="p-2 text-slate-500 hover:text-blue-900"
                                 aria-label="Imprimir atención"
                               >
                                 <Printer size={18} />
@@ -557,18 +519,18 @@ export default function MedicalWorkspace({
                                   setForm(true);
                                   setNotice("");
                                 }}
-                                className="text-sm text-teal-700 p-2"
+                                className="text-sm text-blue-800 p-2"
                               >
                                 Añadir corrección
                               </button>
                             </div>
                           </div>
                           <p className="text-sm mt-4 whitespace-pre-wrap">
-                            <span className="font-semibold">Diagnóstico: </span>
+                            <span className="font-bold">Diagnóstico: </span>
                             {entry.data.diagnosis}
                           </p>
                           <details className="mt-4 text-sm">
-                            <summary className="text-teal-700 cursor-pointer">
+                            <summary className="text-blue-800 cursor-pointer">
                               Ver atención completa
                             </summary>
                             <div className="grid md:grid-cols-2 gap-4 mt-4">
@@ -576,7 +538,7 @@ export default function MedicalWorkspace({
                                 .filter(([key]) => entry.data[key])
                                 .map(([key, label]) => (
                                   <div key={key}>
-                                    <p className="font-semibold">
+                                    <p className="font-bold">
                                       {label.replace(" *", "")}
                                     </p>
                                     <p className="text-slate-600 whitespace-pre-wrap mt-1">
@@ -608,7 +570,7 @@ export default function MedicalWorkspace({
           {tab === "actas" && (
             <>
               <div>
-                <h1 className="text-3xl font-semibold">Actas de dotación</h1>
+                <h1 className="text-3xl font-bold">Actas de dotación</h1>
                 <p className="text-slate-500 mt-2">
                   Últimas 50 actas del sistema principal · consulta e impresión.
                 </p>
@@ -653,7 +615,7 @@ export default function MedicalWorkspace({
                           {date(row.created_at)}
                         </p>
                       </div>
-                      <span className="text-teal-700 text-sm">Ver acta →</span>
+                      <span className="text-blue-800 text-sm">Ver acta →</span>
                     </button>
                   ))}
                 </section>
@@ -663,7 +625,7 @@ export default function MedicalWorkspace({
           {tab === "botiquin" && (
             <>
               <div>
-                <h1 className="text-3xl font-semibold">Botiquín</h1>
+                <h1 className="text-3xl font-bold">Botiquín</h1>
                 <p className="text-slate-500 mt-2">
                   Composición de los kits compartidos. Las cantidades
                   corresponden a cada kit, no al stock disponible.
@@ -680,8 +642,8 @@ export default function MedicalWorkspace({
                     key={kit.id}
                     className="bg-white border border-slate-200 rounded-2xl p-6"
                   >
-                    <HeartPulse className="text-teal-700 mb-4" />
-                    <h2 className="font-semibold text-lg">{kit.name}</h2>
+                    <HeartPulse className="text-blue-800 mb-4" />
+                    <h2 className="font-bold text-lg">{kit.name}</h2>
                     <p className="text-sm text-slate-500 mt-2 mb-5">
                       {kit.description}
                     </p>

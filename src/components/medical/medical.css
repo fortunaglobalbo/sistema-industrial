@@ -7,7 +7,7 @@
   padding: 0.7rem 0.8rem;
   background: white;
   font-size: 0.9rem;
-  outline-color: #0f766e;
+  outline-color: #003876;
 }
 .medical-primary {
   display: inline-flex;
@@ -16,13 +16,13 @@
   gap: 0.5rem;
   border-radius: 0.7rem;
   padding: 0.8rem 1.2rem;
-  background: #115e59;
+  background: linear-gradient(135deg, #003876, #002f6c);
   color: white;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 800;
 }
 .medical-primary:hover {
-  background: #134e4a;
+  background: #00458f;
 }
 .medical-primary:disabled {
   opacity: 0.5;
@@ -33,7 +33,7 @@
 }
 .medical-shell button:focus-visible,
 .medical-shell a:focus-visible {
-  outline: 2px solid #0d9488;
+  outline: 2px solid #d99a00;
   outline-offset: 3px;
 }
 .medical-print {

@@ -90,7 +90,7 @@ export default function EncounterForm({
     >
       <div className="flex justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-widest text-teal-700 mb-2">
+          <p className="text-xs uppercase tracking-widest text-blue-800 mb-2">
             Registro médico
           </p>
           <h2 className="text-2xl font-semibold">

@@ -400,8 +400,8 @@ export default function Home() {
           </form>
 
           <div className="pt-3 border-t border-slate-800 space-y-2">
-            <Link href="/historiales" className="w-full flex items-center justify-center gap-2 bg-teal-900 hover:bg-teal-800 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl border border-teal-500/30">
-              <HeartPulse className="w-4 h-4 text-teal-200" />
+            <Link href="/historiales" className="w-full flex items-center justify-center gap-2 bg-[#003876] hover:bg-[#00458f] text-white font-extrabold text-xs py-2.5 px-4 rounded-xl border border-amber-400/30">
+              <HeartPulse className="w-4 h-4 text-amber-400" />
               <span>Salud ocupacional · Historias clínicas</span>
             </Link>
             <Link
