@@ -54,6 +54,7 @@ export default function ModuloMedicamentosKits({ showTabs = true }: ModuloMedica
   const [assignments, setAssignments] = useState<KitAssignmentData[]>([]);
   const [summary, setSummary] = useState({ total: 0, activos: 0, revision: 0, baja: 0 });
   const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [searchAssignmentTerm, setSearchAssignmentTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('TODOS');
 
@@ -84,6 +85,7 @@ export default function ModuloMedicamentosKits({ showTabs = true }: ModuloMedica
   }, []);
 
   const loadAllData = async () => {
+    setLoadError('');
     loadKits();
     loadAssignments();
   };
@@ -98,6 +100,7 @@ export default function ModuloMedicamentosKits({ showTabs = true }: ModuloMedica
       }
     } catch (err) {
       console.error('Error al cargar kits:', err);
+      setLoadError('No se pudo cargar el catálogo de botiquines. Actualiza para volver a intentar.');
       setKits([]);
     } finally {
       setLoadingKits(false);
@@ -113,6 +116,7 @@ export default function ModuloMedicamentosKits({ showTabs = true }: ModuloMedica
       setSummary(sum);
     } catch (err) {
       console.error('Error al cargar asignaciones:', err);
+      setLoadError('No se pudieron cargar las asignaciones. Verifica la conexión y la configuración de botiquines.');
       setAssignments([]);
     } finally {
       setLoadingAssignments(false);
@@ -370,6 +374,7 @@ export default function ModuloMedicamentosKits({ showTabs = true }: ModuloMedica
 
   return (
     <div className="space-y-6">
+      {loadError && <div role="alert" className="rounded-xl bg-red-50 text-red-800 p-4 text-sm">{loadError} <button type="button" onClick={loadAllData} className="ml-2 underline">Reintentar</button></div>}
       
       {/* SELECTOR DE SUB-PESTAÑAS SUPERIOR */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">

@@ -1,0 +1,65 @@
+.medical-input {
+  display: block;
+  margin-top: 0.5rem;
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.65rem;
+  padding: 0.7rem 0.8rem;
+  background: white;
+  font-size: 0.9rem;
+  outline-color: #0f766e;
+}
+.medical-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.7rem;
+  padding: 0.8rem 1.2rem;
+  background: #115e59;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.medical-primary:hover {
+  background: #134e4a;
+}
+.medical-primary:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.medical-shell button:not(:disabled) {
+  cursor: pointer;
+}
+.medical-shell button:focus-visible,
+.medical-shell a:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 3px;
+}
+.medical-print {
+  display: none;
+}
+@media print {
+  .medical-print {
+    display: block;
+    padding: 12mm !important;
+    font-size: 10pt;
+    color: black;
+  }
+  .medical-print h1 {
+    font-size: 18pt;
+    font-weight: 700;
+    margin-bottom: 6mm;
+  }
+  .medical-print h2 {
+    font-weight: 700;
+    margin-top: 4mm;
+  }
+  .medical-print p {
+    white-space: pre-wrap;
+    margin-bottom: 3mm;
+  }
+  .medical-print div {
+    break-inside: avoid;
+  }
+}

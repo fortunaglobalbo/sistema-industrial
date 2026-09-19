@@ -3,8 +3,6 @@
 import { supabase } from '@/lib/supabase';
 import { 
   MedicineKitInput, 
-  MedicineKitData, 
-  PREDEFINED_KITS,
   KitAssignmentInput,
   KitAssignmentData
 } from '@/lib/medicineKitTypes';
@@ -28,13 +26,15 @@ export async function saveMedicineKit(data: MedicineKitInput, existingId?: strin
     };
 
     if (existingId) {
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from('medicine_kits')
         .update(payload)
-        .eq('id', existingId);
+        .eq('id', existingId)
+        .select('id')
+        .single();
 
-      if (error) {
-        return { success: false, error: `Error al actualizar: ${error.message}` };
+      if (error || !updated) {
+        return { success: false, error: 'No se confirmó la actualización del kit.' };
       }
       return { success: true, id: existingId };
     } else {
@@ -71,32 +71,13 @@ export async function getMedicineKits() {
 
     if (error) {
       console.warn('Error consultando medicine_kits:', error);
-      return PREDEFINED_KITS.map((k, idx) => ({
-        id: `mock-${idx}`,
-        name: k.name,
-        description: k.description || null,
-        items: k.items,
-        created_at: new Date().toISOString()
-      })) as MedicineKitData[];
-    }
-
-    // Si la tabla está vacía en Supabase, inicializar con los kits predefinidos
-    if (!data || data.length === 0) {
-      for (const tpl of PREDEFINED_KITS) {
-        await supabase.from('medicine_kits').insert([{
-          name: tpl.name.toUpperCase(),
-          description: tpl.description,
-          items: tpl.items
-        }]);
-      }
-      const res = await supabase.from('medicine_kits').select('*').order('name', { ascending: true });
-      return res.data || [];
+      throw new Error('No se pudo cargar el catálogo de botiquines.');
     }
 
     return data || [];
   } catch (error) {
     console.error('Error en getMedicineKits:', error);
-    return [];
+    throw new Error('No se pudo cargar el catálogo de botiquines.');
   }
 }
 
@@ -116,55 +97,6 @@ export async function deleteMedicineKit(id: string) {
     return { success: false, error: error?.message || 'Error al eliminar el kit.' };
   }
 }
-
-// Fallback en memoria si la tabla de asignaciones aún no se ejecutó en la base de datos
-let inMemoryAssignments: KitAssignmentData[] = [
-  {
-    id: 'demo-1',
-    kitId: null,
-    kitName: 'Kit Básico de Primeros Auxilios',
-    area: 'Subestación Central',
-    locationDetails: 'Pared este, junto al tablero principal y extintor N° 02',
-    responsibleName: 'Ing. Carlos Mendoza',
-    responsibleCi: '3489123 Or.',
-    responsiblePosition: 'Jefe de Subestación',
-    assignedDate: '2026-08-15',
-    nextRevisionDate: '2026-11-15',
-    status: 'activo',
-    observations: 'Botiquín metálico adosado a la pared con precinto de seguridad N° 104.',
-    createdAt: new Date('2026-08-15T09:00:00Z').toISOString(),
-  },
-  {
-    id: 'demo-2',
-    kitId: null,
-    kitName: 'Kit Botiquín Vehicular / Brigada Móvil',
-    area: 'Móvil Cuadrilla Redes N° 3',
-    locationDetails: 'Camioneta Toyota Hilux (Placa 4512-KLM) - Guantera / Cabina',
-    responsibleName: 'Pedro Gutierrez Choque',
-    responsibleCi: '5412987 Or.',
-    responsiblePosition: 'Técnico Liniero / Conductor',
-    assignedDate: '2026-09-01',
-    nextRevisionDate: '2026-12-01',
-    status: 'activo',
-    observations: 'Maletín impermeable de primeros auxilios con kit completo.',
-    createdAt: new Date('2026-09-01T08:30:00Z').toISOString(),
-  },
-  {
-    id: 'demo-3',
-    kitId: null,
-    kitName: 'Kit Cuadrilla Técnica y Emergencias',
-    area: 'Taller de Maestranza y Soldadura',
-    locationDetails: 'Caseta de supervisión, estante de seguridad nivel 1',
-    responsibleName: 'Mario Fernandez Lopez',
-    responsibleCi: '2987451 Or.',
-    responsiblePosition: 'Encargado de Taller',
-    assignedDate: '2026-07-10',
-    nextRevisionDate: '2026-10-10',
-    status: 'activo',
-    observations: 'Botiquín reforzado para área de soldadura y corte.',
-    createdAt: new Date('2026-07-10T11:00:00Z').toISOString(),
-  }
-];
 
 /**
  * Guardar o actualizar la asignación de un botiquín por área y responsable
@@ -197,13 +129,15 @@ export async function saveKitAssignment(data: KitAssignmentInput, existingId?: s
 
     // Intentar en Supabase
     try {
-      if (existingId && !existingId.startsWith('demo-')) {
-        const { error } = await supabase
+      if (existingId) {
+        const { data: updated, error } = await supabase
           .from('assigned_medicine_kits')
           .update(payload)
-          .eq('id', existingId);
+          .eq('id', existingId)
+          .select('id')
+          .single();
 
-        if (!error) return { success: true, id: existingId };
+        if (!error && updated) return { success: true, id: existingId };
       } else if (!existingId) {
         const { data: record, error } = await supabase
           .from('assigned_medicine_kits')
@@ -214,39 +148,10 @@ export async function saveKitAssignment(data: KitAssignmentInput, existingId?: s
         if (!error && record) return { success: true, id: record.id };
       }
     } catch {
-      // Fallback a memoria si la tabla no existe en Supabase
+      // El error se informa sin simular persistencia.
     }
 
-    // Fallback de persistencia local / en memoria
-    if (existingId) {
-      const idx = inMemoryAssignments.findIndex(a => a.id === existingId);
-      if (idx !== -1) {
-        inMemoryAssignments[idx] = {
-          ...inMemoryAssignments[idx],
-          ...data,
-          locationDetails: data.locationDetails || null,
-          responsibleCi: data.responsibleCi || null,
-          responsiblePosition: data.responsiblePosition || null,
-          nextRevisionDate: data.nextRevisionDate || null,
-          observations: data.observations || null
-        };
-        return { success: true, id: existingId };
-      }
-    }
-
-    const newId = `assign-${Date.now()}`;
-    const newRecord: KitAssignmentData = {
-      id: newId,
-      ...data,
-      locationDetails: data.locationDetails || null,
-      responsibleCi: data.responsibleCi || null,
-      responsiblePosition: data.responsiblePosition || null,
-      nextRevisionDate: data.nextRevisionDate || null,
-      observations: data.observations || null,
-      createdAt: new Date().toISOString(),
-    };
-    inMemoryAssignments.unshift(newRecord);
-    return { success: true, id: newId };
+    return { success: false, error: 'No se guardó la asignación en la base de datos. Verifica la conexión y vuelve a intentar.' };
 
   } catch (error: any) {
     console.error('Error in saveKitAssignment:', error);
@@ -282,10 +187,10 @@ export async function getKitAssignments(): Promise<KitAssignmentData[]> {
       }));
     }
 
-    return inMemoryAssignments;
+    if (error) throw new Error('No se pudieron cargar las asignaciones de botiquines.');
+    return [];
   } catch (error) {
-    console.warn('Usando asignaciones de botiquines en memoria:', error);
-    return inMemoryAssignments;
+    throw error;
   }
 }
 
@@ -294,25 +199,10 @@ export async function getKitAssignments(): Promise<KitAssignmentData[]> {
  */
 export async function deleteKitAssignment(id: string) {
   try {
-    try {
-      const { error } = await supabase
-        .from('assigned_medicine_kits')
-        .delete()
-        .eq('id', id);
-
-      if (!error) {
-        inMemoryAssignments = inMemoryAssignments.filter(a => a.id !== id);
-        return { success: true };
-      }
-    } catch {
-      // Ignorar si tabla no existe
-    }
-
-    inMemoryAssignments = inMemoryAssignments.filter(a => a.id !== id);
+    const { data, error } = await supabase.from('assigned_medicine_kits').delete().eq('id', id).select('id').single();
+    if (error || !data) return { success: false, error: 'No se confirmó la eliminación de la asignación.' };
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error?.message || 'Error al eliminar asignación.' };
-  }
+  } catch { return { success: false, error: 'No se pudo eliminar la asignación.' }; }
 }
 
 /**
@@ -327,4 +217,3 @@ export async function getKitAssignmentSummary() {
 
   return { total, activos, revision, baja };
 }
-

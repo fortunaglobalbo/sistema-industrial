@@ -400,6 +400,10 @@ export default function Home() {
           </form>
 
           <div className="pt-3 border-t border-slate-800 space-y-2">
+            <Link href="/historiales" className="w-full flex items-center justify-center gap-2 bg-teal-900 hover:bg-teal-800 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl border border-teal-500/30">
+              <HeartPulse className="w-4 h-4 text-teal-200" />
+              <span>Salud ocupacional · Historias clínicas</span>
+            </Link>
             <Link
               href="/registros"
               className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#002f6c] to-[#003876] hover:from-[#003876] hover:to-[#004b93] text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md transition border border-white/10"
