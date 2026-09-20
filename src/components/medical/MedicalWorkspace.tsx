@@ -88,20 +88,21 @@ export default function MedicalWorkspace({
   const [printed, setPrinted] = useState<Encounter>();
   const sequence = useRef(0);
   useEffect(() => {
+    if(tab!=="trabajadores")return;
     let alive = true;
-    api
-      .searchMedicalWorkers("")
+    formsApi
+      .searchPatients("")
       .then((rows) => {
         if (alive) setWorkers(rows);
       })
       .catch(() => {
         if (alive)
-          setError("No se pudo cargar el padrón. Usa Buscar para reintentar.");
+          setError("No se pudieron cargar las personas atendidas. Usa Buscar para reintentar.");
       });
     return () => {
       alive = false;
     };
-  }, [api]);
+  }, [formsApi,tab]);
   useEffect(() => {
     if (!dirty) return;
     const guard = (event: BeforeUnloadEvent) => {
@@ -138,7 +139,7 @@ export default function MedicalWorkspace({
     setCorrection(undefined);
     setTab("trabajadores");
     try {
-      const value = await api.readMedicalCase(workerId);
+      const value = await formsApi.readPatient(workerId);
       if (id === sequence.current) setPatient(value);
     } catch (e) {
       if (id === sequence.current)
@@ -171,7 +172,7 @@ export default function MedicalWorkspace({
     setBusy(true);
     setError("");
     try {
-      setWorkers(await api.searchMedicalWorkers(query));
+      setWorkers(await formsApi.searchPatients(query));
     } catch {
       setError("No se pudo buscar. Revisa tu conexión y sesión.");
     } finally {
@@ -334,9 +335,10 @@ export default function MedicalWorkspace({
               <div>
                 <h1 className="text-3xl font-bold">Historias clínicas</h1>
                 <p className="mt-2 text-slate-500">
-                  Selecciona un trabajador del padrón compartido.
+                  Aquí aparecen solo las personas con registros médicos guardados.
                 </p>
               </div>
+              <button className="medical-primary" onClick={()=>openFormats('historia')}><Plus size={16}/> Nueva atención</button>
               <form onSubmit={search} className="flex gap-3">
                 <div className="relative flex-1">
                   <Search
@@ -347,7 +349,7 @@ export default function MedicalWorkspace({
                     aria-label="Buscar por nombre o CI"
                     value={query}
                     maxLength={100}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={(e) => setQuery(e.target.value.toUpperCase())}
                     placeholder="Buscar por nombre o cédula de identidad…"
                     className="w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 py-3 outline-blue-700"
                   />
@@ -358,16 +360,14 @@ export default function MedicalWorkspace({
               </form>
               <section className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                 <div className="p-5 border-b border-slate-100 flex justify-between">
-                  <h2 className="font-bold">Trabajadores</h2>
+                  <h2 className="font-bold">Personas atendidas</h2>
                   <span className="text-xs text-slate-500">
                     Hasta 50 resultados · afina la búsqueda
                   </span>
                 </div>
                 {workers.length === 0 ? (
                   <p className="p-8 text-slate-500">
-                    No hay resultados. Prueba con otro nombre o CI. Los
-                    trabajadores nuevos se registran en el padrón del sistema
-                    principal.
+                    No hay atenciones registradas para esta búsqueda. Usa Nueva atención para escribir los datos de una persona.
                   </p>
                 ) : (
                   <div className="divide-y divide-slate-100">
@@ -402,7 +402,7 @@ export default function MedicalWorkspace({
                 onClick={() => navigate("trabajadores")}
                 className="flex items-center gap-2 text-sm text-slate-500"
               >
-                <ArrowLeft size={16} /> Todos los trabajadores
+                <ArrowLeft size={16} /> Personas atendidas
               </button>
               <section className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-wrap gap-5 justify-between items-center">
                 <div>
@@ -565,7 +565,7 @@ export default function MedicalWorkspace({
               )}
             </>
           )}
-          {tab==='formatos'&&<MedicalDocuments key={formsEntry.key} doctor={doctor} search={api.searchMedicalWorkers} api={formsApi} initialWorker={formsEntry.worker} initialTemplate={formsEntry.template} initialDocument={formsEntry.document} onDirty={setDirty} onBusy={setSaving}/>}
+          {tab==='formatos'&&<MedicalDocuments key={formsEntry.key} doctor={doctor} search={formsApi.searchPatients} api={formsApi} initialWorker={formsEntry.worker} initialTemplate={formsEntry.template} initialDocument={formsEntry.document} onDirty={setDirty} onBusy={setSaving}/>}
           {(tab === "registrar" || tab === "actas" || tab === "botiquin") && (
             api !== liveApi ? (
               <div className="bg-white border border-slate-200 rounded-2xl p-6">

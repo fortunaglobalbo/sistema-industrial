@@ -25,7 +25,7 @@ const denied=(sql,args=[])=>assert.rejects(db.query(sql,args));
 for(const table of ['medical_documents','medical_form_templates','medical_document_workers','medical_document_requests','medical_document_audit'])await denied('select * from '+table);
 await denied('select medical_documents_list($1,$2)',['0'.repeat(64),{}]);
 function input(t){const period=t.period==='year'?'2026-01-01':'2026-09-01';const fill=fs=>Object.fromEntries(fs.filter(f=>f.required).map(f=>[f.key,f.type==='date'?period:'Prueba ficticia']));return {id:randomUUID(),requestId:randomUUID(),revision:0,templateId:t.id,workerId:t.kind==='ficha'?worker:null,period,finalize:false,correctionOf:null,correctionReason:'',data:{fields:fill(t.sections.flatMap(s=>s.fields)),rows:t.kind==='planilla'?[{...fill(t.columns),...(t.id==='farmacia'?{opening:'20',incoming:'5',day1:'3'}:{workerId:worker,fullName:'Trabajador ficticio',ci:'TEST'})}]:[]}};}
-const preview=previewExports.previewDocumentsApi();const previewInput={...input(catalog.getTemplate('historia')),finalize:true};
+const preview=previewExports.previewDocumentsApi();const previewInput={...input(catalog.getTemplate('historia')),finalize:true};previewInput.data.fields.names='PERSONA DE PRUEBA';
 assert.ok((await preview.save(previewInput)).document);
 assert.equal((await preview.list({})).documents.length,2);
 assert.equal((await preview.list({template:'historia'})).documents[0].superseded,false,'derived consultation must not mark the source as corrected');
@@ -38,7 +38,7 @@ for(const t of catalog.templates){
  const updated={...p,revision:1,requestId:randomUUID()};const v2=await save(updated);assert.equal(v2.revision,2);
  await assert.rejects(save({...updated,requestId:randomUUID()}),/Conflicto/);
  const finalized={...p,revision:2,requestId:randomUUID(),finalize:true};const v3=await save(finalized);assert.equal(v3.status,'final');assert.equal(v3.revision,3);
- const html=renderToStaticMarkup(createElement(printExports.MedicalPaper,{doc:v3}));assert.match(html,/ENDE DEORURO/);assert.match(html,/Finalizado/);assert.ok(!html.includes('Guardar borrador'));
+ const html=renderToStaticMarkup(createElement(printExports.MedicalPaper,{doc:v3}));assert.match(html,/ENDE DEORURO/);assert.match(html,/Guardado/);assert.ok(!html.includes('Guardar borrador'));
  for(const section of t.sections.filter(s=>!s.title.startsWith('Datos para el registro')))assert.ok(html.includes(section.title),`Print missing section: ${section.title}`);
  if(t.id==='consultas'){assert.match(html,/>Consulta<\/th>/);assert.match(html,/>Reconsulta<\/th>/);assert.match(html,/Firma paciente/);}
  if(t.id==='farmacia'){assert.equal((html.match(/class="day"/g)||[]).length,30);assert.match(html,/Fecha de vencimiento/);}
@@ -69,7 +69,7 @@ await assert.rejects(save(invalid));
 const incompleteAlcotest={...invalid,finalize:false,requestId:randomUUID()};
 incompleteAlcotest.data.rows[0].observations='Dato ficticio que debe conservarse';
 const savedAlcotest=await save(incompleteAlcotest);
-assert.throws(()=>validation.validateDocument({...incompleteAlcotest,finalize:true}),/Vincula/);
+assert.doesNotThrow(()=>validation.validateDocument({...incompleteAlcotest,finalize:true}));
 const reopenedAlcotest=(await list({template:'alcotest',status:'draft'})).documents.find(d=>d.id===savedAlcotest.id);
 assert.deepEqual(reopenedAlcotest.data,incompleteAlcotest.data,'incomplete Alcotest survives a fresh history query');
 const completedAlcotest={...incompleteAlcotest,revision:reopenedAlcotest.revision,requestId:randomUUID(),finalize:true,data:{...reopenedAlcotest.data,rows:reopenedAlcotest.data.rows.map(r=>({...r,workerId:worker}))}};

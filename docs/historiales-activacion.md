@@ -2,6 +2,12 @@
 
 La doctora ingresa únicamente con el código acordado. No se usa correo ni contraseña, tampoco variables MEDICAL_AUTH_EMAIL o MEDICAL_AUTH_PASSWORD.
 
+## Activar registro libre y edición (actualización 005)
+
+Con 004 ya aplicada, ejecutar una sola vez `supabase/migrations/202609190005_medical_editable_patients.sql` en el editor SQL del mismo proyecto Supabase y publicar esta versión de la aplicación. No repetir 001–004. Coordinar ambos pasos: esta actualización sustituye el guardado antiguo por `medical_document_save_v2`.
+
+005 crea una lista médica privada de personas atendidas, copia únicamente las personas con registros médicos previos y separa las referencias de las nueve plantillas del padrón general. Los documentos existentes se conservan y pasan a ser editables. No modifica trabajadores, actas ni medicamentos del sistema compartido. Las versiones anteriores de cada edición se archivan en una tabla privada; se mantienen las verificaciones de sesión, concurrencia e idempotencia.
+
 ## Activar las nueve plantillas (actualización 004)
 
 Si el ingreso con código ya funciona, ejecutar una sola vez `supabase/migrations/202609190004_medical_documents.sql` en el editor SQL del mismo proyecto Supabase. Después publicar el código actualizado. La migración crea tablas privadas y funciones para las nueve plantillas; conserva los registros, actas y sesiones existentes. No requiere agregar variables de entorno.
@@ -35,7 +41,7 @@ Ejecutar en orden las migraciones 001, 002, 003 y 004. No hace falta crear usuar
 
 ## Alcance de la primera etapa
 
-Expediente por trabajador, consultas/reconsultas, antecedentes, signos vitales, diagnóstico, tratamiento, recomendaciones, correcciones anexas e impresión. Las atenciones guardadas son inmutables desde la aplicación. Cada una conserva los datos laborales del momento de la atención.
+Expediente por trabajador, consultas/reconsultas, antecedentes, signos vitales, diagnóstico, tratamiento, recomendaciones, correcciones anexas e impresión. Las atenciones del formato anterior son inmutables desde la aplicación; las nueve plantillas son editables desde la actualización 005. Cada una conserva los datos laborales del momento de la atención.
 
 El espacio médico incluye Registrar Acta, Historial Actas y Medicamentos con los mismos componentes y datos del sistema principal. Permite registrar entregas, gestionar trabajadores y stock, consultar actas, corregir ítems, imprimir, exportar Word y consultar la planilla mensual. Medicamentos conserva el catálogo y armado de kits. El historial clínico permanece separado y protegido por la sesión médica. Se eliminó el respaldo ficticio en memoria del botiquín: un error de persistencia no se anuncia como guardado.
 
@@ -53,11 +59,11 @@ El espacio médico incluye Registrar Acta, Historial Actas y Medicamentos con lo
 
 ### Llenado e historial
 
-Cada ficha se vincula con un trabajador; cada fila de una planilla clínica también. El historial se puede abrir desde el trabajador o desde Formatos médicos. Incluye filtros por plantilla, trabajador, estado y periodo, y paginación de 50 documentos. Las planillas se identifican por el primer día del mes o año; el filtro de fechas corresponde a ese periodo, no a la fecha de carga.
+Las fichas y filas permiten escribir libremente los datos de una persona o buscarla entre las ya atendidas. El CI es opcional y permite reutilizar la misma persona al guardar. Sin CI no se unen personas solo por compartir nombre: se reutilizan mediante selección explícita en el buscador. La lista de Historias clínicas muestra únicamente personas con registros médicos, hasta 50 resultados por búsqueda.
 
-Los borradores admiten campos pendientes y se pueden continuar después. Finalizar exige los campos obligatorios y conserva una versión inmutable. Las correcciones crean otro documento y mantienen el original; no hay eliminación de documentos. Dos ventanas no pueden sobrescribir silenciosamente el mismo borrador. Reintentar una operación después de un corte de red no crea otro registro.
+Un único botón Guardar conserva los datos disponibles. Desde el historial se abre el documento y se pulsa Editar para cambiarlo y guardar una nueva versión del mismo registro. Los textos escritos, incluidas las opciones seleccionadas, se normalizan a mayúsculas al guardar; fechas, números y referencias internas conservan su tipo. No se eliminan documentos. Las versiones previas se conservan internamente, sin exigir un trámite de finalización o corrección a la doctora. Dos ventanas no pueden sobrescribir silenciosamente la misma versión y los reintentos no duplican registros.
 
-Una historia finalizada genera una fila en Consultas. Una corrección final sustituye esa fila en los informes vigentes, conservando ambas versiones. Los registros derivados se corrigen desde su historia de origen. No registrar manualmente la misma atención si ya se generó desde Historia clínica.
+Una historia guardada genera una fila en Consultas. Editar esa historia actualiza la misma consulta, sin duplicarla. Si la doctora edita directamente la consulta derivada, esta conserva su edición y deja de sincronizarse desde el original. El historial tiene filtros por plantilla, persona, estado y periodo, con páginas de 50 documentos; los periodos mensuales se identifican por el primer día del mes y los anuales por el 1 de enero.
 
 Las nuevas plantillas conservan las atenciones del formato anterior. Estas siguen consultables y corregibles en el expediente. No se convierte automáticamente información antigua a campos que no existían.
 
@@ -65,7 +71,7 @@ Las nuevas plantillas conservan las atenciones del formato anterior. Estas sigue
 
 Vista previa con logo ENDE, títulos, códigos conocidos, campos, tablas y espacios de firma. Papel Carta, A4 o A3; fichas verticales y planillas horizontales. Las planillas más anchas sugieren A3. Imprimir / Guardar PDF abre el diálogo del navegador; elegir Guardar como PDF para descargar. La vista previa de borradores indica BORRADOR. Los encabezados de columnas se repiten al imprimir varias páginas. Las firmas son espacios para firma manuscrita; no se implementa firma electrónica certificada ni captura biométrica.
 
-Se pueden consolidar documentos finales de una planilla del mismo periodo y encabezado. Se omiten versiones sustituidas, se cargan todas las páginas y se detiene con aviso si hay más de 1.000 filas. Cada documento admite hasta 100 filas y 1 MB de contenido; los campos de texto admiten 6.000 caracteres.
+Se pueden consolidar documentos guardados de una planilla del mismo periodo y encabezado. Se omiten versiones sustituidas, se cargan todas las páginas y se detiene con aviso si hay más de 1.000 filas. Cada documento admite hasta 100 filas y 1 MB de contenido; los campos de texto admiten 6.000 caracteres.
 
 ### Farmacia
 
@@ -77,7 +83,7 @@ Adjuntos, importación de historias anteriores y exportación editable de estas 
 
 ## Comprobaciones
 
-- `npm run test:medical`: pruebas de PostgreSQL embebido, sin contactar datos reales. Incluyen código directo, rechazo de códigos inválidos, límite persistente de intentos, sesiones revocadas/expiradas, cuentas desactivadas, inmutabilidad, idempotencia y auditoría. También prueban las nueve plantillas, coincidencia de campos entre pantalla y SQL, borradores, concurrencia, correcciones y consultas derivadas, filtros por trabajador y farmacia.
+- `npm run test:medical`: pruebas de PostgreSQL embebido, sin contactar datos reales. Incluyen código directo, rechazo de códigos inválidos, límite persistente de intentos, sesiones revocadas/expiradas, cuentas desactivadas, inmutabilidad, idempotencia y auditoría. También prueban las nueve plantillas, coincidencia de campos entre pantalla y SQL, borradores, concurrencia, correcciones y consultas derivadas, filtros por trabajador y farmacia. La actualización 005 añade pruebas de registro libre en las nueve plantillas, edición de documentos antiguos y nuevos, mayúsculas, pacientes atendidos, archivo de versiones y sincronización sin duplicados.
 - `npm run build`: compilación.
 - `node scripts/test-medical-http.mjs`: tras compilar, arranca un servidor de prueba en el puerto 3317; comprueba entrada sin email/contraseña, redirección anónima, no-cache y bloqueo de la vista previa en producción.
 - Repetir la validación de inicio, guardado, cierre e impresión en Supabase después de aplicar la migración, usando datos ficticios. Verificar restauración de respaldo antes de usar expedientes reales.

@@ -1,4 +1,7 @@
 export type MedicalWorker = {
+  names?: string;
+  paternal?: string;
+  maternal?: string;
   id: string;
   full_name: string;
   ci: string;

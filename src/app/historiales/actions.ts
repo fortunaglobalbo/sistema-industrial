@@ -88,29 +88,15 @@ export async function logoutMedical() {
 export async function searchMedicalWorkers(
   query: string,
 ): Promise<MedicalWorker[]> {
-  const { db } = await requireMedical();
-  const term = z
-    .string()
-    .max(100)
-    .parse(query)
-    .replace(/[%_,().]/g, " ")
-    .trim();
-  let request = db
-    .from("workers")
-    .select("id,full_name,ci,position,department")
-    .order("full_name")
-    .limit(50);
-  if (term)
-    request = request.or(`full_name.ilike.%${term}%,ci.ilike.%${term}%`);
-  const { data, error } = await request;
-  if (error)
-    throw new Error("No se pudo cargar el padrón. Intenta nuevamente.");
+  const { db, token } = await requireMedical();
+  const {data,error}=await db.rpc('medical_patients_search',{session_token:token,query:z.string().max(100).parse(query).trim()});
+  if(error) throw new Error('No se pudieron cargar las personas atendidas. Verifica la actualización 005 en Supabase.');
   return data;
 }
 
 export async function readMedicalCase(workerId: string): Promise<MedicalCase> {
   const { db, token } = await requireMedical();
-  const { data, error } = await db.rpc("medical_pin_read_case", {
+  const { data, error } = await db.rpc("medical_patient_case", {
     session_token: token,
     target: z.uuid().parse(workerId),
   });

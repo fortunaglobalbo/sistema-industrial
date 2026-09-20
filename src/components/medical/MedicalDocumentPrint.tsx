@@ -15,15 +15,16 @@ table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:inherit}t
 @media print{.sheet{padding:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}h2{break-after:avoid}}
 `;
 function display(value:string|undefined,field:Field){
-  if(field.key.toLowerCase().includes('signature')||field.key==='signature') return value?`${value}\n________________`: '________________';
+  if(field.key.toLowerCase().includes('signature')||field.key==='signature') return value?`${value.toUpperCase()}\n________________`: '________________';
   if(!value) return '—';
   if(field.type==='date'&&/^\d{4}-\d{2}-\d{2}$/.test(value)) return value.split('-').reverse().join('/');
-  return value;
+  return value.toUpperCase();
 }
 export function MedicalPaper({doc,logo='/logo_ende_deoruro.png'}:{doc:MedicalDocument;logo?:string}){
   const t=getTemplate(doc.template_id)!;
   let columns=t.columns||[];
   if(t.id==='farmacia') columns=columns.filter(f=>!f.key.startsWith('day')||Number(f.key.slice(3))<=daysInMonth(doc.period));
+  if(t.id==='bajas') columns=[{key:'fullName',label:'Nombre completo del trabajador'},...columns];
   if(t.id==='consultas') columns=columns.flatMap(f=>f.key==='kind'?[{key:'isConsulta',label:'Consulta'},{key:'isReconsulta',label:'Reconsulta'}]:[f]);
   const period=t.period==='year'?doc.period.slice(0,4):t.period==='month'?`${months[Number(doc.period.slice(5,7))-1]} ${doc.period.slice(0,4)}`:doc.period.split('-').reverse().join('/');
   return <article className={`sheet ${t.kind==='planilla'?'landscape':''}`}>
@@ -35,10 +36,10 @@ export function MedicalPaper({doc,logo='/logo_ende_deoruro.png'}:{doc:MedicalDoc
     <div className="meta"><span><b>{t.period==='date'?'Fecha':'Periodo'}:</b> {period}</span>{doc.worker_snapshot.full_name&&<span><b>Trabajador:</b> {doc.worker_snapshot.full_name} · CI {doc.worker_snapshot.ci}</span>}</div>
     {doc.correction_of&&<p className="note"><b>Corrección de {doc.correction_of.slice(0,8)}:</b> {doc.correction_reason}</p>}
     {t.sections.filter(s=>!(t.id==='historia'&&s.title==='Datos para el registro de consultas')).map(s=><section className="section" key={s.title}><h2>{s.title}</h2><div className="fields">{s.fields.map(f=><div key={f.key} className={`field ${f.type==='textarea'?'wide':''}`}><b>{f.label}</b><div className="value">{display(doc.data.fields[f.key],f)}</div></div>)}</div></section>)}
-    {t.kind==='planilla'&&<table><thead><tr><th className="serial" rowSpan={t.id==='farmacia'?2:1}>N°</th>{columns.map(f=><th key={f.key} className={f.key.startsWith('day')?'day':''}>{f.label}</th>)}</tr>{t.id==='farmacia'&&<tr>{columns.map(f=><th key={f.key}>{f.key.startsWith('day')?['D','L','M','M','J','V','S'][new Date(doc.period.slice(0,8)+f.key.slice(3).padStart(2,'0')+'T12:00:00Z').getUTCDay()]:''}</th>)}</tr>}</thead><tbody>{doc.data.rows.map((r,i)=><tr key={i}><td>{i+1}</td>{columns.map(f=><td key={f.key}>{f.key==='isConsulta'?(r.kind==='Consulta'?'X':''):f.key==='isReconsulta'?(r.kind==='Reconsulta'?'X':''):display(r[f.key],f)}</td>)}</tr>)}</tbody></table>}
+    {t.kind==='planilla'&&<table><thead><tr><th className="serial" rowSpan={t.id==='farmacia'?2:1}>N°</th>{columns.map(f=><th key={f.key} className={f.key.startsWith('day')?'day':''}>{f.label}</th>)}</tr>{t.id==='farmacia'&&<tr>{columns.map(f=><th key={f.key}>{f.key.startsWith('day')?['D','L','M','M','J','V','S'][new Date(doc.period.slice(0,8)+f.key.slice(3).padStart(2,'0')+'T12:00:00Z').getUTCDay()]:''}</th>)}</tr>}</thead><tbody>{doc.data.rows.map((r,i)=><tr key={i}><td>{i+1}</td>{columns.map(f=><td key={f.key}>{f.key==='isConsulta'?(r.kind?.toUpperCase()==='CONSULTA'?'X':''):f.key==='isReconsulta'?(r.kind?.toUpperCase()==='RECONSULTA'?'X':''):display(r[f.key],f)}</td>)}</tr>)}</tbody></table>}
     {t.note&&<p className="note">{t.note}</p>}
     {t.signatures&&<div className="signatures">{t.signatures.map(s=><div key={s}>{s}</div>)}</div>}
-    <footer className="footer">Registro {doc.id.slice(0,8)} · Versión {doc.revision} · {doc.author_name} · {doc.status==='final'?'Finalizado':'Borrador'}{doc.finalized_at?' · '+new Date(doc.finalized_at).toLocaleString('es-BO',{timeZone:'America/La_Paz'}):''}</footer>
+    <footer className="footer">Registro {doc.id.slice(0,8)} · Versión {doc.revision} · {doc.author_name} · {doc.status==='final'?'Guardado':'Borrador anterior'}{doc.finalized_at?' · '+new Date(doc.finalized_at).toLocaleString('es-BO',{timeZone:'America/La_Paz'}):''}</footer>
   </article>;
 }
 export default function MedicalDocumentPrint({doc,onClose}:{doc:MedicalDocument;onClose:()=>void}){

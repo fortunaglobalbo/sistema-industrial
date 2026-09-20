@@ -52,7 +52,7 @@ export const templates: Template[] = [
 ];
 
 export type FormDataValues = { fields: Record<string,string>; rows: Record<string,string>[] };
-export type MedicalDocument = { id:string; template_id:string; worker_id:string|null; worker_snapshot:Record<string,string>; period:string; status:'draft'|'final'; revision:number; data:FormDataValues; author_name:string; created_at:string; updated_at:string; finalized_at:string|null; correction_of:string|null; correction_reason:string; source_document_id:string|null; superseded?:boolean };
+export type MedicalDocument = { id:string; template_id:string; worker_id:string|null; worker_snapshot:Record<string,string>; period:string; status:'draft'|'final'; revision:number; data:FormDataValues; author_name:string; created_at:string; updated_at:string; finalized_at:string|null; correction_of:string|null; correction_reason:string; source_document_id:string|null; source_managed?:boolean; superseded?:boolean };
 export type DocumentFilter = { template?:string; worker?:string; from?:string; to?:string; status?:string; offset?:number };
 export const getTemplate = (id:string) => templates.find(t=>t.id===id);
 export const today = () => new Intl.DateTimeFormat('sv-SE',{timeZone:'America/La_Paz'}).format(new Date());
