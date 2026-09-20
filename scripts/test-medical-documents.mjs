@@ -65,6 +65,18 @@ for(const bad of [{...pharmacy.data.rows[0],day1:'100'},{...pharmacy.data.rows[0
 }
 const invalid=input(catalog.getTemplate('alcotest'));invalid.finalize=true;delete invalid.data.rows[0].workerId;
 await assert.rejects(save(invalid));
+// Alcotest review must preserve incomplete input as a draft before final validation.
+const incompleteAlcotest={...invalid,finalize:false,requestId:randomUUID()};
+incompleteAlcotest.data.rows[0].observations='Dato ficticio que debe conservarse';
+const savedAlcotest=await save(incompleteAlcotest);
+assert.throws(()=>validation.validateDocument({...incompleteAlcotest,finalize:true}),/Vincula/);
+const reopenedAlcotest=(await list({template:'alcotest',status:'draft'})).documents.find(d=>d.id===savedAlcotest.id);
+assert.deepEqual(reopenedAlcotest.data,incompleteAlcotest.data,'incomplete Alcotest survives a fresh history query');
+const completedAlcotest={...incompleteAlcotest,revision:reopenedAlcotest.revision,requestId:randomUUID(),finalize:true,data:{...reopenedAlcotest.data,rows:reopenedAlcotest.data.rows.map(r=>({...r,workerId:worker}))}};
+await save(completedAlcotest);
+const reopenedFinal=(await list({template:'alcotest',status:'final'})).documents.find(d=>d.id===savedAlcotest.id);
+assert.equal(reopenedFinal.status,'final');
+assert.deepEqual(reopenedFinal.data,completedAlcotest.data,'completed Alcotest can be recovered from history');
 const invalidDate=input(catalog.getTemplate('consultas'));invalidDate.data.rows[0].date='2026-08-01';await assert.rejects(save(invalidDate));
 const missing=input(catalog.getTemplate('historia'));missing.finalize=true;missing.data.fields={};await assert.rejects(save(missing));
 const draftEmpty={...missing,finalize:false,requestId:randomUUID()};assert.equal((await save(draftEmpty)).status,'draft');
