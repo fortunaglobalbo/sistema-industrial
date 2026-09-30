@@ -2,6 +2,12 @@
 
 La doctora ingresa únicamente con el código acordado. No se usa correo ni contraseña, tampoco variables MEDICAL_AUTH_EMAIL o MEDICAL_AUTH_PASSWORD.
 
+## Activar el expediente y retiro del listado (actualización 006)
+
+Con 005 aplicada, ejecutar una sola vez `supabase/migrations/202609300006_medical_patient_workspace.sql` y publicar esta versión. Agrega peso (kg) y talla (m) a Historia clínica y permite retirar una persona del buscador mediante Eliminar del listado, con confirmación. Sus documentos y la auditoría se conservan; no se borran historias ni se cambia el padrón compartido. Las personas retiradas no se reutilizan automáticamente por CI ni aparecen en el buscador.
+
+La búsqueda de personas se actualiza al escribir y descarta respuestas atrasadas. Sin coincidencias, Nueva atención abre Historia clínica con el nombre o CI escrito. El expediente muestra nueve tarjetas: las llenadas se marcan en amarillo y abren el último documento; también permiten consultar registros anteriores o crear uno nuevo. Las planillas clínicas precargan a la persona al añadir una fila. Farmacia está identificada como control compartido, no individual. Los botones Volver aparecen arriba y abajo y regresan al expediente o al listado según el punto de entrada.
+
 ## Activar registro libre y edición (actualización 005)
 
 Con 004 ya aplicada, ejecutar una sola vez `supabase/migrations/202609190005_medical_editable_patients.sql` en el editor SQL del mismo proyecto Supabase y publicar esta versión de la aplicación. No repetir 001–004. Coordinar ambos pasos: esta actualización sustituye el guardado antiguo por `medical_document_save_v2`.

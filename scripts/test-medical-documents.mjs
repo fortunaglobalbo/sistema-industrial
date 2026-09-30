@@ -16,7 +16,8 @@ await db.exec(`create role anon;create role authenticated;create schema auth;cre
 for(const file of ['202609190001_medical.sql','202609190002_medical_code_throttle.sql','202609190003_medical_pin_sessions.sql','202609190004_medical_documents.sql'])await db.exec(await readFile(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'));
 const worker=randomUUID(),other=randomUUID();await db.query("insert into workers values($1,'Trabajador ficticio','TEST','Prueba','Prueba'),($2,'Otro ficticio','TEST-2','Prueba','Prueba')",[worker,other]);
 const definitions=(await db.query('select definition from medical_form_templates order by id')).rows.map(r=>r.definition);
-assert.deepEqual(definitions,catalog.templates.toSorted((a,b)=>a.id.localeCompare(b.id)),'SQL and UI field catalogs must agree');
+const originalCatalog=structuredClone(catalog.templates);originalCatalog.find(t=>t.id==='historia').sections[6].fields=originalCatalog.find(t=>t.id==='historia').sections[6].fields.filter(f=>!['weight','height'].includes(f.key));
+assert.deepEqual(definitions,originalCatalog.toSorted((a,b)=>a.id.localeCompare(b.id)),'004 field catalog remains compatible with existing records');
 await db.exec('set role anon');
 const token=(await db.query("select medical_pin_login('5501') as s")).rows[0].s.token;
 const save=async p=>(await db.query('select medical_document_save($1,$2) as d',[token,p])).rows[0].d;

@@ -1,27 +1,30 @@
-import { searchMedicalWorkers, readMedicalCase } from '@/app/historiales/actions';
+import { searchMedicalWorkers, readMedicalCase, removeMedicalPatient } from '@/app/historiales/actions';
 import type { MedicalWorker, MedicalCase } from './types';
 import { listMedicalDocuments, saveMedicalDocument } from '@/app/historiales/document-actions';
 import { validateDocument, type SaveDocumentInput } from './document-validation';
 import type { MedicalDocument, DocumentFilter } from './templates';
-export type DocumentsApi = { searchPatients:(query:string)=>Promise<MedicalWorker[]>; readPatient:(id:string)=>Promise<MedicalCase>; list:(f:DocumentFilter)=>Promise<{documents:MedicalDocument[];more:boolean}>; save:(input:SaveDocumentInput)=>Promise<{document?:MedicalDocument;error?:string}> };
-export const documentsApi:DocumentsApi = {list:listMedicalDocuments,save:saveMedicalDocument,searchPatients:searchMedicalWorkers,readPatient:readMedicalCase};
+export type DocumentsApi = { removePatient:(id:string)=>Promise<void>; searchPatients:(query:string)=>Promise<MedicalWorker[]>; readPatient:(id:string)=>Promise<MedicalCase>; list:(f:DocumentFilter)=>Promise<{documents:MedicalDocument[];more:boolean}>; save:(input:SaveDocumentInput)=>Promise<{document?:MedicalDocument;error?:string}> };
+export const documentsApi:DocumentsApi = {list:listMedicalDocuments,save:saveMedicalDocument,searchPatients:searchMedicalWorkers,readPatient:readMedicalCase,removePatient:removeMedicalPatient};
 // Explicit local preview only: all state is in memory and is discarded on reload.
 export function previewDocumentsApi():DocumentsApi {
+  const removed=new Set<string>();
   const people=new Map<string,MedicalWorker>();
   const records=new Map<string,MedicalDocument>();
   const requests=new Map<string,{input:string;document:MedicalDocument}>();
   function person(values:Record<string,string>,selected:string|null){
+    if(selected&&removed.has(selected))throw new Error('Persona eliminada del listado. Escribe otra persona o selecciónala de nuevo.');
     const prior=selected?people.get(selected):undefined;
     const full_name=(values.fullName||[values.names,values.paternal,values.maternal].filter(Boolean).join(' ')||prior?.full_name||'').toUpperCase();
     if(!full_name)throw new Error('Escribe el nombre del trabajador.');
     const ci=(values.ci||prior?.ci||'').toUpperCase();
-    const match=selected||([...people.values()].find(p=>ci&&p.ci===ci)?.id)||crypto.randomUUID();
+    const match=selected||([...people.values()].find(p=>!removed.has(p.id)&&ci&&p.ci===ci)?.id)||crypto.randomUUID();
     const result={id:match,full_name,ci,position:values.occupation||prior?.position||'',department:values.department||prior?.department||'',names:values.names||prior?.names||'',paternal:values.paternal||prior?.paternal||'',maternal:values.maternal||prior?.maternal||''};
     return result;
   }
   return {
-    async searchPatients(query){return structuredClone([...people.values()].filter(p=>(p.full_name+' '+p.ci).includes(query.toUpperCase())).slice(0,50));},
-    async readPatient(id){const worker=people.get(id);if(!worker)throw new Error('Persona inexistente.');return {worker:structuredClone(worker),encounters:[]};},
+    async removePatient(id){if(!people.has(id))throw new Error('Persona inexistente.');removed.add(id);},
+    async searchPatients(query){return structuredClone([...people.values()].filter(p=>!removed.has(p.id)&&(p.full_name+' '+p.ci).includes(query.toUpperCase())).slice(0,50));},
+    async readPatient(id){const worker=people.get(id);if(!worker||removed.has(id))throw new Error('Persona inexistente.');return {worker:structuredClone(worker),encounters:[]};},
     async list(f){
       const all=[...records.values()].map(d=>({...d,superseded:[...records.values()].some(c=>c.correction_of===d.id&&c.status==='final')})).filter(d=>(!f.template||d.template_id===f.template)&&(!f.status||d.status===f.status)&&(!f.worker||d.worker_id===f.worker||d.data.rows.some(r=>r.workerId===f.worker))&&(!f.from||d.period>=f.from)&&(!f.to||d.period<=f.to)).sort((a,b)=>b.period.localeCompare(a.period)||b.created_at.localeCompare(a.created_at)||a.id.localeCompare(b.id));
       const offset=f.offset||0;return {documents:structuredClone(all.slice(offset,offset+50)),more:all.length>offset+50};

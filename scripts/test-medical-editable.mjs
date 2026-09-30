@@ -20,6 +20,9 @@ const legacyToken=(await db.query("select medical_pin_login('5501') as s")).rows
 const legacyPayload={id:randomUUID(),requestId:randomUUID(),revision:0,templateId:'alcotest',workerId:null,period:'2026-09-01',finalize:true,correctionOf:null,correctionReason:'',data:{fields:{},rows:[{date:'2026-09-01',workerId:legacyWorker,fullName:'ATENDIDO ANTERIOR',ci:'LEGACY'}]}};
 await db.query('select medical_document_save($1,$2)',[legacyToken,legacyPayload]);
 await db.exec(await readFile(new URL('../supabase/migrations/202609190005_medical_editable_patients.sql',import.meta.url),'utf8'));
+await db.exec(await readFile(new URL('../supabase/migrations/202609300006_medical_patient_workspace.sql',import.meta.url),'utf8'));
+const updatedDefinitions=(await db.query('select definition from medical_form_templates order by id')).rows.map(r=>r.definition);
+assert.deepEqual(updatedDefinitions,catalog.templates.toSorted((a,b)=>a.id.localeCompare(b.id)));
 await db.exec('set role anon');
 const token=(await db.query("select medical_pin_login('5501') as s")).rows[0].s.token;
 const save=async p=>(await db.query('select medical_document_save_v2($1,$2) as d',[token,p])).rows[0].d;
@@ -32,6 +35,7 @@ for(const t of catalog.templates){
  const period=t.period==='year'?'2026-01-01':'2026-09-01';
  const identity={fullName:'persona nueva '+t.id,ci:'libre-'+t.id};
  const p={id:randomUUID(),requestId:randomUUID(),revision:0,templateId:t.id,workerId:null,period,finalize:true,correctionOf:null,correctionReason:'',data:{fields:t.kind==='ficha'?identity:{},rows:t.kind==='planilla'?[t.id==='farmacia'?{medication:'medicamento de prueba',opening:'10',incoming:'2',day1:'1'}:identity]:[]}};
+ if(t.id==='historia'){p.data.fields.weight='72.5';p.data.fields.height='1.68';}
  const normalized=validation.validateDocument(p);
  assert.equal((t.kind==='ficha'?normalized.fields:normalized.rows[0])[t.id==='farmacia'?'medication':'fullName'],(t.id==='farmacia'?'medicamento de prueba':identity.fullName).toUpperCase());
  const first=await save(p);assert.equal(first.status,'final');assert.equal(first.revision,1);
@@ -63,7 +67,19 @@ await assert.rejects(db.query('select * from medical_patients'));
 await assert.rejects(db.query('select * from medical_document_versions'));
 await assert.rejects(db.query('select medical_patients_search($1,$2)',['0'.repeat(64),'']));
 await assert.rejects(save({...history.p,id:randomUUID(),revision:0,requestId:randomUUID(),workerId:null,data:{fields:{},rows:[]}}),/nombre/);
+const beforeRemoval=(await list({worker:patient.id})).documents;
+await assert.rejects(db.query('select medical_patient_remove($1,$2)',['0'.repeat(64),patient.id]));
+assert.equal((await search('libre-historia')).length,1);
+await db.query('select medical_patient_remove($1,$2)',[token,patient.id]);
+await db.query('select medical_patient_remove($1,$2)',[token,patient.id]);
+assert.deepEqual(await search('libre-historia'),[],'removed patients disappear from search');
+assert.deepEqual((await list({worker:patient.id})).documents,beforeRemoval,'removal preserves the medical documents');
+await assert.rejects(db.query('select medical_patient_case($1,$2)',[token,patient.id]));
+await assert.rejects(db.query('update medical_patients set removed_at=null where id=$1',[patient.id]));
+assert.equal(history.doc.data.fields.weight,'72.5');assert.equal(history.doc.data.fields.height,'1.68');
+const printed=renderToStaticMarkup(createElement(printExports.MedicalPaper,{doc:history.doc}));assert.match(printed,/Peso \(kg\)/);assert.match(printed,/72.5/);assert.match(printed,/1.68/);
 await db.exec('reset role');
+assert.equal((await db.query("select count(*)::int as n from medical_document_audit where event='remove_patient_from_list'")).rows[0].n,1);
 const versions=(await db.query('select snapshot from medical_document_versions where document_id=$1 order by revision',[history.doc.id])).rows;
 assert.equal(versions.length,2);assert.equal(versions[0].snapshot.data.fields.fullName,'PERSONA NUEVA HISTORIA');
 assert.equal((await db.query('select count(*)::int as n from workers')).rows[0].n,2,'free medical entry never changes the shared roster');
@@ -75,4 +91,5 @@ const previewSaved=await preview.save(previewInput);assert.ok(previewSaved.docum
 assert.equal((await preview.searchPatients('persona')).length,1);
 const previewEdit=await preview.save({...previewInput,workerId:previewSaved.document.worker_id,revision:1,requestId:randomUUID()});assert.equal(previewEdit.document.revision,2);
 assert.equal((await preview.list({template:'consultas'})).documents.length,1);
+await preview.removePatient(previewSaved.document.worker_id);assert.deepEqual(await preview.searchPatients('persona'),[]);assert.equal((await preview.list({worker:previewSaved.document.worker_id})).documents.length,2);
 console.log('OK: nueve plantillas libres y editables, mayúsculas, solo personas atendidas, versiones, permisos y consultas sin duplicados.');

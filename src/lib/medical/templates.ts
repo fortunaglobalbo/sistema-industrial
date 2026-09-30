@@ -20,7 +20,7 @@ export const templates: Template[] = [
     { title: '4. Antecedentes familiares', fields: [area('familyHistory', 'Antecedentes familiares')] },
     { title: '5. Motivo de consulta', fields: [{ ...area('reason', 'Motivo de consulta'), required: true }] },
     { title: '6. Enfermedad actual', fields: [area('illness', 'Enfermedad actual')] },
-    { title: '7. Examen físico', fields: [...vital, area('examination', 'Examen físico')] },
+    { title: '7. Examen físico', fields: [...vital, f('weight','Peso (kg)','number'), f('height','Talla (m)','number'), area('examination', 'Examen físico')] },
     { title: '8. Diagnóstico', fields: [{ ...area('diagnosis', 'Diagnóstico'), required: true }] },
     { title: '9. Conducta', fields: [area('conduct', 'Conducta'), f('doctor', 'Médico tratante', 'text', true)] },
     { title: 'Datos para el registro de consultas', fields: [choice('kind', 'Tipo de atención', ['Consulta','Reconsulta']), f('workSchedule', 'Horario de trabajo'), choice('sex', 'Sexo', ['F','M']), area('treatment', 'Tratamiento'), area('referral', 'Interconsulta'), area('recommendations', 'Observaciones o recomendaciones')] },

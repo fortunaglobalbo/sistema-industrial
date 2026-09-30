@@ -151,3 +151,9 @@ export async function readSharedAct(id: string) {
   const { getTransactionDetails } = await import("@/app/actions/transaction");
   return getTransactionDetails(z.uuid().parse(id));
 }
+
+export async function removeMedicalPatient(id:string):Promise<void>{
+  const {db,token}=await requireMedical();
+  const {error}=await db.rpc('medical_patient_remove',{session_token:token,target:z.uuid().parse(id)});
+  if(error)throw new Error('No se pudo eliminar del listado. Verifica tu conexión y la actualización 006 en Supabase.');
+}
