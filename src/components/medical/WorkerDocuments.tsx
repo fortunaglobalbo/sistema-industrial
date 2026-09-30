@@ -3,12 +3,13 @@ import { useEffect, useState } from 'react';
 import { FileHeart, CheckCircle2, Plus, History, ArrowUpRight } from 'lucide-react';
 import type { DocumentsApi } from '@/lib/medical/document-api';
 import { templates, type MedicalDocument } from '@/lib/medical/templates';
+import { showMedicalLoading } from './medical-loading';
 
 type Page={documents:MedicalDocument[];more:boolean};
 export default function WorkerDocuments({workerId,api,onOpen,onNew}:{workerId:string;api:DocumentsApi;onOpen:(doc:MedicalDocument)=>void;onNew:(template:string)=>void}){
   const [pages,setPages]=useState<Record<string,Page>>({});
   const [busy,setBusy]=useState(true);const [error,setError]=useState('');const [loading,setLoading]=useState('');const [retry,setRetry]=useState(0);
-  useEffect(()=>{let active=true;Promise.all(templates.map(async t=>[t.id,await api.list({template:t.id,...(t.id==='farmacia'?{}:{worker:workerId})})] as const)).then(results=>{if(active){setPages(Object.fromEntries(results));setError('');}}).catch(()=>{if(active)setError('No se pudieron cargar las plantillas. Intenta nuevamente.');}).finally(()=>{if(active)setBusy(false);});return()=>{active=false;};},[api,workerId,retry]);
+  useEffect(()=>{let active=true;const closeLoading=showMedicalLoading('plantillas');Promise.all(templates.map(async t=>[t.id,await api.list({template:t.id,...(t.id==='farmacia'?{}:{worker:workerId})})] as const)).then(results=>{if(active){setPages(Object.fromEntries(results));setError('');}}).catch(()=>{if(active)setError('No se pudieron cargar las plantillas. Intenta nuevamente.');}).finally(()=>{closeLoading();if(active)setBusy(false);});return()=>{active=false;closeLoading();};},[api,workerId,retry]);
   async function more(id:string){setLoading(id);setError('');try{const page=await api.list({template:id,...(id==='farmacia'?{}:{worker:workerId}),offset:pages[id].documents.length});setPages(prev=>({...prev,[id]:{documents:[...prev[id].documents,...page.documents],more:page.more}}));}catch{setError('No se pudieron cargar los registros anteriores.');}finally{setLoading('');}}
   return <section className="space-y-4" aria-label="Plantillas del expediente"><header><h2 className="text-2xl font-black text-[#002f6c] flex items-center gap-2"><FileHeart size={26}/> Formatos médicos ENDE</h2><p className="text-sm text-slate-500 mt-2">Nueve plantillas · Amarillo: tiene registros · Abre una tarjeta para recuperar y editar sus datos.</p></header>
     {error&&<div role="alert" className="bg-red-50 text-red-800 p-4 rounded-xl">{error}<button className="ml-3 underline" onClick={()=>{setBusy(true);setRetry(v=>v+1);}}>Reintentar</button></div>}

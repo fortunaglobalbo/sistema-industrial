@@ -41,6 +41,7 @@ import ModuloMedicamentosKits from "@/components/ModuloMedicamentosKits";
 import "./medical.css";
 import MedicalDocuments from './MedicalDocuments';
 import WorkerDocuments from './WorkerDocuments';
+import { showMedicalLoading } from './medical-loading';
 import type { MedicalDocument } from '@/lib/medical/templates';
 import { documentsApi, previewDocumentsApi } from '@/lib/medical/document-api';
 
@@ -91,6 +92,8 @@ export default function MedicalWorkspace({
   const [notice, setNotice] = useState("");
   const [printed, setPrinted] = useState<Encounter>();
   const sequence = useRef(0);
+  const closePatientLoading = useRef<(() => void) | null>(null);
+  useEffect(() => () => { ++sequence.current; closePatientLoading.current?.(); }, []);
   const [searching,setSearching]=useState(false);
   const [searchRevision,setSearchRevision]=useState(0);
   const [removeTarget,setRemoveTarget]=useState<MedicalWorker>();
@@ -130,8 +133,10 @@ export default function MedicalWorkspace({
     );
   }
   async function openPatient(workerId: string) {
-    if (!leave()) return;
+    if (busy || !leave()) return;
     const id = ++sequence.current;
+    const closeLoading = showMedicalLoading('expediente');
+    closePatientLoading.current = closeLoading;
     setBusy(true);
     setError("");
     setPatient(undefined);
@@ -148,6 +153,7 @@ export default function MedicalWorkspace({
           e instanceof Error ? e.message : "No se pudo abrir el expediente.",
         );
     } finally {
+      closeLoading();
       if (id === sequence.current) setBusy(false);
     }
   }

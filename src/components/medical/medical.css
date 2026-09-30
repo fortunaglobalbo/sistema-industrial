@@ -68,3 +68,17 @@
 }
 
 .medical-shell .medical-back{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;border-radius:.75rem;padding:.75rem 1rem;background:#facc15;color:#172554;font-weight:800;font-size:.875rem;border:1px solid #eab308;box-shadow:0 2px 5px #a1620720}.medical-shell .medical-back:hover{background:#fde047}.medical-shell .medical-back:disabled{opacity:.5}
+
+.swal2-popup.medical-loading-popup{border-radius:24px;border-top:6px solid #facc15;padding:24px 24px 30px;box-shadow:0 24px 80px #002f6c33}
+.medical-loading-popup .medical-loading-title{color:#002f6c;font-size:25px;font-weight:800}
+.medical-loading-art{position:relative;width:150px;height:135px;margin:8px auto 22px}
+.medical-loading-sheet{position:absolute;inset:4px 28px 6px 20px;border:2px solid #bfdbfe;border-radius:14px;background:#eff6ff;transform:rotate(-7deg);padding:23px 14px;box-shadow:0 8px 20px #002f6c12}
+.medical-loading-sheet span{display:block;height:6px;border-radius:6px;background:#93c5fd;margin-bottom:12px}.medical-loading-sheet span:nth-child(2){width:65%;background:#facc15}
+.medical-loading-glass{position:absolute;width:85px;height:85px;top:33px;left:46px;animation:medical-search-sweep 1.8s ease-in-out infinite}
+.medical-loading-caption{color:#475569;font-size:15px;line-height:1.6;margin:0}
+.medical-loading-note{color:#64748b;font-size:12px;margin:16px 0 0}
+.medical-loading-track{height:5px;background:#e2e8f0;overflow:hidden;border-radius:8px;margin:24px auto 0;max-width:240px}
+.medical-loading-track span{display:block;width:40%;height:100%;border-radius:8px;background:#eab308;animation:medical-loading-progress 1.5s ease-in-out infinite}
+@keyframes medical-search-sweep{0%,100%{transform:translate(-15px,-8px) rotate(-8deg)}50%{transform:translate(12px,12px) rotate(8deg)}}
+@keyframes medical-loading-progress{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+@media(prefers-reduced-motion:reduce){.medical-loading-glass,.medical-loading-track span{animation:none}.medical-loading-track span{width:100%}}
