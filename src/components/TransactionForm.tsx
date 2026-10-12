@@ -916,6 +916,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
               <div className="space-y-4">
                 {fields.map((field, index) => {
                   const watchCategory = watch(`items.${index}.category`);
+                  const isToolCategory = watchCategory?.toLowerCase().includes('herramienta');
                   const filteredCatalog = getFilteredCatalog(watchCategory);
 
                   return (
@@ -970,12 +971,13 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
 
                       {/* Cantidad (Soporta fracciones decimales como 22.5 o 3.5) */}
                       <div className="md:col-span-2">
-                        <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase">Cantidad (pza/par)</label>
+                        <label htmlFor={`item-quantity-${index}`} className="text-xs font-black text-slate-700 block mb-1.5 uppercase">Cantidad ({isToolCategory ? 'pza/par/metros' : 'pza/par'})</label>
                         <input
+                          id={`item-quantity-${index}`}
                           type="number"
                           step="any"
                           min="0.1"
-                          placeholder="Ej. 1"
+                          placeholder={isToolCategory ? 'Ej. 2.5' : 'Ej. 1'}
                           {...register(`items.${index}.quantity`, { valueAsNumber: true })}
                           className="w-full text-sm border border-slate-300 bg-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-black text-slate-900"
                         />
