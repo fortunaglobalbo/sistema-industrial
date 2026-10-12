@@ -37,6 +37,7 @@ const itemSchema = z.object({
   itemName: z.string().min(1, 'El nombre del insumo es requerido'),
   category: z.string().min(1, 'La categoría es requerida'),
   quantity: z.number().positive('La cantidad debe ser mayor a 0'),
+  unit: z.enum(['pza', 'par', 'metros']),
   conditionReason: z.enum(['desgaste_natural', 'dano_operativo', 'defecto_fabrica', 'cambio_talla', 'nuevo', 'en_desuso']),
   photoUrl: z.string().nullable().optional(),
 });
@@ -123,7 +124,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
       supervisorName: '',
       transactionType: 'dotacion',
       signatureUrl: '',
-      items: [{ itemName: '', category: 'EPP (Protección)', quantity: 1, conditionReason: 'nuevo', photoUrl: null }],
+      items: [{ itemName: '', category: 'EPP (Protección)', quantity: 1, unit: 'pza', conditionReason: 'nuevo', photoUrl: null }],
     },
   });
 
@@ -465,6 +466,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
           itemName: item.itemName,
           category: item.category,
           quantity: item.quantity,
+          unit: item.unit,
           conditionReason: item.conditionReason,
           photoUrl: item.photoUrl,
         })),
@@ -900,7 +902,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => append({ itemName: '', category: allCategoryNames[0] || 'EPP (Protección)', quantity: 1, conditionReason: transactionType === 'dotacion' ? 'nuevo' : 'desgaste_natural', photoUrl: null })}
+                    onClick={() => append({ itemName: '', category: allCategoryNames[0] || 'EPP (Protección)', quantity: 1, unit: 'pza', conditionReason: transactionType === 'dotacion' ? 'nuevo' : 'desgaste_natural', photoUrl: null })}
                     className="flex items-center gap-1 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg transition"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -916,7 +918,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
               <div className="space-y-4">
                 {fields.map((field, index) => {
                   const watchCategory = watch(`items.${index}.category`);
-                  const isToolCategory = watchCategory?.toLowerCase().includes('herramienta');
+                  const selectedUnit = watch(`items.${index}.unit`);
                   const filteredCatalog = getFilteredCatalog(watchCategory);
 
                   return (
@@ -951,7 +953,7 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                       </div>
 
                       {/* Nombre del Insumo */}
-                      <div className="md:col-span-4">
+                      <div className="md:col-span-3">
                         <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase">Insumo / Descripción</label>
                         <select
                           {...register(`items.${index}.itemName`)}
@@ -971,13 +973,13 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
 
                       {/* Cantidad (Soporta fracciones decimales como 22.5 o 3.5) */}
                       <div className="md:col-span-2">
-                        <label htmlFor={`item-quantity-${index}`} className="text-xs font-black text-slate-700 block mb-1.5 uppercase">Cantidad ({isToolCategory ? 'pza/par/metros' : 'pza/par'})</label>
+                        <label htmlFor={`item-quantity-${index}`} className="text-xs font-black text-slate-700 block mb-1.5 uppercase">Cantidad</label>
                         <input
                           id={`item-quantity-${index}`}
                           type="number"
                           step="any"
                           min="0.1"
-                          placeholder={isToolCategory ? 'Ej. 2.5' : 'Ej. 1'}
+                          placeholder={selectedUnit === 'metros' ? 'Ej. 2.5' : 'Ej. 1'}
                           {...register(`items.${index}.quantity`, { valueAsNumber: true })}
                           className="w-full text-sm border border-slate-300 bg-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-black text-slate-900"
                         />
@@ -986,8 +988,17 @@ export default function TransactionForm({ onSuccess }: TransactionFormProps) {
                         )}
                       </div>
 
+                      <div className="md:col-span-2">
+                        <label htmlFor={`item-unit-${index}`} className="text-xs font-black text-slate-700 block mb-1.5 uppercase">Unidad</label>
+                        <select id={`item-unit-${index}`} {...register(`items.${index}.unit`)} className="w-full text-sm border border-slate-300 bg-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold">
+                          <option value="pza">Pza</option>
+                          <option value="par">Par</option>
+                          <option value="metros">Metros</option>
+                        </select>
+                      </div>
+
                       {/* Estado / Motivo */}
-                      <div className="md:col-span-3">
+                      <div className="md:col-span-2">
                         <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase">Estado / Motivo</label>
                         <select
                           {...register(`items.${index}.conditionReason`)}

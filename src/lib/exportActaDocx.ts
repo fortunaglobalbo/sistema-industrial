@@ -27,6 +27,7 @@ export interface TransactionItemInfo {
   itemName: string;
   category: string;
   quantity: number;
+  unit?: string | null;
   conditionReason: string;
   photoUrl?: string | null;
 }
@@ -407,7 +408,7 @@ export async function exportActaToDocx(
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: formatQuantity(item.quantity), bold: true, size: 18, font: 'Calibri' })],
+              children: [new TextRun({ text: formatQuantity(item.quantity) + (item.unit ? ` ${item.unit}` : ''), bold: true, size: 18, font: 'Calibri' })],
             }),
           ],
         }),

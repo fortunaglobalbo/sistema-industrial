@@ -18,6 +18,7 @@ interface TransactionItem {
   itemName: string;
   category: string;
   quantity: number;
+  unit?: string | null;
   conditionReason: string;
   photoUrl?: string | null;
 }
@@ -177,7 +178,7 @@ export default function PrintReceipt({ transaction, items, onBack }: PrintReceip
         <tbody>
           {items.map((item) => (
             <tr key={item.id} className="hover:bg-slate-50/50">
-              <td className="border border-slate-300 p-1.5 text-center font-bold">{formatQuantity(item.quantity)}</td>
+              <td className="border border-slate-300 p-1.5 text-center font-bold">{formatQuantity(item.quantity)}{item.unit ? ` ${item.unit}` : ''}</td>
               <td className="border border-slate-300 p-1.5 capitalize">{item.category}</td>
               <td className="border border-slate-300 p-1.5 font-medium">{item.itemName}</td>
               <td className="border border-slate-300 p-1.5 text-center capitalize font-semibold">

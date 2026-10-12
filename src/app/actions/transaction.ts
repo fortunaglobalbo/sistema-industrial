@@ -15,6 +15,7 @@ export interface TransactionItemData {
   itemName: string;
   category: string;
   quantity: number;
+  unit?: 'pza' | 'par' | 'metros';
   conditionReason: 'desgaste_natural' | 'dano_operativo' | 'defecto_fabrica' | 'cambio_talla' | 'nuevo' | 'en_desuso';
   photoUrl?: string | null;
 }
@@ -281,6 +282,13 @@ function sanitizeCategoryForEnum(cat: string): string {
  */
 export async function registerTransaction(data: TransactionData) {
   try {
+    if (data.items.some(item => item.unit !== undefined && !['pza', 'par', 'metros'].includes(item.unit))) {
+      return { success: false, error: 'Selecciona una unidad válida: Pza, Par o Metros.' };
+    }
+    if (data.items.some(item => item.unit !== undefined)) {
+      const { error } = await supabase.from('transaction_items').select('unit').limit(0);
+      if (error) return { success: false, error: 'No se pudo comprobar el guardado de unidades. Revisa la conexión y aplica la actualización de unidades en Supabase antes de registrar el acta.' };
+    }
     // 1. Insertar Cabecera de la Transacción (con fallback a 'entrega' o 'devolucion')
     let targetType = data.transactionType;
     let { data: transData, error: transError } = await supabase
@@ -327,6 +335,7 @@ export async function registerTransaction(data: TransactionData) {
       item_name: item.itemName,
       category: item.category,
       quantity: Number(item.quantity),
+      ...(item.unit ? { unit: item.unit } : {}),
       condition_reason: item.conditionReason,
       photo_url: item.photoUrl || null,
     }));
@@ -341,6 +350,7 @@ export async function registerTransaction(data: TransactionData) {
         item_name: item.itemName,
         category: sanitizeCategoryForEnum(item.category),
         quantity: Number(item.quantity),
+        ...(item.unit ? { unit: item.unit } : {}),
         condition_reason: item.conditionReason === 'nuevo' ? 'desgaste_natural' : item.conditionReason === 'en_desuso' ? 'dano_operativo' : item.conditionReason,
         photo_url: item.photoUrl || null,
       }));
@@ -479,6 +489,7 @@ export async function getTransactionDetails(id: string) {
         itemName: i.item_name,
         category: i.category,
         quantity: Number(i.quantity),
+        unit: i.unit ?? null,
         conditionReason: i.condition_reason,
         photoUrl: i.photo_url,
       })),

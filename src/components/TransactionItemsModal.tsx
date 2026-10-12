@@ -302,7 +302,7 @@ export default function TransactionItemsModal({
 
                     <div className="flex items-center gap-3 shrink-0">
                       <span className="bg-white border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-mono font-black text-slate-800 shadow-2xs">
-                        {item.quantity} pza/par
+                        {item.quantity} {item.unit || 'pza/par'}
                       </span>
 
                       <div className="flex items-center gap-1">
