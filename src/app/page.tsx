@@ -231,6 +231,10 @@ export default function Home() {
               <Wrench className="w-4 h-4 text-amber-300" />
               <span>Formulario Requerimiento Herramientas</span>
             </Link>
+            <Link href="/entrega" className="w-full flex items-center justify-center gap-2 bg-[#002f6c] hover:bg-[#003876] text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md transition border border-white/10">
+              <FileText className="w-4 h-4 text-amber-300" />
+              <span>Acta de entrega de herramientas y EPP</span>
+            </Link>
             <Link
               href="/tallas"
               className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#002f6c] to-[#003876] hover:from-[#003876] hover:to-[#004b93] text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md transition border border-white/10"
