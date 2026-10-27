@@ -14,8 +14,9 @@ const saved=await rpc('save',data);assert.equal(saved.revision,1);
 assert.equal((await rpc('save',data)).revision,1); // Retry does not duplicate.
 assert.equal((await rpc('list')).length,1);
 assert.deepEqual((await rpc('read')).data,data);
-const edited={...data,area:'OTRA ÁREA'};
+const edited={...data,area:'OTRA ÁREA',worker:{id:'22222222-2222-4222-8222-222222222222',fullName:'TRABAJADOR DE PRUEBA',ci:'PRUEBA',position:'TECNICO',department:'AREA',supervisorName:''}};
 assert.equal((await rpc('save',edited,1)).revision,2);
+assert.deepEqual((await rpc('read')).data.worker,edited.worker);
 await assert.rejects(rpc('save',{...data,area:'STALE'},1));
 await assert.rejects(rpc('delete',null,1));
 await assert.rejects(rpc('save',{...edited,items:[{description:'SOGA',quantity:'0',unit:'Metros'}]},2));
