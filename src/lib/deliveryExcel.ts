@@ -9,16 +9,17 @@ export async function downloadDeliveryExcel(draft?:Draft,folio?:string){
   sheet.mergeCells('A2:F2');sheet.getCell('A2').value=folio?'FOLIO: '+folio:'PLANTILLA DE CARGA · SIN FOLIO';
   sheet.mergeCells('A3:F3');sheet.getCell('A3').value='TRABAJADOR: '+(draft?.worker?.fullName||'________________________')+'   CI: '+(draft?.worker?.ci||'________________');
   sheet.mergeCells('A4:F4');sheet.getCell('A4').value='FECHA: '+(draft?.date||'________________')+'   ÁREA: '+(draft?.area||'________________');
-  sheet.mergeCells('A5:F5');sheet.getCell('A5').value='Complete las filas desde la 7. Unidades: Pza, Par, Metros. Máximo 100 materiales. Importe solo la hoja Materiales.';
+  sheet.mergeCells('A5:F5');sheet.getCell('A5').value=draft?'DETALLE DE MATERIALES ENTREGADOS / DEVUELTOS':'Complete las filas desde la 7. Unidades: Pza, Par, Metros. Máximo 100 materiales.';
   sheet.addRow(['Categoría','Descripción','Cantidad','Unidad','Estado','Identificación / accesorios']);
   const items=draft?.items||[];
-  for(let n=0;n<Math.max(items.length,25);n++){
+  for(let n=0;n<(draft?items.length:25);n++){
     const i=items[n];const row=sheet.addRow(i?[i.category,i.description,Number(i.quantity),i.unit,i.condition,i.identification]:['Herramientas','','','Pza','Nuevo','']);
     row.height=30;
     row.getCell(1).dataValidation={type:'list',allowBlank:true,formulae:['"Herramientas,EPP"']};
     row.getCell(4).dataValidation={type:'list',allowBlank:true,formulae:['"Pza,Par,Metros"']};
     row.getCell(5).dataValidation={type:'list',allowBlank:true,formulae:['"Nuevo,Usado en buen estado,Con observaciones"']};
   }
+  sheet.pageSetup.printArea='A1:F'+sheet.rowCount;
   sheet.eachRow(row=>row.eachCell({includeEmpty:true},cell=>{cell.alignment={vertical:'middle',wrapText:true};cell.border={bottom:{style:'hair',color:{argb:'FFCBD5E1'}}};}));
   [1,6].forEach(n=>{sheet.getRow(n).height=30;sheet.getRow(n).eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF002F6C'}};c.font={bold:true,color:{argb:'FFFFFFFF'}};});});
   sheet.headerFooter.oddFooter='ENDE · '+(folio||'PLANTILLA')+' · Página &P de &N';

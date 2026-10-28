@@ -44,4 +44,17 @@ await rpc('cancel',ret2,{reason:'ANULACIÓN PRUEBA'},1);
 await rpc('cancel',id,{reason:'ANULACIÓN ORIGINAL'},2);
 assert.equal((await rpc('list')).length,0);
 assert.equal((await rpc('supervise')).length,3);
+await db.exec('reset role');
+await db.exec(readFileSync('supabase/migrations/202610280010_delivery_delete.sql','utf8'));
+await db.exec('set role anon');
+const purge=async(target,revision,code='1010')=>db.query('select public.delivery_delete_permanently($1,$2,$3)',[code,target,revision]);
+await assert.rejects(purge(id,3,'0000'));
+await assert.rejects(purge(id,3)); // linked returns, even cancelled, must be removed first.
+await assert.rejects(purge(ret,999));
+await purge(ret,2);await purge(ret2,2);await purge(id,3);
+assert.equal((await rpc('supervise')).length,0);
+await assert.rejects(rpc('inspect'));
+const afterDelete=await rpc('save',id,data);assert.match(afterDelete.folio,/-000002$/);
+await db.exec('reset role');
+assert.equal((await db.query('select count(*)::int as n from public.delivery_audit where record_id=$1',[ret])).rows[0].n,0);
 await db.close();console.log('PASS: migration, PIN, folios, retries, corrections, audit, returns, balances, cancellations, search and permissions.');

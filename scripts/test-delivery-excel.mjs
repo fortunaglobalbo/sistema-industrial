@@ -16,6 +16,9 @@ try{
  let bytes=await blob.arrayBuffer();let book=new ExcelJS.Workbook();await book.xlsx.load(bytes);
  assert.equal(book.getWorksheet('Materiales').getCell('A2').text,'FOLIO: DEV-2026-000001');
  assert.equal(book.getWorksheet('Materiales').getImages().length,1);
+ assert.equal(book.getWorksheet('Materiales').rowCount,7);
+ assert.equal(book.getWorksheet('Materiales').getCell('B7').text,'SOGA');
+ assert.equal(book.getWorksheet('Materiales').pageSetup.printArea,'A1:F7');
  assert.equal(book.getWorksheet('Conformidad').getCell('B7').text,'RESPONSABLE DE ÁREA');
  const file=()=>new File([bytes],'test.xlsx');
  assert.equal((await parseDeliveryExcel(file()))[0].quantity,'2.5');
