@@ -23,13 +23,14 @@ export function readImportWorkbook(bytes:ArrayBuffer):WorkbookRows{
  return rows;
 }
 const extractionSchema=z.object({
- incomplete:z.boolean(),warnings:z.array(z.string().max(500)).max(30),
- items:z.array(z.object({sheet:z.string().max(200),row:z.number().int().positive(),description:z.string().trim().min(1).max(1000),quantity:z.number().positive().finite().nullable(),unit:z.enum(['Pza','Par','Metros']).nullable(),category:z.enum(['Herramientas','EPP']).nullable(),condition:z.enum(['Nuevo','Usado en buen estado','Con observaciones']).nullable(),identification:z.string().max(500)})).min(1).max(100)
+ incomplete:z.boolean().default(false),warnings:z.array(z.string().max(500)).max(30).default([]),
+ items:z.array(z.object({sheet:z.string().max(200),row:z.coerce.number().int().positive(),description:z.string().trim().min(1).max(1000),quantity:z.preprocess(v=>v===''||v===undefined?null:typeof v==='string'?Number(v.replace(',','.')):v,z.number().positive().finite().nullable()),unit:z.preprocess(v=>typeof v==='string'?({'m':'Metros','metro':'Metros','metros':'Metros','pza':'Pza','pz':'Pza','pieza':'Pza','piezas':'Pza','unidad':'Pza','unidades':'Pza','und':'Pza','par':'Par','pares':'Par'}[v.toLowerCase().trim()]||null):null,z.enum(['Pza','Par','Metros']).nullable()),category:z.enum(['Herramientas','EPP']).nullish().transform(v=>v||null),condition:z.enum(['Nuevo','Usado en buen estado','Con observaciones']).nullish().transform(v=>v||null),identification:z.string().max(500).nullish().transform(v=>v||'')})).min(1).max(100)
 });
 export function validateImportResponse(raw:string,rows:WorkbookRows){
- const cleaned=raw.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+ let cleaned=raw.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+ if(!cleaned.startsWith('{')&&cleaned.includes('{'))cleaned=cleaned.slice(cleaned.indexOf('{'),cleaned.lastIndexOf('}')+1);
  let parsed:z.infer<typeof extractionSchema>;
- try{parsed=extractionSchema.parse(JSON.parse(cleaned));}catch{throw new Error('La IA no devolvió una tabla válida. No se incorporó ningún material; vuelve a intentar.');}
+ try{parsed=extractionSchema.parse(JSON.parse(cleaned));}catch(e){const fields=e instanceof z.ZodError?e.issues.slice(0,3).map(i=>i.path.join('.')+' ('+i.code+')').join(', '):'JSON incompleto';throw new Error('La IA no devolvió una tabla válida: '+fields+'. No se incorporaron materiales.');}
  if(parsed.incomplete)throw new Error('La tabla supera 100 materiales o la lectura quedó incompleta. Divide el archivo para no perder filas.');
  const seen=new Set<string>();const warnings=[...parsed.warnings];
  const items:Item[]=parsed.items.map((i,index)=>{
@@ -55,7 +56,7 @@ export async function recognizeDeliveryWorkbook(rows:WorkbookRows){
  let response:Response;
  try{response=await fetch(base+(direct?'/messages':'/chat/completions'),{
   method:'POST',headers:direct?{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'}:{'Content-Type':'application/json',Authorization:'Bearer '+key},
-  body:JSON.stringify(direct?{model,max_tokens:14000,system,messages:[{role:'user',content:JSON.stringify(rows)}]}:{model,max_tokens:14000,messages:[{role:'system',content:system},{role:'user',content:JSON.stringify(rows)}]}),signal:AbortSignal.timeout(45000)
+  body:JSON.stringify(direct?{model,max_tokens:14000,system,messages:[{role:'user',content:JSON.stringify(rows)}]}:{model,max_tokens:14000,response_format:{type:'json_object'},messages:[{role:'system',content:system},{role:'user',content:JSON.stringify(rows)}]}),signal:AbortSignal.timeout(45000)
  });}catch{throw new Error('La IA tardó demasiado o no pudo conectarse. Intenta nuevamente con una tabla más pequeña.');}
  if(!response.ok){
   if([401,403].includes(response.status))throw new Error('La clave de IA no tiene acceso al modelo configurado. Revisa la configuración de Vercel.');
