@@ -15,7 +15,7 @@ export default function ImportMaterials({onImport,onBusy,count}:{onImport:(items
   finally{onBusy(false);}
  }
  function accept(append:boolean){if(!preview)return;onImport(preview.items,append);dialog.current?.close();setPreview(null);}
- return <><label className="delivery-secondary"><Sparkles size={18}/> Importar Excel con IA<input type="file" accept=".xlsx,.xls,.csv" className="sr-only" onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void upload(file);}}/></label>
+ return <><label className="delivery-secondary"><Sparkles size={18}/> Importar Excel<input type="file" accept=".xlsx,.xls,.csv" className="sr-only" onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void upload(file);}}/></label>
  <dialog ref={dialog} className="delivery-import-dialog" onCancel={()=>setPreview(null)}>{preview&&<><header className="delivery-section-title"><div><h2><FileSpreadsheet/> Revisar materiales reconocidos</h2><p>{filename} · {preview.items.length} materiales</p></div><button aria-label="Cerrar vista previa" onClick={()=>{dialog.current?.close();setPreview(null);}}><X/></button></header>
  <p className="delivery-notice">Verifica las cantidades y unidades. Esta vista previa aún no guarda ni modifica el acta.</p>
  {preview.warnings.length>0&&<details open><summary>{preview.warnings.length} observaciones para revisar</summary><ul>{preview.warnings.map((w,n)=><li key={n}>{w}</li>)}</ul></details>}

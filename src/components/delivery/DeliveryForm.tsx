@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FileCheck2, KeyRound, Plus, Trash2, Printer, Save, FolderOpen, LogOut, History } from 'lucide-react';
+import { FileCheck2, KeyRound, Plus, Trash2, Printer, Save, LogOut, History } from 'lucide-react';
 import { draftSchema, savedDeliverySchema, type Draft, type Item, type DeliverySummary } from '@/lib/delivery';
 import Swal from 'sweetalert2';
 import { checkDeliveryCode, saveDelivery, inspectDelivery, deleteDelivery, permanentlyDeleteDelivery, logoutDelivery } from '@/app/entrega/actions';
@@ -14,7 +14,6 @@ import DescriptionInput from './DescriptionInput';
 import {downloadDeliveryExcel} from '@/lib/deliveryExcel';
 import DeliveryWorkerPicker from './DeliveryWorkerPicker';
 
-const storageKey='ende-delivery-draft-v1';
 const newItem=():Item=>({id:crypto.randomUUID(),category:'Herramientas',description:'',quantity:'1',unit:'Pza',condition:'Nuevo',identification:''});
 const emptyDraft=():Draft=>({kind:'ENT',registeredBy:'',reference:'',date:new Intl.DateTimeFormat('sv-SE',{timeZone:'America/La_Paz'}).format(new Date()),location:'',area:'',reason:'',observations:'',receipt:'Recibido conforme',items:[newItem()]});
 
@@ -54,11 +53,6 @@ export default function DeliveryForm({supervision=false}:{supervision?:boolean})
   useEffect(()=>{if(!dirty)return;const guard=(e:BeforeUnloadEvent)=>e.preventDefault();window.addEventListener('beforeunload',guard);return()=>window.removeEventListener('beforeunload',guard);},[dirty]);
   function change<K extends keyof Draft>(key:K,value:Draft[K]){setDraft(d=>d?{...d,[key]:value}:d);setDirty(true);setMessage('');}
   function changeItem<K extends keyof Item>(id:string,key:K,value:Item[K]){if(draft)change('items',draft.items.map(i=>i.id===id?{...i,[key]:value}:i));}
-  function restore(){
-    if(dirty&&!window.confirm('¿Reemplazar los cambios actuales con el borrador guardado?'))return;
-    try{const saved=localStorage.getItem(storageKey);if(!saved){setMessage('No hay un borrador guardado en este navegador.');return;}setDraft(draftSchema.parse(JSON.parse(saved)));setRecordId(crypto.randomUUID());setRevision(0);setFolio('');setCancelled(false);setView('form');setDirty(true);setError('');setMessage('Borrador recuperado. Revisa los datos antes de imprimir.');}
-    catch{setError('No se pudo recuperar el borrador. Puedes seguir llenando el formulario.');}
-  }
   async function save(){
     if(busy||!draft||cancelled)return;
     if(!draft.worker&&revision===0){await alertError('Selecciona un trabajador o registra uno nuevo.');return;}
@@ -91,7 +85,7 @@ export default function DeliveryForm({supervision=false}:{supervision?:boolean})
     <div className="delivery-editor">
       <header className="delivery-header"><div><Image unoptimized src="/logo_ende_deoruro.png" alt="ENDE DEORURO" width={100} height={60}/><div><span className="delivery-tag">ENTREGAS Y DEVOLUCIONES</span><h1>Herramientas y EPP</h1><p>Folios · Historial · Entregas y devoluciones</p></div></div><button className="delivery-secondary" disabled={busy} onClick={async()=>{if(!await canLeave())return;await logoutDelivery();setAllowed(false);setDraft(null);setMessage('');setError('');setDirty(false);}}><LogOut size={17}/> Salir</button></header>
       <fieldset disabled={busy}><div className="delivery-notice"><b>Documento pendiente de firmas.</b> Selecciona al trabajador del padrón compartido. Quien entrega y el supervisor se identificarán con sus sellos y firmas en el acta impresa. Este formulario no descuenta materiales del almacén.</div>
-      <div className="delivery-actions"><button className="delivery-secondary" onClick={newDelivery}><Plus size={17}/> Nueva acta</button><button className="delivery-secondary" onClick={showHistory}><History size={17}/> Historial y supervisión</button>{view==='form'&&!cancelled&&<><button className="delivery-primary" onClick={save}><Save size={17}/> {revision?'Guardar cambios':'Guardar acta'}</button><button className="delivery-secondary" onClick={restore}><FolderOpen size={17}/> Recuperar borrador local anterior</button><button className="delivery-secondary" onClick={print}><Printer size={17}/> Imprimir / PDF</button></>}</div>
+      <div className="delivery-actions"><button className="delivery-secondary" onClick={newDelivery}><Plus size={17}/> Nueva acta</button><button className="delivery-secondary" onClick={showHistory}><History size={17}/> Historial y supervisión</button>{view==='form'&&!cancelled&&<><button className="delivery-primary" onClick={save}><Save size={17}/> {revision?'Guardar cambios':'Guardar acta'}</button><button className="delivery-secondary" onClick={print}><Printer size={17}/> Imprimir / PDF</button></>}</div>
       {view==='history'&&<DeliveryHistory onOpen={openRecord} onCancel={removeRecord} onDelete={eraseRecord} onReturn={startReturn}/>}
       <div hidden={view!=='form'}>
       {message&&<p role="status" className="delivery-notice">{message}</p>}{error&&<p role="alert" className="delivery-error">{error}</p>}
