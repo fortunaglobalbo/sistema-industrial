@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import DeliveryForm from '@/components/delivery/DeliveryForm';
 import ActasModule from '@/components/ActasModule';
 import { 
   Loader2, 
@@ -24,7 +25,7 @@ export default function Home() {
   const [pinInput, setPinInput] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'new' | 'history' | 'toolRequests' | 'bootSizeRequests' | 'extinguishers' | 'waterSupply' | 'cites' | 'medicineKits' | 'notices'>('new');
+  const [activeTab, setActiveTab] = useState<'new' | 'history' | 'toolRequests' | 'bootSizeRequests' | 'extinguishers' | 'waterSupply' | 'cites' | 'medicineKits' | 'notices' | 'deliveries'>('new');
   const tabTitles: Record<string, { title: string; subtitle: string }> = {
     new: {
       title: 'Registrar Acta de Dotación / Entrega',
@@ -58,6 +59,7 @@ export default function Home() {
       title: 'Gestión y Armado de Kits de Medicamentos / Botiquines',
       subtitle: 'Catálogo oficial y composición de botiquines para cuadrillas y personal.',
     },
+    deliveries: {title:'Supervisión de entregas y devoluciones',subtitle:'Folios, trabajadores, cambios y materiales pendientes de devolución.'},
     notices: {
       title: 'Cronograma de Actividades y Cuadro de Avisos',
       subtitle: 'Planificación oficial, registro de inspecciones y seguimiento de tareas del área de Seguridad y Salud Ocupacional.',
@@ -489,6 +491,7 @@ export default function Home() {
                   <HeartPulse className={`w-4 h-4 ${activeTab === 'medicineKits' ? 'text-amber-400' : 'text-rose-600'}`} />
                   <span>Medicamentos</span>
                 </button>
+                <button onClick={()=>setActiveTab('deliveries')} className={'px-3 py-2 rounded-xl font-bold text-sm '+(activeTab==='deliveries'?'bg-[#002f6c] text-white':'text-[#002f6c] bg-amber-50')}>Entregas y devoluciones</button>
                 <button
                   onClick={() => setActiveTab('notices')}
                   className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-xl transition cursor-pointer ${
@@ -504,7 +507,7 @@ export default function Home() {
             </div>
 
             {/* CONTENIDO DE PESTAÑA: REGISTRAR NUEVA ACTA */}
-            {activeTab === 'new' || activeTab === 'history' ? (
+            {activeTab === 'deliveries' ? <DeliveryForm supervision/> : activeTab === 'new' || activeTab === 'history' ? (
               <ActasModule key={activeTab} activeTab={activeTab} onTabChange={setActiveTab} />
             ) : activeTab === 'toolRequests' ? (
               /* CONTENIDO DE PESTAÑA: REQUERIMIENTOS DE HERRAMIENTAS (HISTORIAL Y CONTROL) */

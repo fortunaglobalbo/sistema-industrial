@@ -1,0 +1,31 @@
+import ts from 'typescript';
+import {readFileSync,writeFileSync,unlinkSync} from 'node:fs';
+import {pathToFileURL} from 'node:url';
+import {resolve} from 'node:path';
+import assert from 'node:assert/strict';
+import ExcelJS from 'exceljs';
+const temp=resolve('scripts/.delivery-excel-test.mjs');
+writeFileSync(temp,ts.transpileModule(readFileSync('src/lib/deliveryExcel.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText);
+try{
+ const {downloadDeliveryExcel,parseDeliveryExcel}=await import(pathToFileURL(temp).href);
+ let blob;globalThis.URL.createObjectURL=value=>{blob=value;return 'blob:test';};globalThis.URL.revokeObjectURL=()=>{};
+ globalThis.document={createElement:()=>({click(){}})};
+ globalThis.fetch=async()=>new Response(readFileSync('public/logo_ende_deoruro.png'));
+ const draft={kind:'DEV',date:'2026-10-28',area:'TEST',worker:{fullName:'PERSONA DE PRUEBA',ci:'TEST'},observations:'PRUEBA',items:[{category:'Herramientas',description:'SOGA',quantity:'2.5',unit:'Metros',condition:'Usado en buen estado',identification:'COD-1'}]};
+ await downloadDeliveryExcel(draft,'DEV-2026-000001');
+ let bytes=await blob.arrayBuffer();let book=new ExcelJS.Workbook();await book.xlsx.load(bytes);
+ assert.equal(book.getWorksheet('Materiales').getCell('A2').text,'FOLIO: DEV-2026-000001');
+ assert.equal(book.getWorksheet('Materiales').getImages().length,1);
+ assert.equal(book.getWorksheet('Conformidad').getCell('B7').text,'RESPONSABLE DE ÁREA');
+ const file=()=>new File([bytes],'test.xlsx');
+ assert.equal((await parseDeliveryExcel(file()))[0].quantity,'2.5');
+ assert.equal((await parseDeliveryExcel(file()))[0].unit,'Metros');
+ book.getWorksheet('Materiales').getCell('C7').value=-1;bytes=await book.xlsx.writeBuffer();await assert.rejects(parseDeliveryExcel(file()));
+ book.getWorksheet('Materiales').getCell('C7').value={formula:'1+1',result:2};bytes=await book.xlsx.writeBuffer();await assert.rejects(parseDeliveryExcel(file()));
+ await downloadDeliveryExcel();bytes=await blob.arrayBuffer();await assert.rejects(parseDeliveryExcel(file()),/entre 1 y 100/);
+ book=new ExcelJS.Workbook();await book.xlsx.load(bytes);
+ const sheet=book.getWorksheet('Materiales');
+ for(let n=7;n<108;n++)sheet.getRow(n).values=['Herramientas','MATERIAL '+n,1,'Pza','Nuevo',''];
+ bytes=await book.xlsx.writeBuffer();await assert.rejects(parseDeliveryExcel(file()),/entre 1 y 100/);
+ console.log('PASS: real XLSX, logo, four signatures, decimal metres, import roundtrip, blank/invalid/formula/oversized rows rejected.');
+}finally{unlinkSync(temp);}
